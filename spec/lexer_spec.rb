@@ -1,5 +1,4 @@
 require File.expand_path("../../lib/mol.en",  __FILE__)
-
 include Molen
 
 describe Lexer do

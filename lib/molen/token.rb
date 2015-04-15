@@ -33,8 +33,8 @@ module Molen
         end
 
         # Checks if this token is of the specified kind
-        def is_kind?(kind)
-            kind == kind
+        def is_kind?(kin)
+            kind == kin
         end
 
         # Checks if the content of this token equals the given content
