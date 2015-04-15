@@ -222,6 +222,33 @@ module Molen
         end
     end
 
+    class VarDef < Statement
+        attr_accessor :name, :value
+
+        def initialize(name, value = nil)
+            @name = name
+            @value = value
+            @value.parent = self if value
+        end
+
+        def accept_children(visitor)
+            @value.accept visitor if @value
+        end
+    end
+
+    class Return < Statement
+        attr_accessor :value
+
+        def initialize(value = nil)
+            @value = value
+            @value.parent = self if value
+        end
+
+        def accept_children(visitor)
+            @value.accept visitor if @value
+        end
+    end
+
     class ClassDef < Statement
         attr_accessor :name, :superclass, :vars, :funcs
 
@@ -240,8 +267,3 @@ module Molen
         end
     end
 end
-
-
-
-
-
