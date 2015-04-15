@@ -40,15 +40,15 @@ module Molen
     class Statement < ASTNode
     end
 
-    class Expressions < Expression
+    class Body < Expression
         include Enumerable
-        attr_accessor :expressions
+        attr_accessor :nodes
 
         def self.from(obj)
             case obj
             when nil
                 new
-            when Expressions
+            when Body
                 obj
             when Array
                 new obj
@@ -57,16 +57,17 @@ module Molen
             end
         end
 
-        def initialize(expressions = [])
-            @expressions = expressions
+        def initialize(nodes = [])
+            @nodes = nodes
+            @nodes.each { |e| e.parent = self }
         end
 
         def each(&block)
-            expressions.each &block
+            nodes.each &block
         end
 
         def accept_children(visitor)
-            expressions.each { |exp| exp.accept visitor }
+            nodes.each { |exp| exp.accept visitor }
         end
     end
 
@@ -105,20 +106,59 @@ module Molen
     class Null < Expression
     end
 
+    class Call < Expression
+        attr_accessor :obj, :name, :args 
+
+        def initialize(obj, name, args = [])
+            @obj = obj
+            @obj.parent = self if obj
+            @name = name
+            @args = args
+            @args.each { |arg| arg.parent = self }
+        end
+
+        def accept_children(visitor)
+            @obj.accept visitor if @obj
+            @args.each { |arg| arg.accept visitor }
+        end
+    end
+
     class New < Expression
         attr_accessor :name, :args
 
         def initialize(name, args = [])
             @name = name
             @args = args
+            @args.each { |arg| arg.parent = self }
+        end
+
+        def visit_children(visitor)
+            @args.each { |arg| arg.accept visitor }
         end
     end
 
-    class Ref < Expression
+    class Var < Expression
         attr_accessor :value
 
         def initialize(val)
             @value = val
+        end
+    end
+
+    class Binary < Expression
+        attr_accessor :op, :left, :right
+
+        def initialize(op, left, right)
+            @op = op
+            @left = left
+            @left.parent = self
+            @right = right
+            @right.parent = self
+        end
+
+        def visit_children(visitor)
+            @left.accept visitor
+            @right.accept visitor
         end
     end
 
@@ -128,7 +168,80 @@ module Molen
         def initialize(name, args = [], body = nil)
             @name = name
             @args = args
-            @body = Expressions.from body
+            @args.each { |arg| arg.parent = self }
+            @body = Body.from body
+            @body.parent = self
+        end
+
+        def visit_children(visitor)
+            @args.each { |a| a.accept visitor }
+            @body.accept visitor
+        end
+    end
+
+    class If < Statement
+        attr_accessor :cond, :then, :elseifs, :else
+
+        def initialize(cond, if_then, if_else = nil, elseifs = [])
+            @cond = cond
+            @cond.parent = self
+            @then = Body.from if_then
+            @then.parent = self
+            @elseifs = elseifs.map {|else_if| [else_if.first, Body.from(else_if.last)]}
+            @elseifs.each do {|else_if| else_if.first.parent = self; else_if.last.parent = self}
+            @else = Body.from if_else
+            @else.parent = self
+        end
+
+        def accept_children(visitor)
+            @cond.accept visitor
+            @then.accept visitor
+            @else.accept visitor
+        end
+    end
+
+    class For < Statement
+        attr_accessor :init, :cond, :step, :body
+
+        def initialize(cond, init = nil, step = nil, body = nil)
+            @cond = cond
+            @cond.parent = self
+            @init = init
+            @init.parent = self if init
+            @step = step
+            @step.parent = self if step
+            @body = Body.from body
+            @body.parent = self
+        end
+
+        def visit_children(visitor)
+            @init.accept visitor if @init
+            @cond.accept visitor
+            @step.accept visitor if @step
+            @body.accept visitor
+        end
+    end
+
+    class ClassDef < Statement
+        attr_accessor :name, :superclass, :vars, :funcs
+
+        def initialize(name, superclass = nil, var_defs = [], funcs = [])
+            @name = name
+            @superclass = superclass
+            @vars = var_defs
+            @vars.each {|var| var.parent = self}
+            @funcs = funcs
+            @funcs.each {|func| func.parent = self}
+        end
+
+        def visit_children(visitor)
+            @var_defs.each {|var| var.accept visitor}
+            @funcs.each {|func| func.accept visitor}
         end
     end
 end
+
+
+
+
+
