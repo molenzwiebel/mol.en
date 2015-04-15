@@ -69,13 +69,21 @@ module Molen
         def accept_children(visitor)
             nodes.each { |exp| exp.accept visitor }
         end
+
+        def ==(other)
+            other.class == self.class && other.nodes == nodes
+        end
     end
 
     class Bool < Expression
         attr_accessor :value
 
         def initialize(val)
-            @value = val
+            @value = val.to_s == "true"
+        end
+
+        def ==(other)
+            other.class == self.class && other.value == value
         end
     end
 
@@ -85,6 +93,10 @@ module Molen
         def initialize(val)
             @value = val.to_i
         end
+
+        def ==(other)
+            other.class == self.class && other.value == value
+        end
     end
 
     class Double < Expression
@@ -93,33 +105,47 @@ module Molen
         def initialize(val)
             @value = val.to_f
         end
+
+        def ==(other)
+            other.class == self.class && other.value == value
+        end
     end
 
-    class String < Expression
+    class Str < Expression
         attr_accessor :value
 
         def initialize(val)
             @value = val
         end
+
+        def ==(other)
+            other.class == self.class && other.value == value
+        end
     end
 
     class Null < Expression
+        def ==(other)
+            other.class == self.class
+        end
     end
 
     class Call < Expression
-        attr_accessor :obj, :name, :args 
+        attr_accessor :on, :args 
 
-        def initialize(obj, name, args = [])
-            @obj = obj
-            @obj.parent = self if obj
-            @name = name
+        def initialize(on, args = [])
+            @on = on
+            @on.parent = self
             @args = args
             @args.each { |arg| arg.parent = self }
         end
 
         def accept_children(visitor)
-            @obj.accept visitor if @obj
+            @on.accept visitor if @on
             @args.each { |arg| arg.accept visitor }
+        end
+
+        def ==(other)
+            other.class == self.class && other.on == on && other.args == args
         end
     end
 
@@ -135,6 +161,10 @@ module Molen
         def visit_children(visitor)
             @args.each { |arg| arg.accept visitor }
         end
+
+        def ==(other)
+            other.class == self.class && other.name == name && other.args == args
+        end
     end
 
     class Var < Expression
@@ -142,6 +172,10 @@ module Molen
 
         def initialize(val)
             @value = val
+        end
+
+        def ==(other)
+            other.class == self.class && other.value == value
         end
     end
 
@@ -160,6 +194,10 @@ module Molen
             @left.accept visitor
             @right.accept visitor
         end
+
+        def ==(other)
+            other.class == self.class && other.op == op && other.left == left && other.right == right
+        end
     end
 
     class Function < Statement
@@ -168,7 +206,6 @@ module Molen
         def initialize(name, args = [], body = nil)
             @name = name
             @args = args
-            @args.each { |arg| arg.parent = self }
             @body = Body.from body
             @body.parent = self
         end
@@ -176,6 +213,10 @@ module Molen
         def visit_children(visitor)
             @args.each { |a| a.accept visitor }
             @body.accept visitor
+        end
+
+        def ==(other)
+            other.class == self.class && other.name == name && other.args == args && other.body == body
         end
     end
 
@@ -187,8 +228,8 @@ module Molen
             @cond.parent = self
             @then = Body.from if_then
             @then.parent = self
-            @elseifs = elseifs.map {|else_if| [else_if.first, Body.from(else_if.last)]}
-            @elseifs.each do {|else_if| else_if.first.parent = self; else_if.last.parent = self}
+            @elseifs = elseifs.map {|else_if| [else_if.first, Body.from(else_if.last)]} if elseifs
+            @elseifs.each {|else_if| else_if.first.parent = self; else_if.last.parent = self} if elseifs
             @else = Body.from if_else
             @else.parent = self
         end
@@ -197,6 +238,10 @@ module Molen
             @cond.accept visitor
             @then.accept visitor
             @else.accept visitor
+        end
+
+        def ==(other)
+            other.class == self.class && other.cond == cond && other.then == @then && other.elseifs == elseifs && other.else == @else
         end
     end
 
@@ -220,6 +265,10 @@ module Molen
             @step.accept visitor if @step
             @body.accept visitor
         end
+
+        def ==(other)
+            other.class == self.class && other.init == init && other.cond == cond && other.step == step && other.body == body
+        end
     end
 
     class VarDef < Statement
@@ -234,6 +283,10 @@ module Molen
         def accept_children(visitor)
             @value.accept visitor if @value
         end
+
+        def ==(other)
+            other.class == self.class && other.name == name && other.value == value
+        end
     end
 
     class Return < Statement
@@ -246,6 +299,10 @@ module Molen
 
         def accept_children(visitor)
             @value.accept visitor if @value
+        end
+
+        def ==(other)
+            other.class == self.class && other.value == value
         end
     end
 
@@ -264,6 +321,10 @@ module Molen
         def visit_children(visitor)
             @var_defs.each {|var| var.accept visitor}
             @funcs.each {|func| func.accept visitor}
+        end
+
+        def ==(other)
+            other.class == self.class && other.name == name && other.superclass == superclass && other.vars == vars && other.funcs = funcs
         end
     end
 end

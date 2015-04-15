@@ -1,4 +1,4 @@
-require File.expand_path("../../lib/mol.en",  __FILE__)
+require File.expand_path("../../lib/molen",  __FILE__)
 include Molen
 
 describe Lexer do
