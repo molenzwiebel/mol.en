@@ -12,7 +12,7 @@ describe Lexer do
     end
 
     def self.it_lexes_multiple(string, *args)
-        it "lexes multiple values from #{string}" do
+        it "lexes multiple tokens from #{string}" do
             lexer = Lexer.new string
             args.each do |kind_and_val|
                 tok = lexer.next_token
@@ -20,6 +20,13 @@ describe Lexer do
                 expect(tok.value).to eq(kind_and_val.last) if kind_and_val.size == 2
             end
         end
+    end
+
+    it "should keep track of line numbers" do
+        lexer = Lexer.new "4 \n \n 3 \n \n \n 33"
+        expect(lexer.next_token.line).to eq 1
+        expect(lexer.next_token.line).to eq 3
+        expect(lexer.next_token.line).to eq 6
     end
 
     it_lexes "4", :integer
@@ -50,5 +57,6 @@ describe Lexer do
     it_lexes ">", :operator, ">"
     it_lexes ">=", :operator, ">="
 
+    it_lexes_multiple "4 \n 'test'", [:integer], [:string]
     it_lexes_multiple "def test(a, b) {", [:keyword, "def"], [:identifier, "test"], [:lparen], [:identifier, "a"], [:special, ","], [:identifier, "b"], [:rparen], [:begin_block]
 end

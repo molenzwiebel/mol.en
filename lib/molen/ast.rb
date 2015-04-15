@@ -6,6 +6,8 @@ module Molen
     end
 
     class ASTNode
+        attr_accessor :line_number, :column_number, :parent
+
         def self.extended(klass)
             name = klass.simple_name.downcase
 
@@ -55,7 +57,7 @@ module Molen
             end
         end
 
-        def initialize(expressions = nil)
+        def initialize(expressions = [])
             @expressions = expressions
         end
 
@@ -97,6 +99,36 @@ module Molen
 
         def initialize(val)
             @value = val
+        end
+    end
+
+    class Null < Expression
+    end
+
+    class New < Expression
+        attr_accessor :name, :args
+
+        def initialize(name, args = [])
+            @name = name
+            @args = args
+        end
+    end
+
+    class Ref < Expression
+        attr_accessor :value
+
+        def initialize(val)
+            @value = val
+        end
+    end
+
+    class Function < Statement
+        attr_accessor :name, :args, :body
+
+        def initialize(name, args = [], body = nil)
+            @name = name
+            @args = args
+            @body = Expressions.from body
         end
     end
 end

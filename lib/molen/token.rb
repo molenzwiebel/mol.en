@@ -8,13 +8,14 @@ module Molen
         # value is the string containing the "value" of the token.
         # start_position is a fixnum which indicates at which index in the source this token started.
         # end_position is a fixnum indicating the end index of the token
-        attr_reader :kind, :value, :start_position, :end_position
+        attr_reader :kind, :value, :start_position, :end_position, :line
 
-        def initialize(kind, value = "", start_pos = 0, end_pos = 0)
+        def initialize(kind, value = "", start_pos = 0, end_pos = 0, line = 0)
             @kind = kind
             @value = value
             @start_position = start_pos
             @end_position = end_pos
+            @line = line
         end
 
         # Checks if this token is a operator with the specified value
@@ -43,7 +44,7 @@ module Molen
         end
 
         def to_s
-            "#<MolenLang::Token @value=\"#{value.to_s}\", @kind=:#{kind.to_s}, @start_index=#{start_index}, @end_index=#{end_index}>"
+            "#<MolenLang::Token @value=\"#{value.to_s}\", @kind=:#{kind.to_s}, @start_index=#{start_position}, @end_index=#{end_position}, @line=#{line}>"
         end
     end
 end

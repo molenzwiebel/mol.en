@@ -60,6 +60,7 @@ module Molen
         }
 
         def initialize(source)
+            @source = source
             @scanner = StringScanner.new source
             @curpos  = 0
         end
@@ -69,12 +70,12 @@ module Molen
                 return Token.new nil, :eof, @scanner.charpos, @scanner.charpos
             end
 
-            return next_token if @scanner.scan /\s+/
+            @scanner.skip(/\s+/)
 
             RULES.each do |matcher, kind|
                 if content = @scanner.scan(matcher) then
                     pos = @scanner.charpos
-                    tok = Token.new kind, content, @curpos, pos + 1
+                    tok = Token.new(kind, content, @curpos, pos + 1, line_num)
                     @curpos = pos
 
                     return tok
@@ -82,6 +83,10 @@ module Molen
             end
 
             raise "Unexpected character '#{@scanner.getch}' at position #{@scanner.charpos} while scanning."
+        end
+
+        def line_num
+            @source[0..@scanner.pos].count("\n") + 1
         end
     end
 end
