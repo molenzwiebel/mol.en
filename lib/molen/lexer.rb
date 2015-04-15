@@ -74,7 +74,7 @@ module Molen
             RULES.each do |matcher, kind|
                 if content = @scanner.scan(matcher) then
                     pos = @scanner.charpos
-                    tok = Token.new content, kind, @curpos, pos + 1
+                    tok = Token.new kind, content, @curpos, pos + 1
                     @curpos = pos
 
                     return tok
