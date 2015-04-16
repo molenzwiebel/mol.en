@@ -8,8 +8,9 @@ module Molen
     class ASTNode
         attr_accessor :line_number, :column_number, :parent
 
-        def self.extended(klass)
-            name = klass.simple_name.downcase
+        def self.inherited(klass)
+            name = klass.name.split('::').last.downcase
+            p klass
 
             klass.class_eval %Q(
                 def accept(visitor)
