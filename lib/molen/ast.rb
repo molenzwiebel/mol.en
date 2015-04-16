@@ -10,7 +10,6 @@ module Molen
 
         def self.inherited(klass)
             name = klass.name.split('::').last.downcase
-            p klass
 
             klass.class_eval %Q(
                 def accept(visitor)
