@@ -65,9 +65,15 @@ module Molen
             name = next_token.value
             next_token # Consume name
             args = Molen::parse_paren_list(self) do
-                consume.value
+                n = :identifier.save >> ":" >> run
+                [Var.new(n.value), Molen::parse_type(self)]
             end
-            Function.new name, args, Molen::parse_body(self)
+            type = nil
+            if token.is? "->" then
+                next_token
+                type = Molen::parse_type self
+            end
+            Function.new name, type, args, Molen::parse_body(self)
         end
         parser.stmt -> x { x.is_keyword? "if" } do
             next_token # Consume 'if'

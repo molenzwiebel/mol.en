@@ -201,17 +201,19 @@ module Molen
     end
 
     class Function < Statement
-        attr_accessor :name, :args, :body
+        attr_accessor :name, :ret_type, :args, :body
 
-        def initialize(name, args = [], body = nil)
+        def initialize(name, ret_type = nil, args = [], body = nil)
             @name = name
+            @ret_type = ret_type || VoidType.new
             @args = args
+            @args.each {|arg| arg.first.parent = self}
             @body = Body.from body
             @body.parent = self
         end
 
         def visit_children(visitor)
-            @args.each { |a| a.accept visitor }
+            @args.each { |a| a.first.accept visitor }
             @body.accept visitor
         end
 

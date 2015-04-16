@@ -27,7 +27,8 @@ describe Parser do
     node "test(10)", Call, Call.new(Var.new("test"), [Int.new(10)])
     node "test(10)()", Call, Call.new(Call.new(Var.new("test"), [Int.new(10)]), [])
 
-    node "def x(a) 10", Function, Function.new("x", ["a"], Int.new(10))
+    node "def x(a: Boolean) 10", Function, Function.new("x", nil, [[Var.new("a"), UnresolvedType.new("Boolean")]], Int.new(10))
+    node "def x(a: Boolean) -> Int 10", Function, Function.new("x", UnresolvedType.new("Int"), [[Var.new("a"), UnresolvedType.new("Boolean")]], Int.new(10))
     node "if (true) 10", If, If.new(Bool.new("true"), Int.new(10))
     node "if (true) 10 else 12", If, If.new(Bool.new("true"), Int.new(10), Int.new(12))
     node "if (true) 10 else 12 elseif (false) 14", If, If.new(Bool.new("true"), Int.new(10), Int.new(12), [[Bool.new("false"), Int.new(14)]])
