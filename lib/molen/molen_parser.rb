@@ -19,7 +19,14 @@ module Molen
             Str.new consume.value.gsub(/\\"/, "\"").gsub(/\\'/, "'").gsub(/^"|"$/, "").gsub(/^'|'$/, '')
         end
         parser.expr -> tok { tok.is_kind? :identifier } do
-            Var.new consume.value
+            name = consume.value
+            if token.is_kind? :lparen then
+                args = Molen::parse_paren_list(self) do
+                    parse_expression
+                end
+                next Call.new name, args
+            end
+            Var.new name
         end 
         parser.expr -> tok { tok.is_keyword? "new" } do
             name = next_token.value
@@ -52,13 +59,11 @@ module Molen
         parser.infix 8, -> x { x.is_operator? "==" }, &create_binary_parser(8)
         parser.infix 8, -> x { x.is_operator? "!=" }, &create_binary_parser(8)
         parser.infix 1, -> x { x.is_operator? "=" },  &create_binary_parser(11, true)
+        parser.infix 50, -> x { x.is? "." } do |left|
+            next_token # Consume .
+            right = parse_expression 49
 
-        parser.infix 50, -> x { x.is_kind? :lparen } do |left|
-            args = Molen::parse_paren_list(self) do
-                parse_expression
-            end
-
-            Call.new left, args
+            Member.new left, right
         end
 
         parser.stmt -> x { x.is_keyword? "def" } do

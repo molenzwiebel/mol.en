@@ -32,8 +32,7 @@ describe Parser do
         node "3 #{op} 3", Binary, Binary.new(op, Int.new(3), Int.new(3))
     end
 
-    node "test(10)", Call, Call.new(Var.new("test"), [Int.new(10)])
-    node "test(10)()", Call, Call.new(Call.new(Var.new("test"), [Int.new(10)]), [])
+    node "test(10)", Call, Call.new("test", [Int.new(10)])
 
     node "def x(a: Boolean) 10", Function, Function.new("x", nil, [Arg.new("a", UnresolvedType.new("Boolean"))], Int.new(10))
     node "def x(a: Boolean) -> Int 10", Function, Function.new("x", UnresolvedType.new("Int"), [Arg.new("a", UnresolvedType.new("Boolean"))], Int.new(10))
@@ -53,6 +52,8 @@ describe Parser do
     node "var x = 10", VarDef, VarDef.new(Var.new("x"), nil, Int.new(10))
     node "var x: Int", VarDef, VarDef.new(Var.new("x"), UnresolvedType.new("Int"))
     node "var x: Int = 4", VarDef, VarDef.new(Var.new("x"), UnresolvedType.new("Int"), Int.new(4))
+    node "a.b", Member, Member.new(Var.new("a"), Var.new("b"))
+    node "a.b()", Member, Member.new(Var.new("a"), Call.new("b", []))
     
     it "should error on undetermined types" do
         expect(lambda {
