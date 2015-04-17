@@ -43,6 +43,14 @@ module Molen
             builder.ret @last
         end
 
+        def enter_scope
+            @scope = Scope.new @scope
+        end
+
+        def leave_scope
+            @scope = @scope.parent
+        end
+
         def visit_int(node)
             node.type = mod["Int"]
             @last = LLVM::Int32.from_i node.value
@@ -96,6 +104,39 @@ module Molen
                 type: type
             })
             @builder.store @last, var[:ptr] if node.value and @last
+
+            false
+        end
+
+        def visit_arg(node)
+            node.type = mod[node.type.name]
+        end
+
+        def visit_function(node)
+            old_pos = builder.insert_block
+
+            node.args.each {|x| x.accept self}
+
+            arg_types = node.args.map(&:type).map(&:llvm_type)
+            ret_type = mod[node.ret_type.name]
+            func = llvm_mod.functions.add(node.name, arg_types, ret_type.llvm_type)
+            func.linkage = :internal # Allow llvm to optimize this function away
+            entry = func.basic_blocks.append "entry"
+            builder.position_at_end entry
+
+            old_scope = @scope
+
+            @scope = Scope.new # We don't want functions talking to our variables because they won't exist.
+            node.args.each_with_index do |arg, i|
+                ptr = @builder.alloca(arg.type.llvm_type, arg.name)
+                @scope.define(arg.name, { ptr: ptr, type: arg.type })
+                @builder.store func.params[i], ptr
+            end
+
+            node.body.accept self
+            builder.ret ret_type == mod["void"] ? nil : @last
+            builder.position_at_end old_pos
+            @scope = old_scope
 
             false
         end

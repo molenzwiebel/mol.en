@@ -4,12 +4,12 @@ module Molen
         attr_accessor :parent
 
         def initialize(parent = {})
-            @parent = {}
+            @parent = parent
             @this = {}
         end
 
         def [](key)
-            @this[key] || parent[key]
+            @this.has_key?(key) ? @this[key] : parent[key]
         end
 
         def []=(key, val)

@@ -189,7 +189,7 @@ module Molen
         parser.next_token # Consume }
 
         if contents.last.is_a? Expression and auto_return then
-            contents << ReturnStatement.new(contents.pop)
+            #contents << ReturnStatement.new(contents.pop)
         end
 
         Body.from contents
