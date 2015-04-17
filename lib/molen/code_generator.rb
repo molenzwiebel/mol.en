@@ -1,10 +1,12 @@
+require 'llvm/core'
+require 'llvm/execution_engine'
 
 module Molen
     class ASTNode
         attr_accessor :type
     end
 
-    def dump_ir(code)
+    def run(code, return_type = "Int", dump_ir = true)
         parser = create_parser code
         contents = []
         until (n = parser.parse_node).nil?
@@ -12,23 +14,24 @@ module Molen
         end
 
         mod = Module.new
-        visitor = GeneratingVisitor.new mod
+        visitor = GeneratingVisitor.new mod, return_type
         Body.from(contents).accept visitor
         visitor.end_func
 
-        visitor.llvm_mod.dump
+        visitor.llvm_mod.dump if dump_ir
+        visitor.llvm_mod
     end
 
     class GeneratingVisitor < Visitor
         attr_accessor :mod, :llvm_mod, :builder
 
-        def initialize(mod)
+        def initialize(mod, ret_type)
             @mod = mod
 
             @llvm_mod = LLVM::Module.new("mol.en")
             @builder = LLVM::Builder.new
 
-            main_func = llvm_mod.functions.add("main", [], LLVM::Int)
+            main_func = llvm_mod.functions.add("main", [], mod[ret_type].llvm_type)
             main_block = main_func.basic_blocks.append("entry")
             builder.position_at_end main_block
 
