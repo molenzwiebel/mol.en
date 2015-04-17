@@ -33,6 +33,7 @@ module Molen
             builder.position_at_end main_block
 
             @strings = {}
+            @scope = Scope.new
         end
 
         def end_func
@@ -57,6 +58,30 @@ module Molen
         def visit_str(node)
             node.type = mod["String"]
             @last = @strings[node.value] || @strings[node.value] = builder.global_string_pointer(node.value)
+        end
+
+        def visit_var(node)
+            var = @scope[node.value]
+            raise "Undefined variable '#{node.value}'" unless var
+            node.type = var[:type]
+            @last = builder.load var[:ptr], node.value
+        end
+
+        def visit_vardef(node)
+            node.value.accept self if node.value
+            node.type = mod[node.type.name] if node.type
+            raise "Conflicting types: var statement specified type #{node.type.to_s} while being assigned value of type #{node.value.type.to_s}" if node.type and node.value and @last and node.value.type != node.type
+        
+            type = node.type || node.value.type
+            raise "Vardef has no type?" unless type
+
+            var = @scope.define(node.name.value, {
+                ptr: builder.alloca(type.llvm_type, node.name.value),
+                type: type
+            })
+            @builder.store @last, var[:ptr] if node.value and @last
+
+            false
         end
     end
 end
