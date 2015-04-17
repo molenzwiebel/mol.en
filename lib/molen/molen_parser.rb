@@ -148,7 +148,9 @@ module Molen
             end
             next_token # Consume }
 
-            ClassDef.new name.value, parent ? parent.value : nil, vars, funcs
+            clazz = ClassDef.new name.value, parent ? parent.value : nil, vars, funcs
+            clazz.funcs.each {|x| x.clazz = clazz}
+            clazz
         end
 
         parser
