@@ -30,7 +30,7 @@ module Molen
         end
 
         # To be overridden by any subclasses if they have children that need to be traversed through.
-        def accept_children
+        def accept_children(visitor)
         end
     end
 
