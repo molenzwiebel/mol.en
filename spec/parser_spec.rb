@@ -2,12 +2,12 @@ require File.expand_path("../../lib/molen",  __FILE__)
 include Molen
 
 describe Parser do
-    def self.node(src, clazz, other)
+    def self.node(src, clazz = nil, other = nil)
         it "should be able to parse `#{src}` and return a #{clazz}" do
             parser = Molen::create_parser src
             node = parser.parse_node
-            expect(node).to be_a clazz
-            expect(node).to eq other
+            expect(node).to be_a clazz if clazz
+            expect(node).to eq other if other
         end
     end
 
@@ -41,16 +41,25 @@ describe Parser do
     node "if (true) 10 else 12", If, If.new(Bool.new("true"), Int.new(10), Int.new(12))
     node "if (true) 10 else 12 elseif (false) 14", If, If.new(Bool.new("true"), Int.new(10), Int.new(12), [[Bool.new("false"), Int.new(14)]])
 
-    node "class Test :: Super { var x = 10 }", ClassDef, ClassDef.new("Test", "Super", [VarDef.new("x", Int.new(10))], [])
+    node "class Test :: Super { var x = 10 }", ClassDef, ClassDef.new("Test", "Super", [VarDef.new(Var.new("x"), nil, Int.new(10))], [])
     node "class Test :: Super { def test() return }", ClassDef, ClassDef.new("Test", "Super", [], [Function.new("test", nil, [], Return.new)])
-    node "class Test :: Super { var x = 10 def test() return }", ClassDef, ClassDef.new("Test", "Super", [VarDef.new("x", Int.new(10))], [Function.new("test", nil, [], Return.new)])
+    node "class Test :: Super { var x = 10 def test() return }", ClassDef, ClassDef.new("Test", "Super", [VarDef.new(Var.new("x"), nil, Int.new(10))], [Function.new("test", nil, [], Return.new)])
 
     node "for(3,2,1) 5", For, For.new(Int.new(2), Int.new(3), Int.new(1), Int.new(5))
     node "for(,2,1) 5", For, For.new(Int.new(2), nil, Int.new(1), Int.new(5))
     node "for(,2,) 5", For, For.new(Int.new(2), nil, nil, Int.new(5))
     node "return", Return, Return.new(nil)
     node "return 10", Return, Return.new(Int.new(10))
-    node "var x = 10", VarDef, VarDef.new("x", Int.new(10))
+    node "var x = 10", VarDef, VarDef.new(Var.new("x"), nil, Int.new(10))
+    node "var x: Int", VarDef, VarDef.new(Var.new("x"), UnresolvedType.new("Int"))
+    node "var x: Int = 4", VarDef, VarDef.new(Var.new("x"), UnresolvedType.new("Int"), Int.new(4))
+    
+    it "should error on undetermined types" do
+        expect(lambda {
+            parser = Molen::create_parser "var x"
+            parser.parse_node
+        }).to raise_error(RuntimeError)
+    end
 
     type "String", UnresolvedType.new("String")
     type "String[]", ArrayType.new(UnresolvedType.new("String"), -1)
