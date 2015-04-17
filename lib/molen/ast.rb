@@ -274,10 +274,12 @@ module Molen
     end
 
     class VarDef < Statement
-        attr_accessor :name, :value
+        attr_accessor :name, :type, :value
 
-        def initialize(name, value = nil)
+        def initialize(name, type = nil, value = nil)
             @name = name
+            @name.parent = self
+            @type = type
             @value = value
             @value.parent = self if value
         end

@@ -114,13 +114,20 @@ module Molen
 
             name = :identifier.save >> run
             val = nil
+            type = nil
+
+            if token.is? ":" then
+                next_token
+                type = Molen::parse_type self
+            end
 
             if token.is_operator? "=" then
                 next_token # Consume =
                 val = parse_expression
             end
 
-            VarDef.new name.value, val
+            raise "Cannot deduce type of #{name.value}: Neither explicit type nor initial value is given." if type.nil? and val.nil?
+            VarDef.new Var.new(name.value), type, val
         end
         parser.stmt -> x { x.is_keyword? "class" } do
             next_token # Consume 'class'
