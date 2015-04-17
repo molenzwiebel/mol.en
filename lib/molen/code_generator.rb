@@ -60,6 +60,19 @@ module Molen
             @last = @strings[node.value] || @strings[node.value] = builder.global_string_pointer(node.value)
         end
 
+        def visit_binary(node)
+            return false if node.op != "=" # TODO
+
+            node.right.accept self
+            node.type = node.left.type = node.right.type
+            var = @scope[node.left.value]
+            raise "Undefined variable '#{node.left.value}'" unless var
+            raise "Cannot assign #{node.type.name} to '#{node.left.value}' (#{var[:type].name})" if var[:type] != node.type
+            @builder.store @last, var[:ptr]
+
+            false
+        end
+
         def visit_var(node)
             var = @scope[node.value]
             raise "Undefined variable '#{node.value}'" unless var
@@ -70,7 +83,7 @@ module Molen
         def visit_vardef(node)
             node.value.accept self if node.value
             node.type = mod[node.type.name] if node.type
-            raise "Conflicting types: var statement specified type #{node.type.to_s} while being assigned value of type #{node.value.type.to_s}" if node.type and node.value and @last and node.value.type != node.type
+            raise "Conflicting types: var statement specified type #{node.type.name} while being assigned value of type #{node.value.type.name}" if node.type and node.value and @last and node.value.type != node.type
         
             type = node.type || node.value.type
             raise "Vardef has no type?" unless type

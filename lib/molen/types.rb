@@ -48,7 +48,7 @@ module Molen
         end
 
         def ==(other)
-            super other && other.llvm_type == llvm_type && other.size == size
+            super(other) && other.llvm_type == llvm_type && other.size == size
         end
     end
 
