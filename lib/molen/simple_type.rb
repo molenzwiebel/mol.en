@@ -62,7 +62,7 @@ module Molen
         attr_accessor :type, :dim
 
         def initialize(type, dim = 0)
-            super type + "[" + dim + "]"
+            super type.to_s + "[" + dim.to_s + "]"
             @type = type
             @dim = dim
         end

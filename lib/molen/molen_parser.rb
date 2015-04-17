@@ -122,6 +122,22 @@ module Molen
 
             VarDef.new name.value, val
         end
+        parser.stmt -> x { x.is_keyword? "class" } do
+            next_token # Consume 'class'
+            name, parent = :identifier.save >> ("::" >> :identifier).maybe.save >> :begin_block >> run
+            vars = []
+            funcs = []
+            until token.is_kind? :end_block
+                raise "Unexpected EOF" if token.is_eof?
+                node = parse_node
+                raise "Only variable declarations and functions allowed in class body." unless node.is_a? VarDef or node.is_a? Function
+                vars << node if node.is_a? VarDef
+                funcs << node if node.is_a? Function
+            end
+            next_token # Consume }
+
+            ClassDef.new name.value, parent ? parent.value : nil, vars, funcs
+        end
 
         parser
     end
