@@ -42,8 +42,8 @@ module Molen
         parser.infix 12, -> x { x.is_operator? "*" }, &create_binary_parser(12)
         parser.infix 12, -> x { x.is_operator? "/" }, &create_binary_parser(12)
         
-        parser.infix 4, -> x { x.is_operator? "&&" }, &create_binary_parser(4)
-        parser.infix 3, -> x { x.is_operator? "||" }, &create_binary_parser(3)
+        parser.infix 4, -> x { x.is_operator? "&&" or x.is_operator? "and" }, &create_binary_parser(4)
+        parser.infix 3, -> x { x.is_operator? "||" or x.is_operator? "or"  }, &create_binary_parser(3)
         parser.infix 9, -> x { x.is_operator? "<" },  &create_binary_parser(9)
         parser.infix 9, -> x { x.is_operator? "<=" }, &create_binary_parser(9)
         parser.infix 9, -> x { x.is_operator? ">" },  &create_binary_parser(9)

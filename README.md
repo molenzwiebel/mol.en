@@ -12,7 +12,7 @@ My experimental programming language. Written in Ruby, compiles to LLVM IR.
         a + b # Implicit returns!
     }
     
-    def map(list: Object[], function: (Object => Object)) -> Object[] {
+    def map(list: Object[], function: Object(Object)) -> Object[] {
         var ret = new Object[list.size]
         for (var i = 0, i < list.size, i = i + 1) {
             ret[i] = function(list[i])

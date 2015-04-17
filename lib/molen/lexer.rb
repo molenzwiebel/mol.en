@@ -49,7 +49,9 @@ module Molen
             /\./                        => :operator,
 
             /&&/                        => :operator,
+            /and/                       => :operator,
             /\|\|/                      => :operator,
+            /or/                        => :operator,
             />=?/                       => :operator,
             /<=?/                       => :operator,
 
