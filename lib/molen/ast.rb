@@ -41,29 +41,24 @@ module Molen
     end
 
     class Body < Expression
-        include Enumerable
         attr_accessor :nodes
 
         def self.from(obj)
             case obj
             when nil
-                new
+                Body.new
             when Body
                 obj
-            when Array
-                new obj
+            when ::Array
+                Body.new obj
             else
-                new [obj]
+                Body.new [obj]
             end
         end
 
         def initialize(nodes = [])
             @nodes = nodes
             @nodes.each { |e| e.parent = self }
-        end
-
-        def each(&block)
-            nodes.each &block
         end
 
         def accept_children(visitor)
@@ -200,20 +195,33 @@ module Molen
         end
     end
 
+    class Arg < Expression
+        attr_accessor :name, :type
+
+        def initialize(name, type)
+            @name = name
+            @type = type
+        end
+
+        def ==(other)
+            other.class == self.class && other.name == name && other.type == type
+        end
+    end
+
     class Function < Statement
         attr_accessor :name, :ret_type, :args, :body
 
         def initialize(name, ret_type = nil, args = [], body = nil)
             @name = name
-            @ret_type = ret_type || VoidType.new
+            @ret_type = ret_type || UnresolvedVoidType.new
             @args = args
-            @args.each {|arg| arg.first.parent = self}
+            @args.each {|arg| arg.parent = self}
             @body = Body.from body
             @body.parent = self
         end
 
         def visit_children(visitor)
-            @args.each { |a| a.first.accept visitor }
+            @args.each { |a| a.accept visitor }
             @body.accept visitor
         end
 

@@ -66,7 +66,7 @@ module Molen
             next_token # Consume name
             args = Molen::parse_paren_list(self) do
                 n = :identifier.save >> ":" >> run
-                [Var.new(n.value), Molen::parse_type(self)]
+                Arg.new n.value, Molen::parse_type(self)
             end
             type = nil
             if token.is? "->" then
