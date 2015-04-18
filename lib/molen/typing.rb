@@ -145,9 +145,9 @@ module Molen
         end
 
         def visit_classdef(node)
-            type = mod[node.name] || ObjectType.new(node.name, node.superclass)
+            node.type = mod[node.name] || ObjectType.new(node.name, node.superclass)
 
-            @classes[node.name] ||= {type: type, defs: {}}
+            @classes[node.name] ||= {type: node.type, defs: {}}
             node.funcs.each {|func| func.accept self}
             false
         end

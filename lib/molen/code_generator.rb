@@ -2,7 +2,25 @@ require 'llvm/core'
 require 'llvm/execution_engine'
 
 module Molen
+    class Function
+        def ir_name
+            if parent.is_a? ClassDef
+                "#{parent.name}__#{name}"
+            else
+                "#{name}"
+            end
+        end
+    end
+
     def run(code, return_type = "Int", dump_ir = true)
+        mod = gen(code, return_type, dump_ir)
+        LLVM.init_jit
+
+        engine = LLVM::JITCompiler.new(mod)
+        engine.run_function mod.functions["main"]
+    end
+
+    def gen(code, return_type = "Int", dump_ir = true)
         parser = create_parser code
         contents = []
         until (n = parser.parse_node).nil?
@@ -39,6 +57,7 @@ module Molen
 
             @strings = {}
             @scope = Scope.new
+            @functions = {}
         end
 
         def end_func
@@ -85,9 +104,28 @@ module Molen
             false
         end
 
+        def visit_call(node)
+            func = @functions[node.target.ir_name]
+
+            args = []
+            node.args.each do |arg|
+                arg.accept self
+                args << get_last
+            end
+            if node.on then
+                node.on.accept self
+                args = [get_last] + args
+            end
+
+            @last = builder.call func, *args
+            false
+        end
+
         def visit_function(node)
             old_pos = builder.insert_block
-            llvm_arg_types = node.args.map(&:type).map(&:llvm_type)
+            args = node.args
+            args = [Arg.new("this", node.parent.type)] + args if node.parent.is_a? ClassDef
+            llvm_arg_types = args.map(&:type).map(&:llvm_type)
 
             func = llvm_mod.functions.add(node.name, llvm_arg_types, node.ret_type.llvm_type)
             func.linkage = :internal # Allow llvm to optimize this function away
@@ -95,7 +133,7 @@ module Molen
             builder.position_at_end entry
 
             with_new_scope(false) do
-                node.args.each_with_index do |arg, i|
+                args.each_with_index do |arg, i|
                     ptr = builder.alloca arg.type.llvm_type, arg.name
                     @scope.define(arg.name, { ptr: ptr, type: arg.type })
                     builder.store func.params[i], ptr
@@ -106,7 +144,14 @@ module Molen
 
             builder.ret get_last
             builder.position_at_end old_pos
+
+            @functions[node.ir_name] = func
             
+            false
+        end
+
+        def visit_classdef(node)
+            node.funcs.each {|f| f.accept self}
             false
         end
 
