@@ -63,7 +63,8 @@ module Molen
             next_token # Consume .
             right = parse_expression 49
 
-            Member.new left, right
+            next Call.new right.name, right.args, left if right.is_a? Call
+            next Member.new left, right
         end
 
         parser.stmt -> x { x.is_keyword? "def" } do
@@ -149,7 +150,7 @@ module Molen
             next_token # Consume }
 
             clazz = ClassDef.new name.value, parent ? parent.value : nil, vars, funcs
-            clazz.funcs.each {|x| x.clazz = clazz}
+            clazz.funcs.each {|x| x.class = clazz}
             clazz
         end
 

@@ -53,7 +53,7 @@ describe Parser do
     node "var x: Int", VarDef, VarDef.new(Var.new("x"), UnresolvedType.new("Int"))
     node "var x: Int = 4", VarDef, VarDef.new(Var.new("x"), UnresolvedType.new("Int"), Int.new(4))
     node "a.b", Member, Member.new(Var.new("a"), Var.new("b"))
-    node "a.b()", Member, Member.new(Var.new("a"), Call.new("b", []))
+    node "a.b()", Call, Call.new("b", [], Var.new("a"))
     
     it "should error on undetermined types" do
         expect(lambda {

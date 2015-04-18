@@ -125,20 +125,23 @@ module Molen
     end
 
     class Call < Expression
-        attr_accessor :name, :args 
+        attr_accessor :name, :args, :on
 
-        def initialize(func_name, args = [])
+        def initialize(func_name, args = [], on = nil)
             @name = func_name
             @args = args
             @args.each { |arg| arg.parent = self }
+            @on = on
+            @on.parent = self if on
         end
 
         def accept_children(visitor)
             @args.each { |arg| arg.accept visitor }
+            @on.accept visitor if on
         end
 
         def ==(other)
-            other.class == self.class && other.args == args && other.name == name
+            other.class == self.class && other.args == args && other.name == name && other.on == on
         end
     end
 
