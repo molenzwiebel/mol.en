@@ -226,10 +226,9 @@ module Molen
     end
 
     class Function < Statement
-        attr_accessor :class, :name, :ret_type, :args, :body
+        attr_accessor :name, :ret_type, :args, :body
 
-        def initialize(name, ret_type = nil, args = [], body = nil, clazz = nil)
-            @class = clazz
+        def initialize(name, ret_type = nil, args = [], body = nil)
             @name = name
             @ret_type = ret_type || UnresolvedVoidType.new
             @args = args
@@ -243,13 +242,8 @@ module Molen
             @body.accept visitor
         end
 
-        def class=(clazz)
-            @class = clazz
-            @class.parent = self
-        end
-
         def ==(other)
-            other.class == self.class && other.name == name && other.args == args && other.body == body && other.class == self.class
+            other.class == self.class && other.name == name && other.args == args && other.body == body
         end
     end
 

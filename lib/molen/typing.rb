@@ -54,7 +54,7 @@ module Molen
         def visit_call(node)
             if node.on
                 node.on.accept self
-                function = @classes[node.obj.type.name][:defs][node.name]
+                function = @classes[node.on.type.name][:defs][node.name]
             else
                 function = @functions[node.name]
             end
@@ -80,8 +80,8 @@ module Molen
             node.ret_type = mod[node.ret_type.name]
             node.args.each {|arg| arg.accept self}
 
-            clazz = node.class
-            if clazz
+            clazz = node.parent
+            if clazz and clazz.is_a? ClassDef
                 @classes[clazz.name][:defs][node.name] = node
             else
                 @functions[node.name] = node
@@ -124,6 +124,8 @@ module Molen
 
         def visit_classdef(node)
             @classes[node.name] ||= {defs: {}}
+            node.funcs.each {|func| func.accept self}
+            false
         end
 
         private
