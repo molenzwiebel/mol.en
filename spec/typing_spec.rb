@@ -50,6 +50,7 @@ describe TypingVisitor do
     type "def x(a: Double) -> Double a x(3.3)", "Double"
     type "class Int { def foo() -> Int 10 } 10.foo()", "Int"
     type "class Int { def foo() -> Int 10 } 10.foo().foo()", "Int"
+    type "class Int { def get() -> Int this } 10.get()", "Int"
     fail_on "def x(a: String) -> Int 10 x(3)", /Cannot invoke function with argument types/
     fail_on "def x() -> Int 1.2", /Expected x to return a/
     fail_on "def x(a: Double) -> Int a", /Expected x to return a/
