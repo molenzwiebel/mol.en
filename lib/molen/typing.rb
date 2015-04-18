@@ -76,12 +76,12 @@ module Molen
             node.type = mod[node.type.name]
         end
 
-        def type_function(node)
+        def visit_function(node)
             node.ret_type = mod[node.ret_type.name]
             node.args.each {|arg| arg.accept self}
 
             clazz = node.parent
-            has_clazz = clazz and clazz.is_a? ClassDef
+            has_clazz = clazz.is_a? ClassDef
             if has_clazz then
                 @classes[clazz.name][:defs][node.name] = node
             else
@@ -125,7 +125,9 @@ module Molen
         end
 
         def visit_classdef(node)
-            @classes[node.name] ||= {type: ObjectType.new(node.name, node.superclass), defs: {}}
+            type = mod[node.name] || ObjectType.new(node.name, node.superclass)
+
+            @classes[node.name] ||= {type: type, defs: {}}
             node.funcs.each {|func| func.accept self}
             false
         end
