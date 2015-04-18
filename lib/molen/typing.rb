@@ -23,8 +23,8 @@ module Molen
             @mod = mod
 
             @scope = Scope.new
-            @scope_obj = nil
             @classes = {}
+            @functions = {}
         end
 
         def visit_int(node)
@@ -45,6 +45,20 @@ module Molen
 
         def end_visit_body(node)
             node.type = node.nodes.last.type
+        end
+
+        def visit_var(node)
+            node.type = @scope[node.value]
+        end
+
+        def visit_function(node)
+            clazz = node.class
+            if clazz
+                @classes[clazz.name][:defs][node.name] = node
+            else
+                @functions[node.name] = node
+            end
+            false
         end
 
         def visit_binary(node)
@@ -69,6 +83,22 @@ module Molen
 
             @scope.define node.name.value, node.type
             false
+        end
+
+        def visit_classdef(node)
+            @classes[node.name] ||= {defs: {}}
+        end
+
+        private
+        def with_new_scope(inherit = true)
+            old_scope = @scope
+            if inherit then
+                @scope = Scope.new old_scope
+            else
+                @scope = Scope.new
+            end
+            yield
+            @scope = old_scope
         end
     end
 end

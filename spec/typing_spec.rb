@@ -43,6 +43,7 @@ describe TypingVisitor do
     type "var x = 10", "Int"
     type "var x: String", "String"
     type "var x = 12 x = 10", "Int"
+    type "var x= 12 x = 10 x", "Int"
 
     fail_on "var x: String = 12"
     fail_on "var x = 'test' x = 4"
