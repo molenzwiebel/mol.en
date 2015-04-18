@@ -58,6 +58,13 @@ describe TypingVisitor do
     type "10.2 / 10", "Double"
     type "10.2 * 10", "Double"
 
+    type "true && false", "Bool"
+    type "true || false", "Bool"
+    type "true and false", "Bool"
+    type "true or false", "Bool"
+    type "true == false", "Bool"
+    type "true != false", "Bool"
+
     fail_on "true * 10", /to be numeric/
 
     # Recursion :)
