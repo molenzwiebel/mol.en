@@ -87,7 +87,7 @@ module Molen
                 @functions[node.name] = node
             end
 
-            with_new_scope do
+            with_new_scope(false) do
                 node.args.each do |arg|
                     @scope.define arg.name, arg.type
                 end
