@@ -68,6 +68,7 @@ module Molen
             raise "Cannot invoke function with argument types '#{func_arg_types.map(&:name).join ", "}' with arguments '#{node_arg_types.map(&:name).join ", "}'" if func_arg_types != node_arg_types
 
             node.type = function.ret_type
+            node.target = function
             false
         end
 
@@ -85,6 +86,15 @@ module Molen
             else
                 @functions[node.name] = node
             end
+
+            with_new_scope do
+                node.args.each do |arg|
+                    @scope.define arg.name, arg.type
+                end
+                node.body.accept self
+            end
+
+            raise "Expected #{node.name} to return a #{node.ret_type.name}, but returned a #{node.body.type.name}" if node.body.type != node.ret_type
             false
         end
 

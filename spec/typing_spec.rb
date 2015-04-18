@@ -47,7 +47,10 @@ describe TypingVisitor do
 
     type "def x() -> Int 10 x()", "Int"
     type "def x(a: Double) -> Double 1.3 x(1.2)", "Double"
+    type "def x(a: Double) -> Double a x(3.3)", "Double"
     fail_on "def x(a: String) -> Int 10 x(3)", /Cannot invoke function with argument types/
+    fail_on "def x() -> Int 1.2", /Expected x to return a/
+    fail_on "def x(a: Double) -> Int a", /Expected x to return a/
     fail_on "a(3)", /Undefined function/
     fail_on "def x(a: String) -> Int 10 x()", /Mismatched parameters/
 
