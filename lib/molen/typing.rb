@@ -51,6 +51,14 @@ module Molen
             node.type = @scope[node.value]
         end
 
+        def visit_new(node)
+            node.type = mod[node.name]
+        end
+
+        def end_visit_return(node)
+            node.type = node.value.type if node.value
+        end
+
         def visit_call(node)
             if node.on
                 node.on.accept self

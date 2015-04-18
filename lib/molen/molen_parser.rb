@@ -130,6 +130,7 @@ module Molen
             if token.is_operator? "=" then
                 next_token # Consume =
                 val = parse_expression
+                raise "Cannot initially assign null to variable. Simply giving no initial value is enough" if val.is_a? Null
             end
 
             raise "Cannot deduce type of #{name.value}: Neither explicit type nor initial value is given." if type.nil? and val.nil?

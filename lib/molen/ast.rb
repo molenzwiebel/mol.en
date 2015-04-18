@@ -149,6 +149,8 @@ module Molen
         attr_accessor :parent, :child
 
         def initialize(parent, child)
+            @parent = parent
+            @child = child
         end
 
         def accept_children(visitor)
