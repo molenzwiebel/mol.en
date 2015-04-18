@@ -19,7 +19,7 @@ describe TypingVisitor do
         end
     end
 
-    def self.fail_on(str)
+    def self.fail_on(str, err)
         it "errors with resolving '#{str}'" do
             expect(lambda {
                 parser = Molen.create_parser str
@@ -31,7 +31,7 @@ describe TypingVisitor do
                 mod = Molen::Module.new
                 visitor = TypingVisitor.new mod
                 Body.from(contents).accept visitor
-            }).to raise_error
+            }).to raise_error(RuntimeError, err)
         end
     end
 
@@ -45,6 +45,12 @@ describe TypingVisitor do
     type "var x = 12 x = 10", "Int"
     type "var x= 12 x = 10 x", "Int"
 
-    fail_on "var x: String = 12"
-    fail_on "var x = 'test' x = 4"
+    type "def x() -> Int 10 x()", "Int"
+    type "def x(a: Double) -> Double 1.3 x(1.2)", "Double"
+    fail_on "def x(a: String) -> Int 10 x(3)", /Cannot invoke function with argument types/
+    fail_on "a(3)", /Undefined function/
+    fail_on "def x(a: String) -> Int 10 x()", /Mismatched parameters/
+
+    fail_on "var x: String = 12", /Conflicting types/
+    fail_on "var x = 'test' x = 4", /Cannot assign/
 end

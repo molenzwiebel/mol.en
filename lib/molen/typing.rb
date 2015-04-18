@@ -51,7 +51,34 @@ module Molen
             node.type = @scope[node.value]
         end
 
+        def visit_call(node)
+            if node.on
+                node.on.accept self
+                function = @classes[node.obj.type.name][:defs][node.name]
+            else
+                function = @functions[node.name]
+            end
+
+            raise "Undefined function '#{node.name}'" unless function
+            raise "Mismatched parameters for function #{node.name}: #{node.args.size} given, #{function.args.size} required" if node.args.size != function.args.size
+            node.args.each {|arg| arg.accept self}
+
+            func_arg_types = function.args.map(&:type)
+            node_arg_types = node.args.map(&:type)
+            raise "Cannot invoke function with argument types '#{func_arg_types.map(&:name).join ", "}' with arguments '#{node_arg_types.map(&:name).join ", "}'" if func_arg_types != node_arg_types
+
+            node.type = function.ret_type
+            false
+        end
+
+        def visit_arg(node)
+            node.type = mod[node.type.name]
+        end
+
         def visit_function(node)
+            node.ret_type = mod[node.ret_type.name]
+            node.args.each {|arg| arg.accept self}
+
             clazz = node.class
             if clazz
                 @classes[clazz.name][:defs][node.name] = node
