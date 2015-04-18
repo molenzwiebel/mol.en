@@ -62,6 +62,13 @@ describe Parser do
         }).to raise_error(RuntimeError)
     end
 
+    it "should error when trying to assign null in a var statement" do
+        expect(lambda {
+            parser = Molen::create_parser "var x = null"
+            parser.parse_node
+        }).to raise_error
+    end
+
     type "String", UnresolvedType.new("String")
     type "String[]", UnresolvedArrayType.new(UnresolvedType.new("String"), -1)
     type "String[10]", UnresolvedArrayType.new(UnresolvedType.new("String"), 10)

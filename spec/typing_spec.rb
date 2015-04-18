@@ -48,6 +48,21 @@ describe TypingVisitor do
     type "new Int", "Int"
     type "return 10", "Int"
 
+    type "10 + 10", "Int"
+    type "10 - 10", "Int"
+    type "10 / 10", "Int"
+    type "10 * 10", "Int"
+
+    type "10.2 + 10", "Double"
+    type "10.2 - 10", "Double"
+    type "10.2 / 10", "Double"
+    type "10.2 * 10", "Double"
+
+    fail_on "true * 10", /to be numeric/
+
+    # Recursion :)
+    type "def x() -> Int x() x()", "Int"
+
     type "def x() -> Int 10 x()", "Int"
     type "def x(a: Double) -> Double 1.3 x(1.2)", "Double"
     type "def x(a: Double) -> Double a x(3.3)", "Double"

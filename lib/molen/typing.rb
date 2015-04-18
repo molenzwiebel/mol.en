@@ -109,14 +109,26 @@ module Molen
         end
 
         def visit_binary(node)
-            return false if node.op != "=" # TODO
-            node.right.accept self # Check value.
+            if node.op == "+" or node.op == "-" or node.op == "*" or node.op == "/" then
+                node.left.accept self
+                node.right.accept self
 
-            old_type = @scope[node.left.value]
-            raise "Undefined variable '#{node.left.value}'" unless old_type
+                left_type = node.left.type
+                right_type = node.right.type
+                raise "Binary op #{node.op} requires both sides to be numeric" unless (left_type == mod["Double"] or left_type == mod["Int"]) and (right_type == mod["Double"] or right_type == mod["Int"])
+                node.type = mod["Double"] if left_type == mod["Double"] or right_type == mod["Double"]
+                node.type = mod["Int"] unless node.type
+            elsif node.op == "&&" or node.op == "||" or node.op == "or" or node.op == "and" or node.op == "==" or node.op == "!=" then
+                node.type = mod["Bool"]
+            elsif node.op == "=" then
+                node.right.accept self # Check value.
 
-            node.type = node.left.type = node.right.type
-            raise "Cannot assign #{node.type.name} to '#{node.left.value}' (a #{old_type.name})" if old_type != node.type
+                old_type = @scope[node.left.value]
+                raise "Undefined variable '#{node.left.value}'" unless old_type
+
+                node.type = node.left.type = node.right.type
+                raise "Cannot assign #{node.type.name} to '#{node.left.value}' (a #{old_type.name})" if old_type != node.type
+            end
             false
         end
 
