@@ -1,7 +1,7 @@
 
 module Molen
     class Type
-        attr_accessor :name, :llvm_type, :size, :vars, :defs
+        attr_accessor :name, :llvm_type, :size, :vars
     end
 
     class ObjectType < Type
@@ -12,7 +12,6 @@ module Molen
             @superclass = supertype
 
             @vars = {}
-            @defs = {}
         end
 
         def llvm_type

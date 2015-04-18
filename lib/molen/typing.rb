@@ -76,18 +76,20 @@ module Molen
             node.type = mod[node.type.name]
         end
 
-        def visit_function(node)
+        def type_function(node)
             node.ret_type = mod[node.ret_type.name]
             node.args.each {|arg| arg.accept self}
 
             clazz = node.parent
-            if clazz and clazz.is_a? ClassDef
+            has_clazz = clazz and clazz.is_a? ClassDef
+            if has_clazz then
                 @classes[clazz.name][:defs][node.name] = node
             else
                 @functions[node.name] = node
             end
 
             with_new_scope(false) do
+                @scope.define "this", @classes[clazz.name][:type] if has_clazz
                 node.args.each do |arg|
                     @scope.define arg.name, arg.type
                 end
@@ -123,7 +125,7 @@ module Molen
         end
 
         def visit_classdef(node)
-            @classes[node.name] ||= {defs: {}}
+            @classes[node.name] ||= {type: ObjectType.new(node.name, node.superclass), defs: {}}
             node.funcs.each {|func| func.accept self}
             false
         end
