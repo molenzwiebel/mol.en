@@ -2,10 +2,6 @@ require 'llvm/core'
 require 'llvm/execution_engine'
 
 module Molen
-    class ASTNode
-        attr_accessor :type
-    end
-
     def run(code, return_type = "Int", dump_ir = true)
         parser = create_parser code
         contents = []
