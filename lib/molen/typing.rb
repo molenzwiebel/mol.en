@@ -118,7 +118,15 @@ module Molen
                 raise "Binary op #{node.op} requires both sides to be numeric" unless (left_type == mod["Double"] or left_type == mod["Int"]) and (right_type == mod["Double"] or right_type == mod["Int"])
                 node.type = mod["Double"] if left_type == mod["Double"] or right_type == mod["Double"]
                 node.type = mod["Int"] unless node.type
-            elsif node.op == "&&" or node.op == "||" or node.op == "or" or node.op == "and" or node.op == "==" or node.op == "!=" then
+            elsif node.op == "&&" or node.op == "||" or node.op == "or" or node.op == "and" or node.op == "==" or node.op == "!=" or node.op == "<" or node.op == "<=" or node.op == ">" or node.op == ">=" then
+                node.left.accept self
+                node.right.accept self
+
+                left_type = node.left.type
+                right_type = node.right.type
+
+                raise "Binary op #{node.op} requires both sides to be a bool" if (left_type != mod["Bool"] or right_type != mod["Bool"]) and (node.op == "&&" or node.op == "||" or node.op == "or" or node.op == "and")
+                raise "Binary op #{node.op} requires both sides to be numeric" if ((left_type != mod["Double"] and left_type != mod["Int"]) or (right_type != mod["Double"] and right_type != mod["Int"])) and (node.op == "<" or node.op == "<=" or node.op == ">" or node.op == ">=")
                 node.type = mod["Bool"]
             elsif node.op == "=" then
                 node.right.accept self # Check value.

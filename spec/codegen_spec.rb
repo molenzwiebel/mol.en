@@ -17,6 +17,20 @@ describe Molen::GeneratingVisitor do
         expect(run_script("true", "Bool").to_b).to eq true
     end
 
+    ["+", "-", "*", "/"].each do |op|
+        it "generates #{op} with two ints correctly" do
+            expect(run_script("10 #{op} 5").to_i).to eq eval("10 #{op} 5")
+        end
+
+        it "generates #{op} with two doubles correctly" do
+            expect(run_script("10.0 #{op} 5.0", "Double").to_f).to eq eval("10.0 #{op} 5.0")
+        end
+
+        it "generates #{op} with different numeric types correctly" do
+            expect(run_script("10.0 #{op} 5", "Double").to_f).to eq eval("10.0 #{op} 5")
+        end
+    end
+
     # TODO: Fix this. Currently it crashes RSpec because the actual C LLVM code errors,
     # and does not translate correctly to a ruby exception. I lazily fixed this by adding
     # a simple number after the op.
