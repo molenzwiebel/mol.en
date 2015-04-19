@@ -60,7 +60,13 @@ module Molen
         # branch back.
         def definitely_returns
             nodes.select do |node|
-                node.is_a?(Return) or (node.is_a?(If) and node.else and node.else.definitely_returns)
+                returns = node.is_a?(Return)
+                if node.is_a?(If) then
+                    returns = node.then.definitely_returns and !node.else.nil?
+                    returns = returns and node.else.definitely_returns if node.else
+                    node.elseifs.each {|else_if| returns = returns and else_if.last.definitely_returns}
+                end
+                returns
             end.size > 0
         end
     end
