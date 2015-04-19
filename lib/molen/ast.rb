@@ -59,15 +59,17 @@ module Molen
         # If this is true, then the implicit return does not get generated and if and while branches do not
         # branch back.
         def definitely_returns
-            nodes.select do |node|
+            does_return = false
+            nodes.each do |node|
                 returns = node.is_a?(Return)
                 if node.is_a?(If) then
                     returns = node.then.definitely_returns and !node.else.nil?
                     returns = returns and node.else.definitely_returns if node.else
                     node.elseifs.each {|else_if| returns = returns and else_if.last.definitely_returns}
                 end
-                returns
-            end.size > 0
+                does_return ||= returns
+            end
+            does_return
         end
     end
 

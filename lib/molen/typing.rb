@@ -66,7 +66,7 @@ module Molen
         def visit_body(node)
             node.nodes.each {|node| node.accept self}
             has_no_return = node.nodes.size == 0 || node.nodes.last.type.nil?
-            raise "Body #{node.nodes.inspect} may not return a value!" if has_no_return and not node.definitely_returns
+            raise "Body #{node.nodes.map{|x| x.class.name}.join(", ")} may not return a value! Has no return: #{has_no_return}, definitely_returns: #{node.definitely_returns}" if has_no_return and not node.definitely_returns
             node.type = node.nodes.last.type unless has_no_return
         end
 
