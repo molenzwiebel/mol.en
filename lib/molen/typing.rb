@@ -53,10 +53,10 @@ module Molen
         end
 
         def visit_for(node)
-            node.init.accept visitor if node.init
-            node.cond.accept visitor
-            node.step.accept visitor if node.step
-            with_new_scope { node.body.accept visitor }
+            node.init.accept self if node.init
+            node.cond.accept self
+            node.step.accept self if node.step
+            with_new_scope { node.body.accept self }
             raise "Expected condition in loop to be a boolean" if node.cond.type != mod["Bool"]
         end
 

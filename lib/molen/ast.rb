@@ -252,7 +252,7 @@ module Molen
             @then.parent = self
 
             else_body = Body.from if_else
-            elseifs.each do |else_if|
+            elseifs.reverse.each do |else_if|
                 else_body = If.new else_if.first, else_if.last, else_body
             end
 
