@@ -79,7 +79,7 @@ module Molen
                 next_token
                 type = Molen::parse_type self
             end
-            Function.new name, type, args, Molen::parse_body(self)
+            Function.new name, type, args, Molen::parse_body(self, type != nil)
         end
         parser.stmt -> x { x.is_keyword? "if" } do
             next_token # Consume 'if'
@@ -183,6 +183,7 @@ module Molen
         unless parser.token.is_kind? :begin_block
             node = parser.parse_node
             raise "Expected an expression or statement in body. Did you forget '{'?" unless node
+            node = Return.new node if auto_return
             return Body.from node # We don't require {} for a single statement or expression.
         end
         raise "Expected { at begin of body." unless parser.token.is_kind? :begin_block
@@ -195,7 +196,7 @@ module Molen
         end
         parser.next_token # Consume }
 
-        if contents.last.is_a? Expression and auto_return then
+        if contents.last and contents.last.is_a? Expression and auto_return then
             contents << Return.new(contents.pop)
         end
 
