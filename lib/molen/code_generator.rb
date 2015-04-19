@@ -88,6 +88,10 @@ module Molen
             @last = builder.load var[:ptr], node.value
         end
 
+        def visit_body(node)
+            node.nodes.each {|n| n.accept self}
+        end
+
         def visit_vardef(node)
             node.value.accept self
             var = @scope.define(node.name.value, {
@@ -95,8 +99,6 @@ module Molen
                 type: node.type
             })
             builder.store get_last, var[:ptr] if node.value and @last
-
-            false
         end
 
         def visit_binary(node)
