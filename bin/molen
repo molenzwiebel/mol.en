@@ -100,11 +100,12 @@ begin
     exit if options[:do_not_run]
     if options[:output] then
         puts "[+] Compiling to file #{options[:output]}...".green
-        $stderr.reopen("#{options[:output]}.ll", "w")
+        $stderr.reopen "#{options[:output]}.ll", "w"
         generating_visitor.llvm_mod.dump
-        cmd = "clang -x ir #{options[:output]}.ll"
+        cmd = "clang -o #{options[:output]} -x ir #{options[:output]}.ll"
         pid = spawn cmd
         Process.waitpid pid
+        File.delete "#{options[:output]}.ll"
         puts "[+] Done!".green
     else
         puts "[+] Running...".green
