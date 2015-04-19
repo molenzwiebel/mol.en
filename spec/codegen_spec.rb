@@ -5,8 +5,8 @@ describe Molen::GeneratingVisitor do
         LLVM::init_jit
     end
 
-    def run_script(src, type = "Int", dump = false)
-        Molen.run src, type, dump
+    def run_script(src)
+        Molen.run src, false
     end
 
     it "should be able to generate an int" do
@@ -14,7 +14,7 @@ describe Molen::GeneratingVisitor do
     end
 
     it "should be able to generate a boolean" do
-        expect(run_script("true", "Bool").to_b).to eq true
+        expect(run_script("true").to_b).to eq true
     end
 
     ["+", "-", "*", "/"].each do |op|
@@ -23,11 +23,11 @@ describe Molen::GeneratingVisitor do
         end
 
         it "generates #{op} with two doubles correctly" do
-            expect(run_script("10.0 #{op} 5.0", "Double").to_f).to eq eval("10.0 #{op} 5.0")
+            expect(run_script("10.0 #{op} 5.0").to_f).to eq eval("10.0 #{op} 5.0")
         end
 
         it "generates #{op} with different numeric types correctly" do
-            expect(run_script("10.0 #{op} 5", "Double").to_f).to eq eval("10.0 #{op} 5")
+            expect(run_script("10.0 #{op} 5").to_f).to eq eval("10.0 #{op} 5")
         end
     end
 

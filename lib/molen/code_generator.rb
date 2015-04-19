@@ -12,15 +12,15 @@ module Molen
         end
     end
 
-    def run(code, return_type = "Int", dump_ir = true)
-        mod = gen(code, return_type, dump_ir)
+    def run(code, dump_ir = true)
+        mod = gen(code, dump_ir)
         LLVM.init_jit
 
         engine = LLVM::JITCompiler.new(mod)
         engine.run_function mod.functions["molen_main"]
     end
 
-    def gen(code, return_type = "Int", dump_ir = true)
+    def gen(code, dump_ir = true)
         parser = create_parser code
         contents = []
         until (n = parser.parse_node).nil?
@@ -29,10 +29,11 @@ module Molen
 
         mod = Module.new
         type_visitor = TypingVisitor.new mod
-        gen_visitor = GeneratingVisitor.new mod, return_type
 
         body = Body.from contents, true
         body.accept type_visitor
+
+        gen_visitor = GeneratingVisitor.new mod, body.type
         body.accept gen_visitor
 
         gen_visitor.end_main_func unless body.definitely_returns
@@ -51,7 +52,7 @@ module Molen
             @llvm_mod = LLVM::Module.new("mol.en")
             @builder = LLVM::Builder.new
 
-            main_func = llvm_mod.functions.add("molen_main", [], mod[ret_type].llvm_type)
+            main_func = llvm_mod.functions.add("molen_main", [], ret_type ? ret_type.llvm_type : LLVM.Void)
             main_block = main_func.basic_blocks.append("entry")
             builder.position_at_end main_block
 
@@ -159,7 +160,8 @@ module Molen
                 args = [get_last] + args
             end
 
-            @last = builder.call func, *args
+            ret_ptr = builder.call func, *args
+            @last = ret_ptr if func.function_type.return_type != LLVM.Void
         end
 
         def visit_if(node)
@@ -189,9 +191,11 @@ module Molen
             old_pos = builder.insert_block
             args = node.args
             args = [Arg.new("this", node.parent.type)] + args if node.parent.is_a? ClassDef
+
+            ret_type = node.ret_type ? node.ret_type.llvm_type : LLVM.Void
             llvm_arg_types = args.map(&:type).map(&:llvm_type)
 
-            func = llvm_mod.functions.add(node.ir_name, llvm_arg_types, node.ret_type.llvm_type)
+            func = llvm_mod.functions.add(node.ir_name, llvm_arg_types, ret_type)
             func.linkage = :internal # Allow llvm to optimize this function away
             @functions[node.ir_name] = func
 
@@ -208,8 +212,8 @@ module Molen
                 node.body.accept self
             end
 
-            last = get_last
-            builder.ret last.nil? ? node.ret_type.llvm_type.null : last unless node.body.definitely_returns
+            get_last # Just to clear @last
+            builder.ret nil if node.ret_type.nil? and not node.body.definitely_returns
             builder.position_at_end old_pos
         end
 
