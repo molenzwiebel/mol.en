@@ -164,13 +164,11 @@ module Molen
 
         def visit_if(node)
             node.cond.accept self
-
-            is_last_node = node.parent.is_a?(Body) and node.parent.nodes.last == node
             the_func = builder.insert_block.parent
 
             then_block = the_func.basic_blocks.append "then"
             else_block = the_func.basic_blocks.append "else" if node.else
-            merge_block = the_func.basic_blocks.append "merge" unless (node.definitely_returns and is_last_node)
+            merge_block = the_func.basic_blocks.append "merge" unless node.definitely_returns
 
             node.else ? builder.cond(get_last, then_block, else_block) : builder.cond(get_last, then_block, merge_block)
 
