@@ -65,9 +65,8 @@ module Molen
 
         def visit_body(node)
             node.nodes.each {|node| node.accept self}
-            has_no_return = node.nodes.size == 0 || node.nodes.last.type.nil?
-            raise "Body #{node.nodes.map{|x| x.class.name}.join(", ")} may not return a value! Has no return: #{has_no_return}, definitely_returns: #{node.definitely_returns}" if has_no_return and not node.definitely_returns
-            node.type = node.nodes.last.type unless has_no_return
+            last = node.nodes.last
+            node.type = (last and last.is_a?(Return)) ? last.type : nil
         end
 
         def visit_var(node)
@@ -82,10 +81,26 @@ module Molen
         def visit_return(node)
             node.value.accept self if node.value
             node.type = node.value.type if node.value
+
+            func = get_closest_func node
+            return unless func
+
+            func_ret_str = func.ret_type.nil? ? "nothing" : "a #{func.ret_type.name}"
+            actual_ret_str = node.type.nil? ? "nothing" : "a #{node.type.name}"
+            raise "Cannot return #{actual_ret_str} from function #{func.name} (returns #{func_ret_str})" if node.type != func.ret_type
+        end
+
+        def get_closest_func(node)
+            parent = node
+            until parent.nil?
+                return parent if parent.is_a? Function
+                parent = parent.parent
+            end
+            nil
         end
 
         def visit_call(node)
-            if node.on
+            if node.on then
                 node.on.accept self
                 function = @classes[node.on.type.name][:defs][node.name]
             else
@@ -109,7 +124,7 @@ module Molen
         end
 
         def visit_function(node)
-            node.ret_type = mod[node.ret_type.name]
+            node.ret_type = node.ret_type.nil? ? nil : mod[node.ret_type.name]
             node.args.each {|arg| arg.accept self}
 
             clazz = node.parent
@@ -128,7 +143,9 @@ module Molen
                 node.body.accept self
             end
 
-            raise "Expected #{node.name} to return a #{node.ret_type.name}, but returned a #{node.body.type.name rescue "nil"}" unless node.body.type == node.ret_type or node.body.definitely_returns
+            last = node.body.nodes.last
+            has_return = node.body.definitely_returns or (last and last.is_a?(Return))
+            raise "Function #{node.name} may not return a value!" if !has_return and node.ret_type != nil
         end
 
         def visit_binary(node)

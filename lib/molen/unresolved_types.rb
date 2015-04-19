@@ -41,16 +41,6 @@ module Molen
         end
     end
 
-    class UnresolvedVoidType < UnresolvedType
-        def initialize
-            super "void"
-        end
-
-        def ==(other)
-            other.class == self.class
-        end
-    end
-
     class UnresolvedArrayType < UnresolvedType
         attr_accessor :type, :dim
 

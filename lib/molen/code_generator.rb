@@ -31,7 +31,7 @@ module Molen
         type_visitor = TypingVisitor.new mod
         gen_visitor = GeneratingVisitor.new mod, return_type
 
-        body = Body.from(contents)
+        body = Body.from contents, true
         body.accept type_visitor
         body.accept gen_visitor
 

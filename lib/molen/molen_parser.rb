@@ -183,8 +183,7 @@ module Molen
         unless parser.token.is_kind? :begin_block
             node = parser.parse_node
             raise "Expected an expression or statement in body. Did you forget '{'?" unless node
-            node = Return.new node if auto_return
-            return Body.from node # We don't require {} for a single statement or expression.
+            return Body.from node, auto_return # We don't require {} for a single statement or expression.
         end
         raise "Expected { at begin of body." unless parser.token.is_kind? :begin_block
         parser.next_token # Consume {
@@ -196,11 +195,7 @@ module Molen
         end
         parser.next_token # Consume }
 
-        if contents.last and contents.last.is_a? Expression and auto_return then
-            contents << Return.new(contents.pop)
-        end
-
-        Body.from contents
+        Body.from contents, auto_return
     end
 
     class Parser

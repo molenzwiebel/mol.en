@@ -33,26 +33,33 @@ module Molen
     class Body < Expression
         attr_accessor :nodes
 
-        def self.from(obj)
+        def self.from(obj, auto_return = false)
             case obj
             when nil
                 Body.new
             when Body
                 obj
             when ::Array
-                Body.new obj
+                Body.new obj, auto_return
             else
-                Body.new [obj]
+                Body.new [obj], auto_return
             end
         end
 
-        def initialize(nodes = [])
+        def initialize(nodes = [], auto_return = false)
             @nodes = nodes
+            if auto_return and @nodes.size > 0 and @nodes.last.is_a? Expression then
+                @nodes << Return.new(@nodes.pop)
+            end
             @nodes.each { |e| e.parent = self }
         end
 
         def ==(other)
             other.class == self.class && other.nodes == nodes
+        end
+
+        def empty?
+            nodes.size == 0
         end
 
         # If this body definitely returns. This means that the body always has a return statement somewhere.
@@ -63,9 +70,12 @@ module Molen
             nodes.each do |node|
                 returns = node.is_a?(Return)
                 if node.is_a?(If) then
-                    returns = node.then.definitely_returns and !node.else.nil?
-                    returns = returns and node.else.definitely_returns if node.else
-                    node.elseifs.each {|else_if| returns = returns and else_if.last.definitely_returns}
+                    all_return = false
+                    all_return = node.then.definitely_returns if node.else.empty?
+                    all_return = (node.then.definitely_returns and node.else.definitely_returns) unless node.else.empty?
+                    all_return = all_return && (node.elseifs.select{|x| x.last.definitely_returns}.size == node.elseifs.size)
+
+                    returns = all_return
                 end
                 does_return ||= returns
             end
@@ -216,7 +226,7 @@ module Molen
 
         def initialize(name, ret_type = nil, args = [], body = nil)
             @name = name
-            @ret_type = ret_type || UnresolvedVoidType.new
+            @ret_type = ret_type
             @args = args
             @args.each {|arg| arg.parent = self}
             @body = Body.from body
