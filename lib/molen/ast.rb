@@ -13,7 +13,7 @@ module Molen
 
             klass.class_eval %Q(
                 def accept(visitor)
-                    visitor.visit_#{name}
+                    visitor.visit_#{name} self
                 end
             )
 
