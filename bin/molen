@@ -1,0 +1,117 @@
+#!/usr/bin/env ruby
+require 'bundler/setup'
+require_relative '../lib/molen'
+require 'optparse'
+require 'colorize'
+
+require 'llvm/execution_engine'
+require 'llvm/transforms/scalar'
+require 'llvm/transforms/ipo'
+require 'llvm/transforms/vectorize'
+require 'llvm/transforms/builder'
+
+options = {}
+OptionParser.new do |opts|
+    opts.on('-o', '--output FILENAME', "Output filename") do |output|
+        options[:output] = output
+    end
+
+    opts.on('-O', '--optimize AMOUNT', "How many optimize passes need to be ran") do |opt|
+        options[:optimize] = opt.to_i
+    end
+
+    opts.on_tail('-g', '--graph', "Create a graph of the provided source") do |graph|
+        options[:graph] = graph
+    end
+
+    opts.on('-e', '--execute SRC', "Single line of source code") do |src|
+        options[:src] = src
+    end
+
+    opts.on_tail('-u', '--dump', "Output LLVM IR to stderr") do
+        options[:dump_ir] = true
+    end
+
+    opts.on_tail('-x', '--exit', "Do not compile or execute the code") do
+        options[:do_not_run] = true
+    end
+
+    opts.on_tail('-h', '--help', "Help") do
+        puts opts
+        exit
+    end
+
+    opts.on_tail("-c", "Open REPL with mol.en loaded.") do
+        require 'irb'
+        require 'llvm/core'
+        require 'ruby-graphviz'
+        include Molen
+        ARGV.clear
+        IRB.start
+    end
+end.parse!
+
+LLVM.init_jit
+
+begin
+    input = options[:src] ? options[:src] : ARGF.read
+
+    puts "[+] Parsing input...".green
+    parser = Molen.create_parser input
+
+    contents = []
+    until (n = parser.parse_node).nil?
+        contents << n
+    end
+
+    body = Molen::Body.from contents, true
+    puts "[+] Parsing complete. Body with #{body.nodes.size} elements parsed.".green
+
+    if options[:graph] then
+        include Molen
+        puts "[+] Creating graph.".green
+        Molen.graph body, options[:graph]
+        puts "[+] Graph saved to #{options[:graph]}.png".green
+    end
+
+    mod = Molen::Module.new
+
+    puts "[+] Typing input...".green
+    typing_visitor = Molen::TypingVisitor.new mod
+    body.accept typing_visitor
+    puts "[+] Done typing input.".green
+
+    puts "[+] Generating LLVM IR...".green
+    generating_visitor = Molen::GeneratingVisitor.new mod, body.type
+    body.accept generating_visitor
+    generating_visitor.end_main_func unless body.definitely_returns
+    generating_visitor.llvm_mod.verify
+    puts "[+] Generated LLVM IR.".green
+
+    generating_visitor.llvm_mod.dump if options[:dump_ir]
+
+    puts "[+] Optimizing LLVM IR...".green
+    engine = LLVM::JITCompiler.new generating_visitor.llvm_mod
+    optimize = LLVM::PassManager.new engine
+    optimize << :arg_promote << :gdce << :global_opt << :gvn << :reassociate << :instcombine << :basicaa << :jump_threading << :simplifycfg << :inline << :mem2reg
+    (options[:optimize] || 5).times { optimize.run generating_visitor.llvm_mod }
+    puts "[+] Optimized LLVM IR.".green
+
+    exit if options[:do_not_run]
+    if options[:output] then
+        puts "[+] Compiling to file #{options[:output]}...".green
+        $stderr.reopen("#{options[:output]}.ll", "w")
+        generating_visitor.llvm_mod.dump
+        cmd = "clang -x ir #{options[:output]}.ll"
+        pid = spawn cmd
+        Process.waitpid pid
+        puts "[+] Done!".green
+    else
+        puts "[+] Running...".green
+        ret = engine.run_function generating_visitor.llvm_mod.functions["main"]
+        puts "[+] Done! JIT returned with code #{ret.to_i}".green
+    end
+rescue StandardError => ex
+    puts "[-] Failed: #{ex.to_s}".red
+    puts "[-] Backtrace:\n\t#{ex.backtrace.join("\n\t")}".red
+end

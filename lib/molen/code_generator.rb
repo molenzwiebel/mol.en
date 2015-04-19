@@ -56,6 +56,13 @@ module Molen
             main_block = main_func.basic_blocks.append("entry")
             builder.position_at_end main_block
 
+            llvm_mod.functions.add("main", [], LLVM::Int32) do |f|
+                f.basic_blocks.append.build do |b|
+                    b.call llvm_mod.functions["molen_main"]
+                    b.ret LLVM::Int(0)
+                end
+            end
+
             @strings = {}
             @scope = Scope.new
             @functions = {}
@@ -66,7 +73,6 @@ module Molen
         def end_main_func
             last = get_last
             builder.ret last if last
-            builder.ret LLVM::Int32.from_i 0 unless last
         end
 
         def visit_int(node)
@@ -136,8 +142,6 @@ module Molen
                 end
             elsif node.op == "||" or node.op == "or" then
                 load_two_values node.left, node.right do |left, right|
-                    p left
-                    p right
                     @last = builder.or left, right
                 end
             else
@@ -279,7 +283,7 @@ module Molen
             right.accept self
             right_val = get_last
 
-            is_double = left.type == mod["Double"] or right.type == mod["Double"]
+            is_double = left.type == mod["Double"] || right.type == mod["Double"]
             if is_double then
                 left_val = builder.si2fp left_val, LLVM::Double if left.type != mod["Double"]
                 right_val = builder.si2fp right_val, LLVM::Double if right.type != mod["Double"]
