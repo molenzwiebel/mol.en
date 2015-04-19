@@ -39,6 +39,10 @@ module Molen
         def ==(other)
             other.class == self.class && other.name == name
         end
+
+        def to_s
+            "Unresolved Type: #{name}"
+        end
     end
 
     class UnresolvedArrayType < UnresolvedType

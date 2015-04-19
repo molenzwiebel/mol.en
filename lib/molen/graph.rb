@@ -22,6 +22,8 @@ module Molen
             ast.instance_variables.each do |var|
                 next if var == :@parent
                 val = ast.instance_variable_get var
+                next unless val
+                
                 n = node_obj(val)
                 (graph.add_edges node, n, {:label => var.to_s}) if n
             end
