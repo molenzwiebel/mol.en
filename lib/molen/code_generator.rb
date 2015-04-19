@@ -191,7 +191,7 @@ module Molen
             args = [Arg.new("this", node.parent.type)] + args if node.parent.is_a? ClassDef
             llvm_arg_types = args.map(&:type).map(&:llvm_type)
 
-            func = llvm_mod.functions.add(node.name, llvm_arg_types, node.ret_type.llvm_type)
+            func = llvm_mod.functions.add(node.ir_name, llvm_arg_types, node.ret_type.llvm_type)
             func.linkage = :internal # Allow llvm to optimize this function away
             @functions[node.ir_name] = func
 
