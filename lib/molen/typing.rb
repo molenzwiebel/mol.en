@@ -70,6 +70,7 @@ module Molen
         end
 
         def visit_var(node)
+            raise "Undefined variable '#{node.value}'" unless @scope[node.value]
             node.type = @scope[node.value]
         end
 

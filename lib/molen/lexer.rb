@@ -27,8 +27,6 @@ module Molen
             /var/                       => :keyword,
             /class/                     => :keyword,
 
-            /[_a-zA-Z][_0-9a-zA-Z]*/    => :identifier, # We need this after the keywords or it will match them as identifiers.
-
             /\{/                        => :begin_block,
             /\}/                        => :end_block,
             /\(/                        => :lparen,
@@ -54,6 +52,8 @@ module Molen
             /or/                        => :operator,
             />=?/                       => :operator,
             /<=?/                       => :operator,
+
+            /[_a-zA-Z][_0-9a-zA-Z]*/    => :identifier, # We need this after the keywords and 'and', 'or' or it will match them as identifiers.
 
             # Note that the order of these matters! This lexer is lazy, so it will always match `=` over `==` unless we specify `==` first.
             /==/                        => :operator,
