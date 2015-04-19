@@ -17,6 +17,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.2.0)
     rspec-support (3.2.2)
+    ruby-graphviz (1.2.1)
     ruby-llvm (3.5.0)
       ffi (~> 1.9.3)
       rake (~> 10.0)
@@ -26,4 +27,5 @@ PLATFORMS
 
 DEPENDENCIES
   rspec
+  ruby-graphviz
   ruby-llvm
