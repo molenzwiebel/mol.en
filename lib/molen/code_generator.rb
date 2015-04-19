@@ -72,7 +72,7 @@ module Molen
 
         def end_main_func
             last = get_last
-            builder.ret last if last
+            builder.ret last
         end
 
         def visit_int(node)
@@ -98,6 +98,10 @@ module Molen
 
         def visit_body(node)
             node.nodes.each {|n| n.accept self}
+        end
+
+        def visit_new(node)
+            @last = builder.malloc node.type.llvm_struct, node.type.name
         end
 
         def visit_vardef(node)

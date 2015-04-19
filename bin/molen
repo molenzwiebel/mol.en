@@ -36,6 +36,10 @@ OptionParser.new do |opts|
         options[:do_not_run] = true
     end
 
+    opts.on_tail('-v', '--no-validate', "Do not validate the generated LLVM IR") do
+        options[:no_validate] = true
+    end
+
     opts.on_tail('-h', '--help', "Help") do
         puts opts
         exit
@@ -85,7 +89,7 @@ begin
     generating_visitor = Molen::GeneratingVisitor.new mod, body.type
     body.accept generating_visitor
     generating_visitor.end_main_func unless body.definitely_returns
-    generating_visitor.llvm_mod.verify
+    generating_visitor.llvm_mod.verify unless options[:no_validate]
     puts "[+] Generated LLVM IR.".green
 
     generating_visitor.llvm_mod.dump if options[:dump_ir]

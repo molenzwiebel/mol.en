@@ -76,7 +76,8 @@ module Molen
 
         def visit_new(node)
             node.args.each {|arg| arg.accept self}
-            node.type = mod[node.name]
+            raise "Undefined class '#{node.name}'" unless @classes[node.name]
+            node.type = @classes[node.name][:type]
         end
 
         def visit_return(node)
