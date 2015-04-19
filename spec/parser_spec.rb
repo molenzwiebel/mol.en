@@ -38,7 +38,9 @@ describe Parser do
     node "def x(a: Boolean) -> Int 10", Function, Function.new("x", UnresolvedType.new("Int"), [Arg.new("a", UnresolvedType.new("Boolean"))], Return.new(Int.new(10)))
     node "if (true) 10", If, If.new(Bool.new("true"), Int.new(10))
     node "if (true) 10 else 12", If, If.new(Bool.new("true"), Int.new(10), Int.new(12))
+
     node "if (true) 10 else 12 elseif (false) 14", If, If.new(Bool.new("true"), Int.new(10), Int.new(12), [[Bool.new("false"), Int.new(14)]])
+    node "if (true) 10 else 12 elseif (false) 14", If, If.new(Bool.new("true"), Int.new(10), If.new(Bool.new("false"), Int.new(14), Int.new(12)))
 
     node "class Test :: Super { var x = 10 }", ClassDef, ClassDef.new("Test", "Super", [VarDef.new(Var.new("x"), nil, Int.new(10))], [])
     node "class Test :: Super { def test() return }", ClassDef, ClassDef.new("Test", "Super", [], [Function.new("test", nil, [], Return.new)])

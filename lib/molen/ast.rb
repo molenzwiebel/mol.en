@@ -72,10 +72,7 @@ module Molen
                 if node.is_a?(If) then
                     all_return = false
                     all_return = node.then.definitely_returns if node.else.empty?
-                    all_return = (node.then.definitely_returns and node.else.definitely_returns) unless node.else.empty?
-                    all_return = all_return && (node.elseifs.select{|x| x.last.definitely_returns}.size == node.elseifs.size)
-
-                    returns = all_return
+                    returns = (node.then.definitely_returns and node.else.definitely_returns) unless node.else.empty?
                 end
                 does_return ||= returns
             end
@@ -239,21 +236,31 @@ module Molen
     end
 
     class If < Statement
-        attr_accessor :cond, :then, :elseifs, :else
+        attr_accessor :cond, :then, :else
 
         def initialize(cond, if_then, if_else = nil, elseifs = [])
             @cond = cond
             @cond.parent = self
             @then = Body.from if_then
             @then.parent = self
-            @elseifs = elseifs.map {|else_if| [else_if.first, Body.from(else_if.last)]} if elseifs
-            @elseifs.each {|else_if| else_if.first.parent = self; else_if.last.parent = self} if elseifs
-            @else = Body.from if_else
+
+            else_body = Body.from if_else
+            elseifs.each do |else_if|
+                else_body = If.new else_if.first, else_if.last, else_body
+            end
+
+            @else = Body.from else_body
             @else.parent = self
         end
 
         def ==(other)
-            other.class == self.class && other.cond == cond && other.then == @then && other.elseifs == elseifs && other.else == @else
+            other.class == self.class && other.cond == cond && other.then == @then && other.else == @else
+        end
+
+        def definitely_returns
+            returns = self.then.definitely_returns
+            returns = (returns and self.else.definitely_returns) unless self.else.empty?
+            returns
         end
     end
 

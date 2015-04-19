@@ -47,10 +47,6 @@ module Molen
         def visit_if(node)
             node.cond.accept self
             with_new_scope { node.then.accept self }
-            node.elseifs.each do |else_if|
-                else_if.first.accept self
-                with_new_scope { else_if.last.accept self }
-            end
             with_new_scope { node.else.accept self } if node.else
             raise "Expected condition in if to be a boolean" if node.cond.type != mod["Bool"]
         end
@@ -64,7 +60,10 @@ module Molen
         end
 
         def visit_body(node)
-            node.nodes.each {|node| node.accept self}
+            node.nodes.each_with_index do |n, index|
+                n.accept self
+                raise "Unreachable code because if statement always returns." if n.is_a?(If) and n.definitely_returns and index != node.nodes.size - 1
+            end
             last = node.nodes.last
             node.type = (last and last.is_a?(Return)) ? last.type : nil
         end
