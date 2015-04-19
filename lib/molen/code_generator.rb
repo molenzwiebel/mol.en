@@ -60,6 +60,7 @@ module Molen
             @scope = Scope.new
             @functions = {}
             @functions["putchar"] = llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
+            @functions["puts"] = llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
         end
 
         def end_main_func

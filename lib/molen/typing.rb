@@ -26,6 +26,7 @@ module Molen
             @classes = {}
             @functions = {}
             @functions["putchar"] = Function.new "putchar", mod["Int"], [Arg.new("x", mod["Int"])]
+            @functions["puts"] = Function.new "puts", mod["Int"], [Arg.new("x", mod["String"])]
         end
 
         def visit_int(node)
