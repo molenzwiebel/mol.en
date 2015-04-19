@@ -35,7 +35,7 @@ module Molen
         body.accept type_visitor
         body.accept gen_visitor
 
-        gen_visitor.end_func
+        gen_visitor.end_main_func unless body.definitely_returns
 
         gen_visitor.llvm_mod.verify
         gen_visitor.llvm_mod.dump if dump_ir
@@ -58,10 +58,13 @@ module Molen
             @strings = {}
             @scope = Scope.new
             @functions = {}
+            @functions["putchar"] = llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
         end
 
-        def end_func
-            builder.ret get_last
+        def end_main_func
+            last = get_last
+            builder.ret last if last
+            builder.ret LLVM::Int32.from_i 0 unless last
         end
 
         def visit_int(node)
@@ -129,15 +132,16 @@ module Molen
                 end
             elsif node.op == "||" or node.op == "or" then
                 load_two_values node.left, node.right do |left, right|
+                    p left
+                    p right
                     @last = builder.or left, right
                 end
             else
-                return false if node.op != "=" # TODO
+                return if node.op != "=" # TODO
 
                 node.right.accept self
                 builder.store get_last, @scope[node.left.value][:ptr]
             end
-            false
         end
 
         def visit_call(node)
@@ -154,7 +158,29 @@ module Molen
             end
 
             @last = builder.call func, *args
-            false
+        end
+
+        def visit_if(node)
+            node.cond.accept self
+            the_func = builder.insert_block.parent
+
+            then_block = the_func.basic_blocks.append "then"
+            else_block = the_func.basic_blocks.append "else" if node.else
+            merge_block = the_func.basic_blocks.append "merge"
+
+            node.else ? builder.cond(get_last, then_block, else_block) : builder.cond(get_last, then_block, merge_block)
+
+            builder.position_at_end then_block
+            with_new_scope { node.then.accept self }
+            builder.br merge_block unless node.then.definitely_returns
+
+            if node.else then
+                builder.position_at_end else_block
+                with_new_scope { node.else.accept self }
+                builder.br merge_block unless node.else.definitely_returns
+            end
+
+            builder.position_at_end merge_block
         end
 
         def visit_function(node)
@@ -180,15 +206,40 @@ module Molen
                 node.body.accept self
             end
 
-            builder.ret get_last
+            last = get_last
+            builder.ret last.nil? ? node.ret_type.llvm_type.null : last unless node.body.definitely_returns
             builder.position_at_end old_pos
+        end
 
-            false
+        def visit_for(node)
+            the_func = builder.insert_block.parent
+
+            cond_block = the_func.basic_blocks.append "loop_cond"
+            body_block = the_func.basic_blocks.append "loop_body"
+            after_block = the_func.basic_blocks.append "after_loop"
+
+            node.init.accept self if node.init
+            builder.br cond_block
+
+            builder.position_at_end cond_block
+            node.cond.accept self
+            builder.cond get_last, body_block, after_block
+
+            builder.position_at_end body_block
+            with_new_scope { node.body.accept self }
+            node.step.accept self if node.step
+            builder.br cond_block
+
+            builder.position_at_end after_block
+        end
+
+        def visit_return(node)
+            node.value.accept self if node.value
+            builder.ret get_last
         end
 
         def visit_classdef(node)
             node.funcs.each {|f| f.accept self}
-            false
         end
 
         private

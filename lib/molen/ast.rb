@@ -13,24 +13,14 @@ module Molen
 
             klass.class_eval %Q(
                 def accept(visitor)
-                    if visitor.visit_#{name} self
-                        accept_children visitor
-                    end
-                    visitor.end_visit_#{name} self
+                    visitor.visit_#{name}
                 end
             )
 
             Visitor.class_eval %Q(
                 def visit_#{name}(node)
-                    true
-                end
-                def end_visit_#{name}(node)
                 end
             )
-        end
-
-        # To be overridden by any subclasses if they have children that need to be traversed through.
-        def accept_children(visitor)
         end
     end
 
@@ -61,12 +51,17 @@ module Molen
             @nodes.each { |e| e.parent = self }
         end
 
-        def accept_children(visitor)
-            nodes.each { |exp| exp.accept visitor }
-        end
-
         def ==(other)
             other.class == self.class && other.nodes == nodes
+        end
+
+        # If this body definitely returns. This means that the body always has a return statement somewhere.
+        # If this is true, then the implicit return does not get generated and if and while branches do not
+        # branch back.
+        def definitely_returns
+            nodes.select do |node|
+                node.is_a?(Return) or (node.is_a?(If) and node.else and node.else.definitely_returns)
+            end.size > 0
         end
     end
 
@@ -135,11 +130,6 @@ module Molen
             @on.parent = self if on
         end
 
-        def accept_children(visitor)
-            @args.each { |arg| arg.accept visitor }
-            @on.accept visitor if on
-        end
-
         def ==(other)
             other.class == self.class && other.args == args && other.name == name && other.on == on
         end
@@ -151,11 +141,6 @@ module Molen
         def initialize(parent, child)
             @parent = parent
             @child = child
-        end
-
-        def accept_children(visitor)
-            parent.accept visitor
-            child.accept visitor
         end
 
         def ==(other)
@@ -170,10 +155,6 @@ module Molen
             @name = name
             @args = args
             @args.each { |arg| arg.parent = self }
-        end
-
-        def visit_children(visitor)
-            @args.each { |arg| arg.accept visitor }
         end
 
         def ==(other)
@@ -202,11 +183,6 @@ module Molen
             @left.parent = self
             @right = right
             @right.parent = self
-        end
-
-        def visit_children(visitor)
-            @left.accept visitor
-            @right.accept visitor
         end
 
         def ==(other)
@@ -239,11 +215,6 @@ module Molen
             @body.parent = self
         end
 
-        def visit_children(visitor)
-            @args.each { |a| a.accept visitor }
-            @body.accept visitor
-        end
-
         def ==(other)
             other.class == self.class && other.name == name && other.args == args && other.body == body
         end
@@ -261,12 +232,6 @@ module Molen
             @elseifs.each {|else_if| else_if.first.parent = self; else_if.last.parent = self} if elseifs
             @else = Body.from if_else
             @else.parent = self
-        end
-
-        def accept_children(visitor)
-            @cond.accept visitor
-            @then.accept visitor
-            @else.accept visitor
         end
 
         def ==(other)
@@ -288,13 +253,6 @@ module Molen
             @body.parent = self
         end
 
-        def visit_children(visitor)
-            @init.accept visitor if @init
-            @cond.accept visitor
-            @step.accept visitor if @step
-            @body.accept visitor
-        end
-
         def ==(other)
             other.class == self.class && other.init == init && other.cond == cond && other.step == step && other.body == body
         end
@@ -311,10 +269,6 @@ module Molen
             @value.parent = self if value
         end
 
-        def accept_children(visitor)
-            @value.accept visitor if @value
-        end
-
         def ==(other)
             other.class == self.class && other.name == name && other.value == value
         end
@@ -326,10 +280,6 @@ module Molen
         def initialize(value = nil)
             @value = value
             @value.parent = self if value
-        end
-
-        def accept_children(visitor)
-            @value.accept visitor if @value
         end
 
         def ==(other)
@@ -347,11 +297,6 @@ module Molen
             @vars.each {|var| var.parent = self}
             @funcs = funcs
             @funcs.each {|func| func.parent = self}
-        end
-
-        def visit_children(visitor)
-            @var_defs.each {|var| var.accept visitor}
-            @funcs.each {|func| func.accept visitor}
         end
 
         def ==(other)

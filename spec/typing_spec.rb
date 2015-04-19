@@ -84,4 +84,7 @@ describe TypingVisitor do
 
     fail_on "var x: String = 12", /Conflicting types/
     fail_on "var x = 'test' x = 4", /Cannot assign/
+
+    fail_on "def x() -> Int if (true) 10", /may not return/
+    fail_on "if (10) true else false", /Expected condition in if/
 end

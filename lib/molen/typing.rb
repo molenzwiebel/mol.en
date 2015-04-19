@@ -25,6 +25,7 @@ module Molen
             @scope = Scope.new
             @classes = {}
             @functions = {}
+            @functions["putchar"] = Function.new "putchar", mod["Int"], [Arg.new("x", mod["Int"])]
         end
 
         def visit_int(node)
@@ -43,8 +44,30 @@ module Molen
             node.type = mod["String"]
         end
 
-        def end_visit_body(node)
-            node.type = node.nodes.last.type
+        def visit_if(node)
+            node.cond.accept self
+            with_new_scope { node.then.accept self }
+            node.elseifs.each do |else_if|
+                else_if.first.accept self
+                with_new_scope { else_if.last.accept self }
+            end
+            with_new_scope { node.else.accept self } if node.else
+            raise "Expected condition in if to be a boolean" if node.cond.type != mod["Bool"]
+        end
+
+        def visit_for(node)
+            node.init.accept visitor if node.init
+            node.cond.accept visitor
+            node.step.accept visitor if node.step
+            with_new_scope { node.body.accept visitor }
+            raise "Expected condition in loop to be a boolean" if node.cond.type != mod["Bool"]
+        end
+
+        def visit_body(node)
+            node.nodes.each {|node| node.accept self}
+            has_no_return = node.nodes.size == 0 || node.nodes.last.type.nil?
+            raise "Body #{node.nodes.inspect} may not return a value!" if has_no_return and not node.definitely_returns
+            node.type = node.nodes.last.type unless has_no_return
         end
 
         def visit_var(node)
@@ -52,10 +75,12 @@ module Molen
         end
 
         def visit_new(node)
+            node.args.each {|arg| arg.accept self}
             node.type = mod[node.name]
         end
 
-        def end_visit_return(node)
+        def visit_return(node)
+            node.value.accept self if node.value
             node.type = node.value.type if node.value
         end
 
@@ -77,7 +102,6 @@ module Molen
 
             node.type = function.ret_type
             node.target = function
-            false
         end
 
         def visit_arg(node)
@@ -104,8 +128,7 @@ module Molen
                 node.body.accept self
             end
 
-            raise "Expected #{node.name} to return a #{node.ret_type.name}, but returned a #{node.body.type.name}" if node.body.type != node.ret_type
-            false
+            raise "Expected #{node.name} to return a #{node.ret_type.name}, but returned a #{node.body.type.name rescue "nil"}" unless node.body.type == node.ret_type or node.body.definitely_returns
         end
 
         def visit_binary(node)
@@ -137,7 +160,6 @@ module Molen
                 node.type = node.left.type = node.right.type
                 raise "Cannot assign #{node.type.name} to '#{node.left.value}' (a #{old_type.name})" if old_type != node.type
             end
-            false
         end
 
         def visit_vardef(node)
@@ -149,7 +171,6 @@ module Molen
             raise "Vardef has no type?" unless node.type
 
             @scope.define node.name.value, node.type
-            false
         end
 
         def visit_classdef(node)
@@ -157,7 +178,6 @@ module Molen
 
             @classes[node.name] ||= {type: node.type, defs: {}}
             node.funcs.each {|func| func.accept self}
-            false
         end
 
         private
