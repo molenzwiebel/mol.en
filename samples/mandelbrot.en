@@ -1,4 +1,4 @@
-def print_density(d: Double) {
+def print_density(d: double) {
     if (d > 8) {
         putchar(32)
     } elseif (d > 4) {
@@ -10,7 +10,7 @@ def print_density(d: Double) {
     }
 }
 
-def mandelconverger(real: Double, imag: Double, iters: Double, creal: Double, cimag: Double) -> Double {
+def mandelconverger(real: double, imag: double, iters: double, creal: double, cimag: double) -> double {
     if (iters > 255 || real * real + imag * imag > 4) {
         return iters
     } else {
@@ -18,11 +18,11 @@ def mandelconverger(real: Double, imag: Double, iters: Double, creal: Double, ci
     }
 }
 
-def mandelconverge(real: Double, imag: Double) -> Double {
+def mandelconverge(real: double, imag: double) -> double {
     return mandelconverger(real, imag, 0.0, real, imag)
 }
 
-def mandlehelp(xmin: Double, xmax: Double, xstep: Double, ymin: Double, ymax: Double, ystep: Double) {
+def mandlehelp(xmin: double, xmax: double, xstep: double, ymin: double, ymax: double, ystep: double) {
     for (var y = ymin, y < ymax, y = y + ystep) {
         for (var x = xmin, x < xmax, x = x + xstep) {
             print_density(mandelconverge(x, y))
@@ -31,7 +31,7 @@ def mandlehelp(xmin: Double, xmax: Double, xstep: Double, ymin: Double, ymax: Do
     }
 }
 
-def mandel(realstart: Double, imagstart: Double, realmag: Double, imagmag: Double) {
+def mandel(realstart: double, imagstart: double, realmag: double, imagmag: double) {
     mandlehelp(realstart, realstart + realmag * 78, realmag, imagstart, imagstart + imagmag * 78, imagmag)
 }
 

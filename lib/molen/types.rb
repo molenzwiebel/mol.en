@@ -19,7 +19,7 @@ module Molen
         end
 
         def llvm_struct
-            @llvm_struct_type ||= LLVM::Struct *vars.map(&:llvm_type)
+            @llvm_struct_type ||= LLVM::Struct *vars.values
         end
 
         def ==(other)
