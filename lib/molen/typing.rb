@@ -140,11 +140,12 @@ module Molen
             has_clazz = clazz.is_a? ClassDef
             if has_clazz then
                 @classes[clazz.name][:defs][node.name] = node
+                args = [true, @classes[clazz.name][:type].vars]
             else
                 @functions[node.name] = node
+                args = [false]
             end
-
-            with_new_scope(false) do
+            with_new_scope(*args) do
                 @scope.define "this", @classes[clazz.name][:type] if has_clazz
                 node.args.each do |arg|
                     @scope.define arg.name, arg.type
@@ -216,14 +217,14 @@ module Molen
                 with_new_scope(false) { var.accept self }
                 node.type.vars[var.name.value] = var.type
             end
-            node.funcs.each {|func| func.accept self}
+            node.funcs.each { |func| func.accept self }
         end
 
         private
-        def with_new_scope(inherit = true)
+        def with_new_scope(inherit = true, inherit_from = nil)
             old_scope = @scope
             if inherit then
-                @scope = Scope.new old_scope
+                @scope = Scope.new inherit_from || old_scope
             else
                 @scope = Scope.new
             end
