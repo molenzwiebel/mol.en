@@ -179,12 +179,19 @@ module Molen
                 node.type = mod["bool"]
             elsif node.op == "=" then
                 node.right.accept self # Check value.
+                raise "Expected variable or member on left side of =" unless node.left.is_a? Var or node.left.is_a? Member
 
-                old_type = @scope[node.left.value]
-                raise "Undefined variable '#{node.left.value}'" unless old_type
+                if node.left.is_a? Var then
+                    old_type = @scope[node.left.value]
+                    raise "Undefined variable '#{node.left.value}'" unless old_type
 
-                node.type = node.left.type = node.right.type
-                raise "Cannot assign #{node.type.name} to '#{node.left.value}' (a #{old_type.name})" if old_type != node.type
+                    node.type = node.left.type = node.right.type
+                    raise "Cannot assign #{node.type.name} to '#{node.left.value}' (a #{old_type.name})" if old_type != node.type
+                else
+                    node.left.accept self
+                    raise "Cannot assign #{node.left.type.name} to '#{node.left.to_s}' (a #{node.left.type.name})" if node.left.type != node.right.type
+                    node.type = node.left.type = node.right.type
+                end
             end
         end
 

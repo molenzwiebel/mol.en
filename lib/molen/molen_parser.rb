@@ -61,7 +61,7 @@ module Molen
         parser.infix 1, -> x { x.is_operator? "=" },  &create_binary_parser(11, true)
         parser.infix 50, -> x { x.is? "." } do |left|
             next_token # Consume .
-            right = parse_expression 49
+            right = parse_expression 50
 
             next Call.new right.name, right.args, left if right.is_a? Call
             next Member.new left, right
