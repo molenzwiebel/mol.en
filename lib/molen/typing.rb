@@ -25,20 +25,20 @@ module Molen
             @scope = Scope.new
             @classes = {}
             @functions = {}
-            @functions["putchar"] = Function.new "putchar", mod["Int"], [Arg.new("x", mod["Int"])]
-            @functions["puts"] = Function.new "puts", mod["Int"], [Arg.new("x", mod["String"])]
+            @functions["putchar"] = Function.new "putchar", mod["int"], [Arg.new("x", mod["int"])]
+            @functions["puts"] = Function.new "puts", mod["int"], [Arg.new("x", mod["String"])]
         end
 
         def visit_int(node)
-            node.type = mod["Int"]
+            node.type = mod["int"]
         end
 
         def visit_double(node)
-            node.type = mod["Double"]
+            node.type = mod["double"]
         end
 
         def visit_bool(node)
-            node.type = mod["Bool"]
+            node.type = mod["bool"]
         end
 
         def visit_str(node)
@@ -49,7 +49,7 @@ module Molen
             node.cond.accept self
             with_new_scope { node.then.accept self }
             with_new_scope { node.else.accept self } if node.else
-            raise "Expected condition in if to be a boolean" if node.cond.type != mod["Bool"]
+            raise "Expected condition in if to be a boolean" if node.cond.type != mod["bool"]
         end
 
         def visit_for(node)
@@ -57,7 +57,7 @@ module Molen
             node.cond.accept self
             node.step.accept self if node.step
             with_new_scope { node.body.accept self }
-            raise "Expected condition in loop to be a boolean" if node.cond.type != mod["Bool"]
+            raise "Expected condition in loop to be a boolean" if node.cond.type != mod["bool"]
         end
 
         def visit_body(node)
@@ -76,8 +76,8 @@ module Molen
 
         def visit_new(node)
             node.args.each {|arg| arg.accept self}
-            raise "Undefined class '#{node.name}'" unless @classes[node.name]
-            node.type = @classes[node.name][:type]
+            raise "Undefined class '#{node.name}'" unless @classes[node.name] or mod[node.name]
+            node.type = @classes[node.name] ? @classes[node.name][:type] : mod[node.name]
         end
 
         def visit_return(node)
@@ -115,7 +115,7 @@ module Molen
 
             func_arg_types = function.args.map(&:type)
             node_arg_types = node.args.map(&:type)
-            raise "Cannot invoke function with argument types '#{func_arg_types.map(&:name).join ", "}' with arguments '#{node_arg_types.map(&:name).join ", "}'" if func_arg_types != node_arg_types
+            raise "Cannot invoke function requiring types '#{func_arg_types.map(&:name).join ", "}' with arguments '#{node_arg_types.map(&:name).join ", "}'" unless is_method_callable? function, *node_arg_types
 
             node.type = function.ret_type
             node.target = function
@@ -157,9 +157,9 @@ module Molen
 
                 left_type = node.left.type
                 right_type = node.right.type
-                raise "Binary op #{node.op} requires both sides to be numeric" unless (left_type == mod["Double"] or left_type == mod["Int"]) and (right_type == mod["Double"] or right_type == mod["Int"])
-                node.type = mod["Double"] if left_type == mod["Double"] or right_type == mod["Double"]
-                node.type = mod["Int"] unless node.type
+                raise "Binary op #{node.op} requires both sides to be numeric" unless (left_type == mod["double"] or left_type == mod["int"]) and (right_type == mod["double"] or right_type == mod["int"])
+                node.type = mod["double"] if left_type == mod["double"] or right_type == mod["double"]
+                node.type = mod["int"] unless node.type
             elsif node.op == "&&" or node.op == "||" or node.op == "or" or node.op == "and" or node.op == "==" or node.op == "!=" or node.op == "<" or node.op == "<=" or node.op == ">" or node.op == ">=" then
                 node.left.accept self
                 node.right.accept self
@@ -167,9 +167,9 @@ module Molen
                 left_type = node.left.type
                 right_type = node.right.type
 
-                raise "Binary op #{node.op} requires both sides to be a bool" if (left_type != mod["Bool"] or right_type != mod["Bool"]) and (node.op == "&&" or node.op == "||" or node.op == "or" or node.op == "and")
-                raise "Binary op #{node.op} requires both sides to be numeric" if ((left_type != mod["Double"] and left_type != mod["Int"]) or (right_type != mod["Double"] and right_type != mod["Int"])) and (node.op == "<" or node.op == "<=" or node.op == ">" or node.op == ">=")
-                node.type = mod["Bool"]
+                raise "Binary op #{node.op} requires both sides to be a bool" if (left_type != mod["bool"] or right_type != mod["bool"]) and (node.op == "&&" or node.op == "||" or node.op == "or" or node.op == "and")
+                raise "Binary op #{node.op} requires both sides to be numeric" if ((left_type != mod["double"] and left_type != mod["int"]) or (right_type != mod["double"] and right_type != mod["int"])) and (node.op == "<" or node.op == "<=" or node.op == ">" or node.op == ">=")
+                node.type = mod["bool"]
             elsif node.op == "=" then
                 node.right.accept self # Check value.
 
@@ -193,9 +193,15 @@ module Molen
         end
 
         def visit_classdef(node)
-            node.type = mod[node.name] || ObjectType.new(node.name, node.superclass)
+            superclass = mod[node.superclass]
+            raise "Class #{node.superclass} (superclass of #{node.name}) not found!" unless superclass
+            node.type = mod.types[node.name] ||= ObjectType.new(node.name, superclass)
 
             @classes[node.name] ||= {type: node.type, defs: {}}
+            node.vars.each do |var|
+                var.accept self
+                node.type.vars[var.name.value] = var.type
+            end
             node.funcs.each {|func| func.accept self}
         end
 
@@ -209,6 +215,15 @@ module Molen
             end
             yield
             @scope = old_scope
+        end
+
+        def is_method_callable?(func_node, *arg_types)
+            return false if func_node.args.size != arg_types.size
+            arg_types.each_with_index do |arg_type, i|
+                can, dist = arg_type.castable_to func_node.args[i].type
+                return false if not can
+            end
+            true
         end
     end
 end

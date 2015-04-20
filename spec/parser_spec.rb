@@ -34,17 +34,17 @@ describe Parser do
 
     node "test(10)", Call, Call.new("test", [Int.new(10)])
 
-    node "def x(a: Boolean) 10", Function, Function.new("x", nil, [Arg.new("a", UnresolvedType.new("Boolean"))], Int.new(10))
-    node "def x(a: Boolean) -> Int 10", Function, Function.new("x", UnresolvedType.new("Int"), [Arg.new("a", UnresolvedType.new("Boolean"))], Return.new(Int.new(10)))
+    node "def x(a: bool) 10", Function, Function.new("x", nil, [Arg.new("a", UnresolvedType.new("bool"))], Int.new(10))
+    node "def x(a: bool) -> int 10", Function, Function.new("x", UnresolvedType.new("Int"), [Arg.new("a", UnresolvedType.new("bool"))], Return.new(Int.new(10)))
     node "if (true) 10", If, If.new(Bool.new("true"), Int.new(10))
     node "if (true) 10 else 12", If, If.new(Bool.new("true"), Int.new(10), Int.new(12))
 
     node "if (true) 10 else 12 elseif (false) 14", If, If.new(Bool.new("true"), Int.new(10), Int.new(12), [[Bool.new("false"), Int.new(14)]])
     node "if (true) 10 else 12 elseif (false) 14", If, If.new(Bool.new("true"), Int.new(10), If.new(Bool.new("false"), Int.new(14), Int.new(12)))
 
-    node "class Test :: Super { var x = 10 }", ClassDef, ClassDef.new("Test", "Super", [VarDef.new(Var.new("x"), nil, Int.new(10))], [])
+    node "class Test :: Super { var x: int }", ClassDef, ClassDef.new("Test", "Super", [VarDef.new(Var.new("x"), UnresolvedType.new("Int"))], [])
     node "class Test :: Super { def test() return }", ClassDef, ClassDef.new("Test", "Super", [], [Function.new("test", nil, [], Return.new)])
-    node "class Test :: Super { var x = 10 def test() return }", ClassDef, ClassDef.new("Test", "Super", [VarDef.new(Var.new("x"), nil, Int.new(10))], [Function.new("test", nil, [], Return.new)])
+    node "class Test :: Super { var x: int def test() return }", ClassDef, ClassDef.new("Test", "Super", [VarDef.new(Var.new("x"), UnresolvedType.new("Int"))], [Function.new("test", nil, [], Return.new)])
 
     node "for(3,2,1) 5", For, For.new(Int.new(2), Int.new(3), Int.new(1), Int.new(5))
     node "for(,2,1) 5", For, For.new(Int.new(2), nil, Int.new(1), Int.new(5))
@@ -52,8 +52,8 @@ describe Parser do
     node "return", Return, Return.new(nil)
     node "return 10", Return, Return.new(Int.new(10))
     node "var x = 10", VarDef, VarDef.new(Var.new("x"), nil, Int.new(10))
-    node "var x: Int", VarDef, VarDef.new(Var.new("x"), UnresolvedType.new("Int"))
-    node "var x: Int = 4", VarDef, VarDef.new(Var.new("x"), UnresolvedType.new("Int"), Int.new(4))
+    node "var x: int", VarDef, VarDef.new(Var.new("x"), UnresolvedType.new("Int"))
+    node "var x: int = 4", VarDef, VarDef.new(Var.new("x"), UnresolvedType.new("Int"), Int.new(4))
     node "a.b", Member, Member.new(Var.new("a"), Var.new("b"))
     node "a.b()", Call, Call.new("b", [], Var.new("a"))
     
@@ -75,7 +75,7 @@ describe Parser do
     type "String[]", UnresolvedArrayType.new(UnresolvedType.new("String"), -1)
     type "String[10]", UnresolvedArrayType.new(UnresolvedType.new("String"), 10)
     type "String[10][3]", UnresolvedArrayType.new(UnresolvedArrayType.new(UnresolvedType.new("String"), 10), 3)
-    type "Int(String)", UnresolvedFunctionType.new([UnresolvedType.new("String")], UnresolvedType.new("Int"))
-    type "Int(Int, Int)", UnresolvedFunctionType.new([UnresolvedType.new("Int"), UnresolvedType.new("Int")], UnresolvedType.new("Int"))
-    type "Int(Int, Int(Int))", UnresolvedFunctionType.new([UnresolvedType.new("Int"), UnresolvedFunctionType.new([UnresolvedType.new("Int")], UnresolvedType.new("Int"))], UnresolvedType.new("Int"))
+    type "int(String)", UnresolvedFunctionType.new([UnresolvedType.new("String")], UnresolvedType.new("int"))
+    type "int(int, int)", UnresolvedFunctionType.new([UnresolvedType.new("int"), UnresolvedType.new("int")], UnresolvedType.new("int"))
+    type "int(int, int(int))", UnresolvedFunctionType.new([UnresolvedType.new("int"), UnresolvedFunctionType.new([UnresolvedType.new("int")], UnresolvedType.new("int"))], UnresolvedType.new("int"))
 end

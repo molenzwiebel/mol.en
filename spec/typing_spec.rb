@@ -36,65 +36,67 @@ describe TypingVisitor do
         end
     end
 
-    type "10", "Int"
-    type "3.2", "Double"
-    type "true", "Bool"
+    type "10", "int"
+    type "3.2", "double"
+    type "true", "bool"
     type "'test'", "String"
 
-    type "var x = 10 x", "Int"
+    type "var x = 10 x", "int"
     type "var x: String x", "String"
-    type "var x = 12 x = 10", "Int"
-    type "var x= 12 x = 10 x", "Int"
+    type "var x = 12 x = 10", "int"
+    type "var x= 12 x = 10 x", "int"
 
-    type "new Int", "Int"
-    type "return 10", "Int"
+    type "new Integer", "Integer"
+    type "return 10", "int"
 
-    type "10 + 10", "Int"
-    type "10 - 10", "Int"
-    type "10 / 10", "Int"
-    type "10 * 10", "Int"
+    type "10 + 10", "int"
+    type "10 - 10", "int"
+    type "10 / 10", "int"
+    type "10 * 10", "int"
 
-    type "10.2 + 10", "Double"
-    type "10.2 - 10", "Double"
-    type "10.2 / 10", "Double"
-    type "10.2 * 10", "Double"
+    type "10.2 + 10", "double"
+    type "10.2 - 10", "double"
+    type "10.2 / 10", "double"
+    type "10.2 * 10", "double"
 
-    type "true && false", "Bool"
-    type "true || false", "Bool"
-    type "true and false", "Bool"
-    type "true or false", "Bool"
-    type "true == false", "Bool"
-    type "true != false", "Bool"
+    type "true && false", "bool"
+    type "true || false", "bool"
+    type "true and false", "bool"
+    type "true or false", "bool"
+    type "true == false", "bool"
+    type "true != false", "bool"
 
     fail_on "true * 10", /to be numeric/
 
     # Recursion :)
-    type "def x() -> Int x() x()", "Int"
+    type "def x() -> int x() x()", "int"
 
     type "def x() x() x()", nil
     type "def do_stuff() putchar(10) do_stuff()", nil
 
-    type "def x() -> Int 10 x()", "Int"
-    type "def x(a: Double) -> Double 1.3 x(1.2)", "Double"
-    type "def x(a: Double) -> Double a x(3.3)", "Double"
-    type "class Int { def foo() -> Int 10 } 10.foo()", "Int"
-    type "class Int { def foo() -> Int 10 } 10.foo().foo()", "Int"
-    type "class Int { def get() -> Int this } 10.get()", "Int"
-    fail_on "def x(a: String) -> Int 10 x(3)", /Cannot invoke function with argument types/
-    fail_on "def x() -> Int 1.2", /Cannot return a /
-    fail_on "def x(a: Double) -> Int a", /Cannot return a /
+    type "def x() -> int 10 x()", "int"
+    type "def x(a: double) -> double 1.3 x(1.2)", "double"
+    type "def x(a: double) -> double a x(3.3)", "double"
+    type "class int { def foo() -> int 10 } 10.foo()", "int"
+    type "class int { def foo() -> int 10 } 10.foo().foo()", "int"
+    type "class int { def get() -> int this } 10.get()", "int"
+
+    type "def x(a: Object) -> int 10 x('test')", "int"
+    fail_on "def x(a: String) -> int 10 x(3)", /Cannot invoke function requiring types/
+    fail_on "def x() -> int 1.2", /Cannot return a /
+    fail_on "def x(a: double) -> int a", /Cannot return a /
     fail_on "a(3)", /Undefined function/
-    fail_on "def x(a: String) -> Int 10 x()", /Mismatched parameters/
+    fail_on "def x(a: String) -> int 10 x()", /Mismatched parameters/
 
     fail_on "var x: String = 12", /Conflicting types/
     fail_on "var x = 'test' x = 4", /Cannot assign/
 
-    type "var x = 10 if (true) { x = 5 } x", "Int"
+    type "var x = 10 if (true) { x = 5 } x", "int"
     fail_on "if (true) { var x = 4 } x", /Undefined/
 
-    type "def x() -> Int if (true) return 10 else return 4 x()", "Int"
-    fail_on "def x() -> Int if (true) 10", /may not return a value/
-    fail_on "def x() -> Int if (true) return 10 else 4", /may not return/
-    fail_on "def x() -> Int if (true) return 10 else return 4 elseif (false) 4", /may not return/
+    type "def x() -> int if (true) return 10 else return 4 x()", "int"
+    fail_on "def x() -> int if (true) 10", /may not return a value/
+    fail_on "def x() -> int if (true) return 10 else 4", /may not return/
+    fail_on "def x() -> int if (true) return 10 else return 4 elseif (false) 4", /may not return/
     fail_on "if (10) true else false", /Expected condition in if/
 end

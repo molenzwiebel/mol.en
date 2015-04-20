@@ -50,15 +50,15 @@ describe Molen::GeneratingVisitor do
 
     it "should be able to generate a function" do
         expect(lambda {
-            run_script("def x() -> Int 10 0")
+            run_script("def x() -> int 10 0")
         }).to_not raise_error
     end
 
     it "should be able to call a function" do 
-        expect(run_script("def x() -> Int 10 x()").to_i).to eq 10
+        expect(run_script("def x() -> int 10 x()").to_i).to eq 10
     end
 
     it "should be able to generate and call class functions" do
-        expect(run_script("class Int { def get_10() -> Int 10 } 4.get_10()").to_i).to eq 10
+        expect(run_script("class int { def get_10() -> int 10 } 4.get_10()").to_i).to eq 10
     end
 end

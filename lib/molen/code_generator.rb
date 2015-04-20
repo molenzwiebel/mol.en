@@ -287,10 +287,10 @@ module Molen
             right.accept self
             right_val = get_last
 
-            is_double = left.type == mod["Double"] || right.type == mod["Double"]
+            is_double = left.type == mod["double"] || right.type == mod["double"]
             if is_double then
-                left_val = builder.si2fp left_val, LLVM::Double if left.type != mod["Double"]
-                right_val = builder.si2fp right_val, LLVM::Double if right.type != mod["Double"]
+                left_val = builder.si2fp left_val, LLVM::Double if left.type != mod["double"]
+                right_val = builder.si2fp right_val, LLVM::Double if right.type != mod["double"]
             end
 
             yield is_double, left_val, right_val
