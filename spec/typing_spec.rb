@@ -66,6 +66,9 @@ describe TypingVisitor do
     type "true == false", "bool"
     type "true != false", "bool"
 
+    type "class Foo { var bar: int } var x = new Foo x.bar", "int"
+    fail_on "class Foo { var bar: int } var x = new Foo x.baz", /Unknown member/
+
     fail_on "true * 10", /to be numeric/
 
     # Recursion :)

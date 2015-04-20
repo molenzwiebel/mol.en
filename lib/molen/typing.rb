@@ -60,6 +60,13 @@ module Molen
             raise "Expected condition in loop to be a boolean" if node.cond.type != mod["bool"]
         end
 
+        def visit_member(node)
+            node.on.accept self
+            obj_type = node.on.type
+            raise "Unknown member #{node.child.value} on object of type #{obj_type.name}" unless obj_type.vars[node.child.value]
+            node.type = obj_type.vars[node.child.value]
+        end
+
         def visit_body(node)
             node.nodes.each_with_index do |n, index|
                 n.accept self
@@ -199,7 +206,7 @@ module Molen
 
             @classes[node.name] ||= {type: node.type, defs: {}}
             node.vars.each do |var|
-                var.accept self
+                with_new_scope(false) { var.accept self }
                 node.type.vars[var.name.value] = var.type
             end
             node.funcs.each {|func| func.accept self}

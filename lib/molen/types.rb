@@ -19,7 +19,8 @@ module Molen
         end
 
         def llvm_struct
-            @llvm_struct_type ||= LLVM::Struct *vars.values
+            super_vars = superclass ? superclass.vars : {}
+            @llvm_struct_type ||= LLVM::Struct *(super_vars.values.map(&:llvm_type) + vars.values.map(&:llvm_type))
         end
 
         def ==(other)

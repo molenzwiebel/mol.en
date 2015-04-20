@@ -158,15 +158,15 @@ module Molen
     end
 
     class Member < Expression
-        attr_accessor :parent, :child
+        attr_accessor :on, :child
 
-        def initialize(parent, child)
-            @parent = parent
+        def initialize(on, child)
+            @on = on
             @child = child
         end
 
         def ==(other)
-            other.class == self.class && other.parent == parent && other.child == child
+            other.class == self.class && other.on == on && other.child == child
         end
     end
 
