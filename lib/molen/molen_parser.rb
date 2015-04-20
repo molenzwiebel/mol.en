@@ -145,6 +145,7 @@ module Molen
                 raise "Unexpected EOF" if token.is_eof?
                 node = parse_node
                 raise "Only variable declarations and functions allowed in class body." unless node.is_a? VarDef or node.is_a? Function
+                raise "Initialization of instance variables is not allowed in classes. Move the initialization to your constructor" if node.is_a? VarDef and node.value
                 vars << node if node.is_a? VarDef
                 funcs << node if node.is_a? Function
             end

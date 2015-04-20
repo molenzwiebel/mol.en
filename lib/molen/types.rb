@@ -1,7 +1,7 @@
 
 module Molen
     class Type
-        attr_accessor :name, :llvm_type, :size, :vars
+        attr_accessor :name, :llvm_type, :vars
     end
 
     class ObjectType < Type
@@ -22,28 +22,19 @@ module Molen
             @llvm_struct_type ||= LLVM::Struct *vars.map(&:llvm_type)
         end
 
-        def llvm_size
-            8 # Int8, a pointer
-        end
-
         def ==(other)
             other.class == self.class && other.name == name && other.superclass == superclass
         end
     end
 
     class PrimitiveType < ObjectType
-        def initialize(name, superclass, llvm_type, llvm_size)
+        def initialize(name, superclass, llvm_type)
             super name, superclass
             @llvm_type = llvm_type
-            @size = llvm_size
         end
 
         def llvm_type
             @llvm_type
-        end
-
-        def llvm_size
-            @size
         end
 
         def ==(other)

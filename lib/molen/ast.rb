@@ -324,7 +324,7 @@ module Molen
 
         def initialize(name, superclass = nil, var_defs = [], funcs = [])
             @name = name
-            @superclass = superclass
+            @superclass = superclass || "Object"
             @vars = var_defs
             @vars.each {|var| var.parent = self}
             @funcs = funcs

@@ -7,10 +7,10 @@ module Molen
             @types = {}
 
             self["Object"] = ObjectType.new "Object"
-            self["Bool"] = PrimitiveType.new "Bool", self["Object"], LLVM::Int1, 1
-            self["Int"] = PrimitiveType.new "Int", self["Object"], LLVM::Int32, 4
-            self["Double"] = PrimitiveType.new "Double", self["Object"], LLVM::Double, 8
-            self["String"] = PrimitiveType.new "String", self["Object"], LLVM::Pointer(LLVM::Int8), 8
+            self["Bool"] = PrimitiveType.new "Bool", self["Object"], LLVM::Int1
+            self["Int"] = PrimitiveType.new "Int", self["Object"], LLVM::Int32
+            self["Double"] = PrimitiveType.new "Double", self["Object"], LLVM::Double
+            self["String"] = PrimitiveType.new "String", self["Object"], LLVM::Pointer(LLVM::Int8)
         end
 
         def [](q)
