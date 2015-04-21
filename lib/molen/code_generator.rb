@@ -12,15 +12,15 @@ module Molen
         end
     end
 
-    def run(code, dump_ir = true)
-        mod = gen(code, dump_ir)
+    def run(code, dump_ir = true, verify = true)
+        mod = gen(code, dump_ir, verify)
         LLVM.init_jit
 
         engine = LLVM::JITCompiler.new(mod)
         engine.run_function mod.functions["molen_main"]
     end
 
-    def gen(code, dump_ir = true)
+    def gen(code, dump_ir = true, verify = true)
         parser = create_parser code
         contents = []
         until (n = parser.parse_node).nil?
@@ -38,7 +38,7 @@ module Molen
 
         gen_visitor.end_main_func unless body.definitely_returns
 
-        gen_visitor.llvm_mod.verify
+        gen_visitor.llvm_mod.verify if verify
         gen_visitor.llvm_mod.dump if dump_ir
         gen_visitor.llvm_mod
     end
@@ -101,7 +101,20 @@ module Molen
         end
 
         def visit_new(node)
-            @last = builder.malloc node.type.llvm_struct, node.type.name
+            allocated_struct = builder.malloc node.type.llvm_struct, node.type.name
+
+            args = [allocated_struct]
+            node.args.each do |arg|
+                arg.accept self
+                args << get_last
+            end
+
+            if node.type.functions["create"] then
+                create_func = @functions[node.type.functions["create"].ir_name]
+                builder.call create_func, *args
+            end
+
+            @last = allocated_struct
         end
 
         def visit_vardef(node)

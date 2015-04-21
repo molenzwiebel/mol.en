@@ -25,7 +25,7 @@ module Molen
             @scope = Scope.new
             @functions = {}
             @functions["putchar"] = Function.new "putchar", mod["int"], [Arg.new("x", mod["int"])]
-            @functions["puts"] = Function.new "puts", mod["int"], [Arg.new("x", mod["String"])]
+            @functions["puts"] = Function.new "puts", mod["int"], [Arg.new("x", mod["str"])]
         end
 
         def visit_int(node)
@@ -41,7 +41,7 @@ module Molen
         end
 
         def visit_str(node)
-            node.type = mod["String"]
+            node.type = mod["str"]
         end
 
         def visit_if(node)
@@ -84,6 +84,14 @@ module Molen
             node.args.each {|arg| arg.accept self}
             raise "Undefined class '#{node.name}'" unless mod[node.name]
             node.type = mod[node.name]
+
+            if node.type.functions["create"] then
+                create_func = node.type.functions["create"]
+                given_arg_types = node.args.map(&:type)
+                required_arg_types = create_func.args.map(&:type)
+
+                raise "Cannot instantiate #{node.name} with argument types #{given_arg_types.map(&:name).join ", "} (create requires types #{required_arg_types.map(&:name).join ", "})" unless is_method_callable? create_func, *given_arg_types
+            end
         end
 
         def visit_return(node)
