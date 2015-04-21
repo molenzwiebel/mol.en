@@ -1,17 +1,19 @@
 
 module Molen
     class Type
-        attr_accessor :name, :llvm_type, :vars
+        attr_accessor :name, :llvm_type, :functions, :vars
     end
 
     class ObjectType < Type
         attr_accessor :superclass
 
         def initialize(name, supertype = nil)
+            raise "Superclass of #{name} needs to be an object, #{supertype} received." if supertype and not supertype.is_a? ObjectType
             @name = name
             @superclass = supertype
 
             @vars = {}
+            @functions = supertype ? Scope.new(supertype.functions) : Scope.new
         end
 
         def llvm_type
@@ -48,7 +50,7 @@ module Molen
             @name = name
 
             @llvm_type = llvm_type
-            @vars = {}
+            @functions = Scope.new
         end
 
         def llvm_type

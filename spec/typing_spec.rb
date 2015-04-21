@@ -75,6 +75,8 @@ describe TypingVisitor do
     type "class Foo { var bar: int def set_bar(val: int) bar = val } var x = new Foo x.set_bar(10) x.bar", "int"
     type "class Foo { var bar: int def do_stuff() -> double { var bar = 10.0 bar } } new Foo.do_stuff()", "double"
 
+    type "class Foo { def get_bar() -> int 42 } class Bar :: Foo { } new Bar.get_bar()", "int"
+
     fail_on "class Foo { var bar: int } var x = new Foo x.bar = 10.0", /Cannot assign/
     fail_on "class Foo { var bar: int } var x = new Foo x.baz", /Unknown member/
 

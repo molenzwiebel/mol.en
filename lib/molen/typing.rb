@@ -23,7 +23,6 @@ module Molen
             @mod = mod
 
             @scope = Scope.new
-            @classes = {}
             @functions = {}
             @functions["putchar"] = Function.new "putchar", mod["int"], [Arg.new("x", mod["int"])]
             @functions["puts"] = Function.new "puts", mod["int"], [Arg.new("x", mod["String"])]
@@ -83,8 +82,8 @@ module Molen
 
         def visit_new(node)
             node.args.each {|arg| arg.accept self}
-            raise "Undefined class '#{node.name}'" unless @classes[node.name] or mod[node.name]
-            node.type = @classes[node.name] ? @classes[node.name][:type] : mod[node.name]
+            raise "Undefined class '#{node.name}'" unless mod[node.name]
+            node.type = mod[node.name]
         end
 
         def visit_return(node)
@@ -111,7 +110,7 @@ module Molen
         def visit_call(node)
             if node.on then
                 node.on.accept self
-                function = @classes[node.on.type.name][:defs][node.name]
+                function = mod[node.on.type.name].functions[node.name]
             else
                 function = @functions[node.name]
             end
@@ -139,14 +138,14 @@ module Molen
             clazz = node.parent
             has_clazz = clazz.is_a? ClassDef
             if has_clazz then
-                @classes[clazz.name][:defs][node.name] = node
-                args = [true, @classes[clazz.name][:type].vars]
+                mod[clazz.name].functions.define(node.name, node)
+                args = [true, mod[clazz.name].vars]
             else
                 @functions[node.name] = node
                 args = [false]
             end
             with_new_scope(*args) do
-                @scope.define "this", @classes[clazz.name][:type] if has_clazz
+                @scope.define "this", mod[clazz.name] if has_clazz
                 node.args.each do |arg|
                     @scope.define arg.name, arg.type
                 end
@@ -212,7 +211,6 @@ module Molen
             raise "Class #{node.superclass} (superclass of #{node.name}) not found!" unless superclass
             node.type = mod.types[node.name] ||= ObjectType.new(node.name, superclass)
 
-            @classes[node.name] ||= {type: node.type, defs: {}}
             node.vars.each do |var|
                 with_new_scope(false) { var.accept self }
                 node.type.vars[var.name.value] = var.type
