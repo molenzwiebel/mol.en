@@ -5,9 +5,9 @@ module Molen
     class Function
         def ir_name
             if parent.is_a? ClassDef
-                "#{parent.name}__#{name}"
+                "#{parent.name}__#{name}<#{args.map(&:type).map(&:name).join ","}>"
             else
-                "#{name}"
+                "#{name}<#{args.map(&:type).map(&:name).join ","}>"
             end
         end
     end
@@ -67,8 +67,8 @@ module Molen
             @strings = {}
             @scope = Scope.new
             @functions = {}
-            @functions["putchar"] = llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
-            @functions["puts"] = llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
+            @functions["putchar<int>"] = llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
+            @functions["puts<str>"] = llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
         end
 
         def end_main_func
@@ -108,9 +108,9 @@ module Molen
         def visit_new(node)
             allocated_struct = builder.malloc node.type.llvm_struct, node.type.name
 
-            if node.type.functions["create"] then
-                create_func = @functions[node.type.functions["create"].ir_name]
-                casted_this = builder.bit_cast allocated_struct, node.type.functions["create"].this_type.llvm_type
+            if node.target then
+                create_func = @functions[node.target.ir_name]
+                casted_this = builder.bit_cast allocated_struct, node.target.this_type.llvm_type
                 
                 args = [casted_this]
                 node.args.each do |arg|
@@ -151,9 +151,14 @@ module Molen
             func = @functions[node.target.ir_name]
 
             args = []
-            node.args.each do |arg|
+            node.args.each_with_index do |arg, i|
                 arg.accept self
-                args << get_last
+                val = get_last
+                if arg.type != node.target.args[i].type then
+                    puts "#{arg.type.name} != #{node.target.args[i].type.name}, casting..."
+                    val = builder.bit_cast val, node.target.args[i].type.llvm_type
+                end
+                args << val
             end
             if node.on then
                 node.on.accept self
@@ -161,10 +166,8 @@ module Molen
                 args = [casted_this] + args
             end
 
-            puts "Calling #{node.target.ir_name} with args: #{node.args.map(&:type).map(&:name).join ", "}"
             ret_ptr = builder.call func, *args
             @last = ret_ptr if func.function_type.return_type != LLVM.Void
-            puts "Done"
         end
 
         def visit_if(node)

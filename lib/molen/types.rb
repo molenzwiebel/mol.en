@@ -62,7 +62,7 @@ module Molen
         end
 
         def castable_to(other)
-            other == self
+            return other == self, 0
         end
     end
 

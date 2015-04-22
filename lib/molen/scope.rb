@@ -1,7 +1,7 @@
 
 module Molen
     class Scope
-        attr_accessor :parent
+        attr_accessor :parent, :this
 
         def initialize(parent = {})
             @parent = parent

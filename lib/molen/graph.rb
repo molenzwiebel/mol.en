@@ -23,6 +23,10 @@ module Molen
                 next if var == :@parent
                 val = ast.instance_variable_get var
                 next unless val
+                if var == :@target then
+                    graph.add_edges(node, graph.add_nodes(String.random(11), {:label => val.ir_name}), {:label => "@target"})
+                    next
+                end
 
                 n = node_obj(val)
                 (graph.add_edges node, n, {:label => var.to_s}) if n
@@ -34,6 +38,7 @@ module Molen
             if val.is_a? ASTNode then
                 return val.accept self
             end
+            return graph.add_nodes(String.random(11), {:label => val.name}) if val.is_a? Type
             return graph.add_nodes(String.random(11), {:label => val.to_s}) unless val.is_a? Array or val.is_a? Hash
 
             if val.is_a? Array

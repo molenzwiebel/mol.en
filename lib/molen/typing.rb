@@ -16,10 +16,30 @@ module Molen
         attr_accessor :target
     end
 
+    class New
+        # Same as Call.
+        attr_accessor :target
+    end
+
     class Function
         # The "this" type. This is used for casting objects when a parent
         # class with differing instance variables should be called.
         attr_accessor :this_type
+    end
+
+    def type(str)
+        parser = Molen.create_parser str
+
+        contents = []
+        until (n = parser.parse_node).nil?
+            contents << n
+        end
+    
+        body = Molen::Body.from contents, true
+        vis = TypingVisitor.new(Module.new)
+        body.accept vis
+
+        Molen.graph body
     end
 
     class TypingVisitor < Visitor
@@ -30,8 +50,8 @@ module Molen
 
             @scope = Scope.new
             @functions = {}
-            @functions["putchar"] = Function.new "putchar", mod["int"], [Arg.new("x", mod["int"])]
-            @functions["puts"] = Function.new "puts", mod["int"], [Arg.new("x", mod["str"])]
+            @functions["putchar"] = [Function.new("putchar", mod["int"], [Arg.new("x", mod["int"])])]
+            @functions["puts"] = [Function.new("puts", mod["int"], [Arg.new("x", mod["str"])])]
         end
 
         def visit_int(node)
@@ -91,12 +111,9 @@ module Molen
             raise "Undefined class '#{node.name}'" unless mod[node.name]
             node.type = mod[node.name]
 
-            if node.type.functions["create"] then
-                create_func = node.type.functions["create"]
-                given_arg_types = node.args.map(&:type)
-                required_arg_types = create_func.args.map(&:type)
-
-                raise "Cannot instantiate #{node.name} with argument types #{given_arg_types.map(&:name).join ", "} (create requires types #{required_arg_types.map(&:name).join ", "})" unless is_method_callable? create_func, *given_arg_types
+            func_scope = node.type.functions
+            if (fn = find_overloaded_method(func_scope, "create", *node.args)) then
+                node.target = fn
             end
         end
 
@@ -112,30 +129,18 @@ module Molen
             raise "Cannot return #{actual_ret_str} from function #{func.name} (returns #{func_ret_str})" if node.type != func.ret_type
         end
 
-        def get_closest_func(node)
-            parent = node
-            until parent.nil?
-                return parent if parent.is_a? Function
-                parent = parent.parent
-            end
-            nil
-        end
-
         def visit_call(node)
-            if node.on then
-                node.on.accept self
-                function = mod[node.on.type.name].functions[node.name]
-            else
-                function = @functions[node.name]
-            end
-
-            raise "Undefined function '#{node.name}'" unless function
-            raise "Mismatched parameters for function #{node.name}: #{node.args.size} given, #{function.args.size} required" if node.args.size != function.args.size
             node.args.each {|arg| arg.accept self}
 
-            func_arg_types = function.args.map(&:type)
+            if node.on then
+                node.on.accept self
+                function = find_overloaded_method mod[node.on.type.name].functions, node.name, *node.args
+            else
+                function = find_overloaded_method @functions, node.name, *node.args
+            end
+
             node_arg_types = node.args.map(&:type)
-            raise "Cannot invoke function requiring types '#{func_arg_types.map(&:name).join ", "}' with arguments '#{node_arg_types.map(&:name).join ", "}'" unless is_method_callable? function, *node_arg_types
+            raise "No function with name '#{node.name}' and matching parameters found (given #{node_arg_types.map(&:name).join ", "})" unless function
 
             node.type = function.ret_type
             node.target = function
@@ -152,10 +157,13 @@ module Molen
             clazz = node.parent
             has_clazz = clazz.is_a? ClassDef
             if has_clazz then
-                mod[clazz.name].functions.define(node.name, node)
+                func_scope = mod[clazz.name].functions
+                raise "Redefinition of #{clazz.name}##{node.name} with same argument types" unless assure_unique func_scope, node.name, *node.args.map(&:type)
+                func_scope.this.has_key?(node.name) ? func_scope[node.name] << node : func_scope.define(node.name, [node])
                 args = [true, mod[clazz.name].vars]
             else
-                @functions[node.name] = node
+                raise "Redefinition of #{node.name} with same argument types" unless assure_unique @functions, node.name, *node.args.map(&:type)
+                (@functions[node.name] ||= []) << node
                 args = [false]
             end
             with_new_scope(*args) do
@@ -224,13 +232,48 @@ module Molen
             @scope = old_scope
         end
 
+        def assure_unique(in_scope, name, *arg_types)
+            return true if not in_scope[name] or not in_scope[name].is_a?(Array) or in_scope[name].size == 0
+            in_scope[name].each do |func|
+                return false if func.args.map(&:type) == arg_types
+            end
+            return true
+        end
+
+        def get_closest_func(node)
+            parent = node
+            until parent.nil?
+                return parent if parent.is_a? Function
+                parent = parent.parent
+            end
+            nil
+        end
+
         def is_method_callable?(func_node, *arg_types)
-            return false if func_node.args.size != arg_types.size
+            return false, -1 if func_node.args.size != arg_types.size
+            total_dist = 0
             arg_types.each_with_index do |arg_type, i|
                 can, dist = arg_type.castable_to func_node.args[i].type
-                return false if not can
+                return false, -1 if not can
+                total_dist += dist
             end
-            true
+            return true, total_dist
+        end
+
+        def find_overloaded_method(in_scope, name, *args)
+            return nil if not in_scope[name] or not in_scope[name].is_a?(Array) or in_scope[name].size == 0
+            matches = {}
+            in_scope[name].each do |func|
+                next if func.args.size != args.size
+                callable, dist = is_method_callable? func, *args.map(&:type)
+                next if not callable
+                (matches[dist] ||= []) << func
+            end
+            return nil if matches.size == 0
+
+            dist, functions = matches.min_by {|k, v| k}
+            raise "Multiple functions named #{name} found matching argument set '#{args.map(&:type).map(&:name).join ", "}'. Be more specific!" if functions and functions.size > 1
+            functions.first
         end
     end
 end
