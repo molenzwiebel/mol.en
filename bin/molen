@@ -103,7 +103,7 @@ begin
         puts "[+] Done!".green
     else
         puts "[+] Running...".green
-        ret = engine.run_function generating_visitor.llvm_mod.functions["main"]
+        ret = engine.run_function llvm_mod.functions["main"]
         puts "[+] Done! JIT returned with code #{ret.to_i}".green
     end
 rescue StandardError => ex

@@ -12,6 +12,13 @@ module Molen
         end
     end
 
+    def run(llvm_mod)
+        LLVM.init_jit
+
+        engine = LLVM::JITCompiler.new llvm_mod
+        engine.run_function llvm_mod.functions["molen_main"]
+    end
+
     def gen(body, mod)
         visitor = GeneratingVisitor.new mod, body.type
         body.accept visitor
@@ -30,7 +37,6 @@ module Molen
             @builder = LLVM::Builder.new
 
             main_func = llvm_mod.functions.add("molen_main", [], ret_type ? ret_type.llvm_type : LLVM.Void)
-            main_func.linkage = :internal
             main_block = main_func.basic_blocks.append("entry")
             builder.position_at_end main_block
 

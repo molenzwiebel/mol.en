@@ -6,7 +6,12 @@ describe Molen::GeneratingVisitor do
     end
 
     def run_script(src)
-        Molen.run src, false
+        tree = Molen.parse src
+        mod = Molen::Module.new
+
+        Molen.type tree, mod
+        llvm_mod = Molen.gen tree, mod
+        Molen.run llvm_mod
     end
 
     it "should be able to generate an int" do

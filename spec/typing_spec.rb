@@ -96,11 +96,11 @@ describe TypingVisitor do
     type "class int { def get() -> int this } 10.get()", "int"
 
     type "def x(a: Object) -> int 10 x(new String('test'))", "int"
-    fail_on "def x(a: String) -> int 10 x(3)", /Cannot invoke function requiring types/
+    fail_on "def x(a: String) -> int 10 x(3)", /No function with name 'x'/
     fail_on "def x() -> int 1.2", /Cannot return a /
     fail_on "def x(a: double) -> int a", /Cannot return a /
-    fail_on "a(3)", /Undefined function/
-    fail_on "def x(a: String) -> int 10 x()", /Mismatched parameters/
+    fail_on "a(3)", /No function with name 'a'/
+    fail_on "def x(a: String) -> int 10 x()", /No function with name 'x'/
 
     fail_on "var x: String = 12", /Conflicting types/
     fail_on "var x = 'test' x = 4", /Cannot assign/
