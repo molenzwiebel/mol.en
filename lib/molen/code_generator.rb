@@ -155,7 +155,6 @@ module Molen
                 arg.accept self
                 val = get_last
                 if arg.type != node.target.args[i].type then
-                    puts "#{arg.type.name} != #{node.target.args[i].type.name}, casting..."
                     val = builder.bit_cast val, node.target.args[i].type.llvm_type
                 end
                 args << val
