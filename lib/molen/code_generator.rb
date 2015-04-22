@@ -12,7 +12,16 @@ module Molen
         end
     end
 
-    def run(llvm_mod)
+    def run_raw(src)
+        tree = parse src
+        mod = Module.new
+
+        type tree, mod
+        llvm_mod = gen tree, mod
+        run_mod llvm_mod
+    end
+
+    def run_mod(llvm_mod)
         LLVM.init_jit
 
         engine = LLVM::JITCompiler.new llvm_mod
@@ -130,8 +139,18 @@ module Molen
             end
         end
 
+        def visit_rubybody(node)
+            node.block.call builder, builder.insert_block.parent
+        end
+
         def visit_call(node)
             func = @functions[node.target.ir_name]
+
+            # In case the function is not yet generated, as is the case with primitives
+            if not func and node.target then
+                node.target.accept self
+                func = @functions[node.target.ir_name]
+            end
 
             args = []
             node.args.each_with_index do |arg, i|
@@ -142,6 +161,7 @@ module Molen
                 end
                 args << val
             end
+
             if node.on then
                 node.on.accept self
                 casted_this = builder.bit_cast get_last, node.target.this_type.llvm_type
@@ -178,7 +198,7 @@ module Molen
         def visit_function(node)
             old_pos = builder.insert_block
             args = node.args
-            args = [Arg.new("this", node.this_type)] + args if node.parent.is_a? ClassDef
+            args = [Arg.new("this", node.this_type)] + args if node.this_type
 
             ret_type = node.ret_type ? node.ret_type.llvm_type : LLVM.Void
             llvm_arg_types = args.map(&:type).map(&:llvm_type)

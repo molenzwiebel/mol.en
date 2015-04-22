@@ -87,6 +87,20 @@ module Molen
         end
     end
 
+    # This is never parsed by the parser and instead exists so that we can
+    # control codegen at a certain point. The code generator will simply
+    # execute the block specified when creating this. This constructor
+    # requires a type so that the return type of a call can be accurately
+    # deduced by the typing visitor.
+    class RubyBody < ASTNode
+        attr_accessor :block
+
+        def initialize(type, block)
+            @type = type
+            @block = block
+        end
+    end
+
     class Bool < Expression
         attr_accessor :value
 

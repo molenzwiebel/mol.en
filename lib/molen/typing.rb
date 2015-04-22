@@ -32,6 +32,12 @@ module Molen
         body.accept visitor
     end
 
+    def self.parse_and_type(body, mod)
+        body = parse body
+        type body, mod
+        body
+    end
+
     class TypingVisitor < Visitor
         attr_accessor :mod
 
@@ -130,7 +136,8 @@ module Molen
             end
 
             node_arg_types = node.args.map(&:type)
-            raise "No function with name '#{node.name}' and matching parameters found (given #{node_arg_types.map(&:name).join ", "})" unless function
+            extra_str = node.on ? " (on object of type #{node.on.type.name}) " : " " 
+            raise "No function with name '#{node.name}'#{extra_str}and matching parameters found (given #{node_arg_types.map(&:name).join ", "})" unless function
 
             node.type = function.ret_type
             node.target = function
@@ -251,7 +258,7 @@ module Molen
         end
 
         def find_overloaded_method(in_scope, name, *args)
-            return nil if not in_scope[name] or not in_scope[name].is_a?(Array) or in_scope[name].size == 0
+            return nil if not in_scope[name] or not in_scope[name].is_a?(::Array) or in_scope[name].size == 0
             matches = {}
             in_scope[name].each do |func|
                 next if func.args.size != args.size

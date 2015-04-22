@@ -64,6 +64,14 @@ module Molen
         def castable_to(other)
             return other == self, 0
         end
+
+        def add_func(name, ret_type, *arg_types, &block)
+            body = RubyBody.new ret_type, block
+            func_def = Function.new name, ret_type, arg_types.each_with_index.map{|type, id| Arg.new "arg#{id.to_s}", type}
+            func_def.body = body
+            func_def.this_type = self
+            functions.this.has_key?(name) ? functions[name] << func_def : functions.define(name, [func_def])
+        end
     end
 
     class ArrayType < Type

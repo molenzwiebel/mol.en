@@ -24,6 +24,8 @@ module Molen
 
             self["Double"] = ObjectType.new "Double", self["Object"]
             self["Double"].vars.define "value", self["double"]
+
+            add_primitives
         end
 
         def [](q)

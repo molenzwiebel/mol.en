@@ -80,7 +80,7 @@ describe TypingVisitor do
     fail_on "class Foo { var bar: int } var x = new Foo x.bar = 10.0", /Cannot assign/
     fail_on "class Foo { var bar: int } var x = new Foo x.baz", /Unknown member/
 
-    fail_on "true * 10", /to be numeric/
+    fail_on "true * 10", /No function with/
 
     # Recursion :)
     type "def x() -> int x() x()", "int"
