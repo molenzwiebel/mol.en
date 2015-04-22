@@ -39,7 +39,7 @@ describe TypingVisitor do
     type "10", "int"
     type "3.2", "double"
     type "true", "bool"
-    type "'test'", "String"
+    type "'test'", "str"
 
     type "var x = 10 x", "int"
     type "var x: String x", "String"
@@ -95,7 +95,7 @@ describe TypingVisitor do
     type "class int { def foo() -> int 10 } 10.foo().foo()", "int"
     type "class int { def get() -> int this } 10.get()", "int"
 
-    type "def x(a: Object) -> int 10 x('test')", "int"
+    type "def x(a: Object) -> int 10 x(new String('test'))", "int"
     fail_on "def x(a: String) -> int 10 x(3)", /Cannot invoke function requiring types/
     fail_on "def x() -> int 1.2", /Cannot return a /
     fail_on "def x(a: double) -> int a", /Cannot return a /

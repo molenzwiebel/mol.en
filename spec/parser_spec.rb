@@ -26,10 +26,10 @@ describe Parser do
     node "'test'", Str, Str.new("test")
     node "\"test\"", Str, Str.new("test")
     node "new MyClass(10)", New, New.new("MyClass", [Int.new(10)])
-    node "(4 + 4) * 3", Binary, Binary.new("*", Binary.new("+", Int.new(4), Int.new(4)), Int.new(3))
+    node "(4 + 4) * 3", Call, Call.new("__mul", [Int.new(3)], Call.new("__add", [Int.new(4)], Int.new(4)))
 
-    ["+", "-", "*", "/", "&&", "||", ">", ">=", "<", "<=", "==", "!=", "="].each do |op|
-        node "3 #{op} 3", Binary, Binary.new(op, Int.new(3), Int.new(3))
+    Molen::OPERATOR_NAMES.each do |op, name|
+        node "3 #{op} 3", Call, Call.new(name, [Int.new(3)], Int.new(3))
     end
 
     node "test(10)", Call, Call.new("test", [Int.new(10)])

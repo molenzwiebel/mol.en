@@ -1,5 +1,22 @@
 
 module Molen
+    OPERATOR_NAMES = {
+        "+"         => "__add",
+        "-"         => "__sub",
+        "*"         => "__mul",
+        "/"         => "__div",
+        "=="        => "__eq",
+        "!="        => "__neq",
+        "&&"        => "__and",
+        "and"       => "__and",
+        "||"        => "__or",
+        "or"        => "__or",
+        "<"         => "__lt",
+        "<="        => "__lte",
+        ">"         => "__gt",
+        ">="        => "__gte"
+    }
+
     def self.create_parser(source)
         parser = Parser.new source
 
@@ -44,21 +61,25 @@ module Molen
             node
         end
 
-        parser.infix 11, -> x { x.is_operator? "+" }, &create_binary_parser(11)
-        parser.infix 11, -> x { x.is_operator? "-" }, &create_binary_parser(11)
-        parser.infix 12, -> x { x.is_operator? "*" }, &create_binary_parser(12)
-        parser.infix 12, -> x { x.is_operator? "/" }, &create_binary_parser(12)
+        parser.infix 11, -> x { x.is_operator? "+" }, &create_function_binary_parser(11)
+        parser.infix 11, -> x { x.is_operator? "-" }, &create_function_binary_parser(11)
+        parser.infix 12, -> x { x.is_operator? "*" }, &create_function_binary_parser(12)
+        parser.infix 12, -> x { x.is_operator? "/" }, &create_function_binary_parser(12)
         
-        parser.infix 4, -> x { x.is_operator? "&&" or x.is_operator? "and" }, &create_binary_parser(4)
-        parser.infix 3, -> x { x.is_operator? "||" or x.is_operator? "or"  }, &create_binary_parser(3)
-        parser.infix 9, -> x { x.is_operator? "<" },  &create_binary_parser(9)
-        parser.infix 9, -> x { x.is_operator? "<=" }, &create_binary_parser(9)
-        parser.infix 9, -> x { x.is_operator? ">" },  &create_binary_parser(9)
-        parser.infix 9, -> x { x.is_operator? ">=" }, &create_binary_parser(9)
+        parser.infix 4, -> x { x.is_operator? "&&" or x.is_operator? "and" }, &create_function_binary_parser(4)
+        parser.infix 3, -> x { x.is_operator? "||" or x.is_operator? "or"  }, &create_function_binary_parser(3)
+        parser.infix 9, -> x { x.is_operator? "<" },  &create_function_binary_parser(9)
+        parser.infix 9, -> x { x.is_operator? "<=" }, &create_function_binary_parser(9)
+        parser.infix 9, -> x { x.is_operator? ">" },  &create_function_binary_parser(9)
+        parser.infix 9, -> x { x.is_operator? ">=" }, &create_function_binary_parser(9)
         
-        parser.infix 8, -> x { x.is_operator? "==" }, &create_binary_parser(8)
-        parser.infix 8, -> x { x.is_operator? "!=" }, &create_binary_parser(8)
-        parser.infix 1, -> x { x.is_operator? "=" },  &create_binary_parser(11, true)
+        parser.infix 8, -> x { x.is_operator? "==" }, &create_function_binary_parser(8)
+        parser.infix 8, -> x { x.is_operator? "!=" }, &create_function_binary_parser(8)
+        parser.infix 1, -> x { x.is_operator? "=" } do |left|
+            next_token # Consume .
+            right = parse_expression 10
+            Assign.new left, right
+        end
         parser.infix 50, -> x { x.is? "." } do |left|
             next_token # Consume .
             right = parse_expression 50
@@ -157,11 +178,11 @@ module Molen
         parser
     end
 
-    def self.create_binary_parser(prec, right_associative = false)
+    def self.create_function_binary_parser(prec, right_associative = false)
         return lambda do |left|
             op = consume.value # Consume operator
             right = parse_expression right_associative ? prec - 1 : prec
-            return Binary.new op, left, right
+            return Call.new(OPERATOR_NAMES[op], [right], left)
         end
     end
 

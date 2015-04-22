@@ -133,55 +133,17 @@ module Molen
             builder.store get_last, var[:ptr] if node.value and @last
         end
 
-        def visit_binary(node)
-            if node.op == "+" then
-                load_and_convert_two_numerics node.left, node.right do |is_d, left, right|
-                    @last = is_d ? builder.fadd(left, right) : builder.add(left, right)
-                end
-            elsif node.op == "-" then
-                load_and_convert_two_numerics node.left, node.right do |is_d, left, right|
-                    @last = is_d ? builder.fsub(left, right) : builder.sub(left, right)
-                end
-            elsif node.op == "*" then
-                load_and_convert_two_numerics node.left, node.right do |is_d, left, right|
-                    @last = is_d ? builder.fmul(left, right) : builder.mul(left, right)
-                end
-            elsif node.op == "/" then
-                load_and_convert_two_numerics node.left, node.right do |is_d, left, right|
-                    @last = is_d ? builder.fdiv(left, right) : builder.sdiv(left, right)
-                end
-            elsif node.op == "<" or node.op == "<=" then
-                mode = node.op == "<" ? :ult : :ule
-                load_and_convert_two_numerics node.left, node.right do |is_d, left, right|
-                    @last = is_d ? builder.fcmp(mode, left, right) : builder.icmp(mode, left, right)
-                end
-            elsif node.op == ">" or node.op == ">=" then
-                mode = node.op == ">" ? :ugt : :uge
-                load_and_convert_two_numerics node.left, node.right do |is_d, left, right|
-                    @last = is_d ? builder.fcmp(mode, left, right) : builder.icmp(mode, left, right)
-                end
-            elsif node.op == "&&" or node.op == "and" then
-                load_two_values node.left, node.right do |left, right|
-                    @last = builder.and left, right
-                end
-            elsif node.op == "||" or node.op == "or" then
-                load_two_values node.left, node.right do |left, right|
-                    @last = builder.or left, right
-                end
+        def visit_assign(node)
+            if node.name.is_a? Var then
+                node.value.accept self
+                val = get_last
+                builder.store val, @scope[node.name.value][:ptr]
+                @last = val
             else
-                return if node.op != "=" # TODO
-
-                if node.left.is_a? Var then
-                    node.right.accept self
-                    val = get_last
-                    builder.store val, @scope[node.left.value][:ptr]
-                    @last = val
-                else
-                    node.right.accept self
-                    val = get_last
-                    builder.store val, member_to_ptr(node.left)
-                    @last = val
-                end
+                node.value.accept self
+                val = get_last
+                builder.store val, member_to_ptr(node.name)
+                @last = val
             end
         end
 

@@ -172,41 +172,20 @@ module Molen
             raise "Function #{node.name} may not return a value!" if !has_return and node.ret_type != nil
         end
 
-        def visit_binary(node)
-            if node.op == "+" or node.op == "-" or node.op == "*" or node.op == "/" then
-                node.left.accept self
-                node.right.accept self
+        def visit_assign(node)
+            node.value.accept self # Check value.
+            raise "Expected variable or member on left side of =" unless node.name.is_a? Var or node.name.is_a? Member
 
-                left_type = node.left.type
-                right_type = node.right.type
-                raise "Binary op #{node.op} requires both sides to be numeric" unless (left_type == mod["double"] or left_type == mod["int"]) and (right_type == mod["double"] or right_type == mod["int"])
-                node.type = mod["double"] if left_type == mod["double"] or right_type == mod["double"]
-                node.type = mod["int"] unless node.type
-            elsif node.op == "&&" or node.op == "||" or node.op == "or" or node.op == "and" or node.op == "==" or node.op == "!=" or node.op == "<" or node.op == "<=" or node.op == ">" or node.op == ">=" then
-                node.left.accept self
-                node.right.accept self
+            if node.name.is_a? Var then
+                old_type = @scope[node.name.value]
+                raise "Undefined variable '#{node.name.value}'" unless old_type
 
-                left_type = node.left.type
-                right_type = node.right.type
-
-                raise "Binary op #{node.op} requires both sides to be a bool" if (left_type != mod["bool"] or right_type != mod["bool"]) and (node.op == "&&" or node.op == "||" or node.op == "or" or node.op == "and")
-                raise "Binary op #{node.op} requires both sides to be numeric" if ((left_type != mod["double"] and left_type != mod["int"]) or (right_type != mod["double"] and right_type != mod["int"])) and (node.op == "<" or node.op == "<=" or node.op == ">" or node.op == ">=")
-                node.type = mod["bool"]
-            elsif node.op == "=" then
-                node.right.accept self # Check value.
-                raise "Expected variable or member on left side of =" unless node.left.is_a? Var or node.left.is_a? Member
-
-                if node.left.is_a? Var then
-                    old_type = @scope[node.left.value]
-                    raise "Undefined variable '#{node.left.value}'" unless old_type
-
-                    node.type = node.left.type = node.right.type
-                    raise "Cannot assign #{node.type.name} to '#{node.left.value}' (a #{old_type.name})" if old_type != node.type
-                else
-                    node.left.accept self
-                    raise "Cannot assign #{node.left.type.name} to '#{node.left.to_s}' (a #{node.left.type.name})" if node.left.type != node.right.type
-                    node.type = node.left.type = node.right.type
-                end
+                node.type = node.name.type = node.value.type
+                raise "Cannot assign #{node.type.name} to '#{node.name.value}' (a #{old_type.name})" if old_type != node.type
+            else
+                node.name.accept self
+                raise "Cannot assign #{node.name.type.name} to '#{node.name.to_s}' (a #{node.name.type.name})" if node.name.type != node.value.type
+                node.type = node.name.type = node.value.type
             end
         end
 

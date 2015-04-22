@@ -196,19 +196,18 @@ module Molen
         end
     end
 
-    class Binary < Expression
-        attr_accessor :op, :left, :right
+    class Assign < Expression
+        attr_accessor :name, :value
 
-        def initialize(op, left, right)
-            @op = op
-            @left = left
-            @left.parent = self
-            @right = right
-            @right.parent = self
+        def initialize(name, value)
+            @name = name
+            @name.parent = name
+            @value = value
+            @value.parent = value
         end
 
         def ==(other)
-            other.class == self.class && other.op == op && other.left == left && other.right == right
+            other.class == self.class && other.name == name && other.value == value
         end
     end
 
