@@ -82,7 +82,7 @@ begin
     llvm_mod.verify unless options[:no_validate]
     puts "[+] Generated LLVM IR.".green
 
-    llvm_mod.llvm_mod.dump if options[:dump_ir]
+    llvm_mod.dump if options[:dump_ir]
 
     puts "[+] Optimizing LLVM IR...".green
     engine = LLVM::JITCompiler.new llvm_mod
@@ -95,7 +95,7 @@ begin
     if options[:output] then
         puts "[+] Compiling to file #{options[:output]}...".green
         $stderr.reopen "#{options[:output]}.ll", "w"
-        generating_visitor.llvm_mod.dump
+        llvm_mod.dump
         cmd = "clang -o #{options[:output]} -x ir #{options[:output]}.ll"
         pid = spawn cmd
         Process.waitpid pid

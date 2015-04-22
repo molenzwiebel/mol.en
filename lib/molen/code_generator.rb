@@ -4,15 +4,15 @@ require 'llvm/execution_engine'
 module Molen
     class Function
         def ir_name
-            if parent.is_a? ClassDef
-                "#{parent.name}__#{name}<#{args.map(&:type).map(&:name).join ","}>"
+            if this_type then
+                "#{this_type.name}__#{name}<#{args.map(&:type).map(&:name).join ","}>"
             else
                 "#{name}<#{args.map(&:type).map(&:name).join ","}>"
             end
         end
     end
 
-    def run_raw(src)
+    def self.run_raw(src)
         tree = parse src
         mod = Module.new
 
@@ -21,14 +21,14 @@ module Molen
         run_mod llvm_mod
     end
 
-    def run_mod(llvm_mod)
+    def self.run_mod(llvm_mod)
         LLVM.init_jit
 
         engine = LLVM::JITCompiler.new llvm_mod
         engine.run_function llvm_mod.functions["molen_main"]
     end
 
-    def gen(body, mod)
+    def self.gen(body, mod)
         visitor = GeneratingVisitor.new mod, body.type
         body.accept visitor
         gen_visitor.end_main_func unless body.definitely_returns
