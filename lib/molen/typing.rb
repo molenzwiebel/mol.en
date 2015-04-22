@@ -27,19 +27,9 @@ module Molen
         attr_accessor :this_type
     end
 
-    def type(str)
-        parser = Molen.create_parser str
-
-        contents = []
-        until (n = parser.parse_node).nil?
-            contents << n
-        end
-    
-        body = Molen::Body.from contents, true
-        vis = TypingVisitor.new(Module.new)
-        body.accept vis
-
-        Molen.graph body
+    def self.type(body, mod)
+        visitor = TypingVisitor.new mod
+        body.accept visitor
     end
 
     class TypingVisitor < Visitor

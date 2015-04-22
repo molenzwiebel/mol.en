@@ -17,6 +17,15 @@ module Molen
         ">="        => "__gte"
     }
 
+    def self.parse(src, auto_return = true)
+        parser = create_parser src
+        contents = []
+        until (n = parser.parse_node).nil?
+            contents << n
+        end
+        Body.from contents, auto_return
+    end
+
     def self.create_parser(source)
         parser = Parser.new source
 

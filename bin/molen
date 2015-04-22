@@ -61,14 +61,7 @@ begin
     input = options[:src] ? options[:src] : ARGF.read
 
     puts "[+] Parsing input...".green
-    parser = Molen.create_parser input
-
-    contents = []
-    until (n = parser.parse_node).nil?
-        contents << n
-    end
-
-    body = Molen::Body.from contents, true
+    body = Molen.parse input
     puts "[+] Parsing complete. Body with #{body.nodes.size} elements parsed.".green
 
     if options[:graph] then
@@ -81,24 +74,21 @@ begin
     mod = Molen::Module.new
 
     puts "[+] Typing input...".green
-    typing_visitor = Molen::TypingVisitor.new mod
-    body.accept typing_visitor
+    Molen.type body, mod
     puts "[+] Done typing input.".green
 
     puts "[+] Generating LLVM IR...".green
-    generating_visitor = Molen::GeneratingVisitor.new mod, body.type
-    body.accept generating_visitor
-    generating_visitor.end_main_func unless body.definitely_returns
-    generating_visitor.llvm_mod.verify unless options[:no_validate]
+    llvm_mod = Molen.gen body, mod
+    llvm_mod.verify unless options[:no_validate]
     puts "[+] Generated LLVM IR.".green
 
-    generating_visitor.llvm_mod.dump if options[:dump_ir]
+    llvm_mod.llvm_mod.dump if options[:dump_ir]
 
     puts "[+] Optimizing LLVM IR...".green
-    engine = LLVM::JITCompiler.new generating_visitor.llvm_mod
+    engine = LLVM::JITCompiler.new llvm_mod
     optimize = LLVM::PassManager.new engine
     optimize << :arg_promote << :gdce << :global_opt << :gvn << :reassociate << :instcombine << :basicaa << :jump_threading << :simplifycfg << :inline << :mem2reg
-    (options[:optimize] || 5).times { optimize.run generating_visitor.llvm_mod }
+    (options[:optimize] || 5).times { optimize.run llvm_mod }
     puts "[+] Optimized LLVM IR.".green
 
     exit if options[:do_not_run]

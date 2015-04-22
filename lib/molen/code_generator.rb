@@ -12,35 +12,12 @@ module Molen
         end
     end
 
-    def run(code, dump_ir = true, verify = true)
-        mod = gen(code, dump_ir, verify)
-        LLVM.init_jit
-
-        engine = LLVM::JITCompiler.new(mod)
-        engine.run_function mod.functions["molen_main"]
-    end
-
-    def gen(code, dump_ir = true, verify = true)
-        parser = create_parser code
-        contents = []
-        until (n = parser.parse_node).nil?
-            contents << n
-        end
-
-        mod = Module.new
-        type_visitor = TypingVisitor.new mod
-
-        body = Body.from contents, true
-        body.accept type_visitor
-
-        gen_visitor = GeneratingVisitor.new mod, body.type
-        body.accept gen_visitor
-
+    def gen(body, mod)
+        visitor = GeneratingVisitor.new mod, body.type
+        body.accept visitor
         gen_visitor.end_main_func unless body.definitely_returns
 
-        gen_visitor.llvm_mod.verify if verify
-        gen_visitor.llvm_mod.dump if dump_ir
-        gen_visitor.llvm_mod
+        visitor.llvm_mod
     end
 
     class GeneratingVisitor < Visitor
