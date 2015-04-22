@@ -14,16 +14,16 @@ module Molen
             self["Object"] = ObjectType.new "Object"
 
             self["String"] = ObjectType.new "String", self["Object"]
-            self["String"].vars["value"] = self["str"]
+            self["String"].vars.define "value", self["str"]
 
             self["Boolean"] = ObjectType.new "Boolean", self["Object"]
-            self["Boolean"].vars["value"] = self["bool"]
+            self["Boolean"].vars.define "value", self["bool"]
 
             self["Integer"] = ObjectType.new "Integer", self["Object"]
-            self["Integer"].vars["value"] = self["int"]
+            self["Integer"].vars.define "value", self["int"]
 
             self["Double"] = ObjectType.new "Double", self["Object"]
-            self["Double"].vars["value"] = self["double"]
+            self["Double"].vars.define "value", self["double"]
         end
 
         def [](q)

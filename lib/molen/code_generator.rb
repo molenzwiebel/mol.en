@@ -53,6 +53,7 @@ module Molen
             @builder = LLVM::Builder.new
 
             main_func = llvm_mod.functions.add("molen_main", [], ret_type ? ret_type.llvm_type : LLVM.Void)
+            main_func.linkage = :internal
             main_block = main_func.basic_blocks.append("entry")
             builder.position_at_end main_block
 
@@ -96,6 +97,10 @@ module Molen
             @last = builder.load var[:ptr], node.value
         end
 
+        def visit_member(node)
+            @last = builder.load member_to_ptr(node), node.child.value
+        end
+
         def visit_body(node)
             node.nodes.each {|n| n.accept self}
         end
@@ -103,14 +108,16 @@ module Molen
         def visit_new(node)
             allocated_struct = builder.malloc node.type.llvm_struct, node.type.name
 
-            args = [allocated_struct]
-            node.args.each do |arg|
-                arg.accept self
-                args << get_last
-            end
-
             if node.type.functions["create"] then
                 create_func = @functions[node.type.functions["create"].ir_name]
+                casted_this = builder.bit_cast allocated_struct, node.type.functions["create"].this_type.llvm_type
+                
+                args = [casted_this]
+                node.args.each do |arg|
+                    arg.accept self
+                    args << get_last
+                end
+
                 builder.call create_func, *args
             end
 
@@ -164,8 +171,17 @@ module Molen
             else
                 return if node.op != "=" # TODO
 
-                node.right.accept self
-                builder.store get_last, @scope[node.left.value][:ptr]
+                if node.left.is_a? Var then
+                    node.right.accept self
+                    val = get_last
+                    builder.store val, @scope[node.left.value][:ptr]
+                    @last = val
+                else
+                    node.right.accept self
+                    val = get_last
+                    builder.store val, member_to_ptr(node.left)
+                    @last = val
+                end
             end
         end
 
@@ -179,11 +195,14 @@ module Molen
             end
             if node.on then
                 node.on.accept self
-                args = [get_last] + args
+                casted_this = builder.bit_cast get_last, node.target.this_type.llvm_type
+                args = [casted_this] + args
             end
 
+            puts "Calling #{node.target.ir_name} with args: #{node.args.map(&:type).map(&:name).join ", "}"
             ret_ptr = builder.call func, *args
             @last = ret_ptr if func.function_type.return_type != LLVM.Void
+            puts "Done"
         end
 
         def visit_if(node)
@@ -212,7 +231,7 @@ module Molen
         def visit_function(node)
             old_pos = builder.insert_block
             args = node.args
-            args = [Arg.new("this", node.parent.type)] + args if node.parent.is_a? ClassDef
+            args = [Arg.new("this", node.this_type)] + args if node.parent.is_a? ClassDef
 
             ret_type = node.ret_type ? node.ret_type.llvm_type : LLVM.Void
             llvm_arg_types = args.map(&:type).map(&:llvm_type)
@@ -275,6 +294,14 @@ module Molen
             last = @last
             @last = nil
             last
+        end
+
+        def member_to_ptr(node)
+            node.on.accept self
+            ptr_to_obj = get_last
+            index = node.on.type.vars.keys.index node.child.value
+
+            return builder.gep ptr_to_obj, [LLVM::Int(0), LLVM::Int(index)], node.child.value + "_ptr"
         end
 
         def with_new_scope(inherit = true)

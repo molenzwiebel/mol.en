@@ -12,7 +12,7 @@ module Molen
             @name = name
             @superclass = supertype
 
-            @vars = {}
+            @vars = Scope.new(supertype ? supertype.vars : {})
             @functions = supertype ? Scope.new(supertype.functions) : Scope.new
         end
 
@@ -21,8 +21,7 @@ module Molen
         end
 
         def llvm_struct
-            super_vars = superclass ? superclass.vars : {}
-            @llvm_struct_type ||= LLVM::Struct *(super_vars.values.map(&:llvm_type) + vars.values.map(&:llvm_type))
+            @llvm_struct_type ||= LLVM::Struct *(vars.values.map(&:llvm_type))
         end
 
         def ==(other)
@@ -51,6 +50,7 @@ module Molen
 
             @llvm_type = llvm_type
             @functions = Scope.new
+            @vars = Scope.new
         end
 
         def llvm_type

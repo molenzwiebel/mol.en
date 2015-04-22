@@ -22,5 +22,13 @@ module Molen
             @this[key] = val
             val
         end
+
+        def values
+            (@parent ? @parent.values : []) + @this.values
+        end
+
+        def keys
+            (@parent ? @parent.keys : []) + @this.keys
+        end
     end
 end

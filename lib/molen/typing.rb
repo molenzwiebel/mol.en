@@ -16,6 +16,12 @@ module Molen
         attr_accessor :target
     end
 
+    class Function
+        # The "this" type. This is used for casting objects when a parent
+        # class with differing instance variables should be called.
+        attr_accessor :this_type
+    end
+
     class TypingVisitor < Visitor
         attr_accessor :mod
 
@@ -154,6 +160,7 @@ module Molen
             end
             with_new_scope(*args) do
                 @scope.define "this", mod[clazz.name] if has_clazz
+                node.this_type = mod[clazz.name] if has_clazz
                 node.args.each do |arg|
                     @scope.define arg.name, arg.type
                 end
@@ -221,7 +228,7 @@ module Molen
 
             node.vars.each do |var|
                 with_new_scope(false) { var.accept self }
-                node.type.vars[var.name.value] = var.type
+                node.type.vars.define var.name.value, var.type
             end
             node.funcs.each { |func| func.accept self }
         end
