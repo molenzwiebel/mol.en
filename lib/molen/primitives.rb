@@ -12,7 +12,7 @@ module Molen
             int.add_func("__lt", bool, int) { |b, f| b.ret b.icmp :ult, f.params[0], f.params[1] }
             int.add_func("__lte", bool, int) { |b, f| b.ret b.icmp :ule, f.params[0], f.params[1] }
             int.add_func("__gt", bool, int) { |b, f| b.ret b.icmp :ugt, f.params[0], f.params[1] }
-            int.add_func("__lte", bool, int) { |b, f| b.ret b.icmp :uge, f.params[0], f.params[1] }
+            int.add_func("__gte", bool, int) { |b, f| b.ret b.icmp :uge, f.params[0], f.params[1] }
 
             int.add_func("__eq", bool, int) { |b, f| b.ret b.icmp :eq, f.params[0], f.params[1] }
             int.add_func("__neq", bool, int) { |b, f| b.ret b.icmp :neq, f.params[0], f.params[1] }
@@ -35,7 +35,7 @@ module Molen
             double.add_func("__lt", bool, double) { |b, f| b.ret b.fcmp :ult, f.params[0], f.params[1] }
             double.add_func("__lte", bool, double) { |b, f| b.ret b.fcmp :ule, f.params[0], f.params[1] }
             double.add_func("__gt", bool, double) { |b, f| b.ret b.fcmp :ugt, f.params[0], f.params[1] }
-            double.add_func("__lte", bool, double) { |b, f| b.ret b.fcmp :uge, f.params[0], f.params[1] }
+            double.add_func("__gte", bool, double) { |b, f| b.ret b.fcmp :uge, f.params[0], f.params[1] }
 
             double.add_func("__eq", bool, double) { |b, f| b.ret b.fcmp :eq, f.params[0], f.params[1] }
             double.add_func("__neq", bool, double) { |b, f| b.ret b.fcmp :neq, f.params[0], f.params[1] }
@@ -48,7 +48,7 @@ module Molen
             double.add_func("__lt", bool, int) { |b, f| b.ret b.fcmp :ult, f.params[0], b.si2fp(f.params[1], double.llvm_type) }
             double.add_func("__lte", bool, int) { |b, f| b.ret b.fcmp :ule, f.params[0], b.si2fp(f.params[1], double.llvm_type) }
             double.add_func("__gt", bool, int) { |b, f| b.ret b.fcmp :ugt, f.params[0], b.si2fp(f.params[1], double.llvm_type) }
-            double.add_func("__lte", bool, int) { |b, f| b.ret b.fcmp :uge, f.params[0], b.si2fp(f.params[1], double.llvm_type) }
+            double.add_func("__gte", bool, int) { |b, f| b.ret b.fcmp :uge, f.params[0], b.si2fp(f.params[1], double.llvm_type) }
 
             bool.add_func("__or", bool, bool) { |b, f| b.ret b.or f.params[0], f.params[1] }
             bool.add_func("__and", bool, bool) { |b, f| b.ret b.and f.params[0], f.params[1] }

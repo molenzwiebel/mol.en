@@ -1,0 +1,34 @@
+def print_bool(x: bool) {
+    if (x) {
+        puts("true")
+    } else {
+        puts("false")
+    }
+}
+
+class MyInt {
+    var value: int
+
+    def create(x: int) {
+        this.value = x
+    }
+
+    def to_i() -> int {
+        this.value
+    }
+
+    def __mul(other: MyInt) -> MyInt {
+        new MyInt(this.value * other.value)
+    }
+
+    def __add(other: MyInt) -> MyInt {
+        new MyInt(this.value + other.value)
+    }
+}
+
+var myInt1 = new MyInt(5)
+var myInt2 = new MyInt(6)
+
+print_bool(myInt1.value >= 5)
+print_bool((myInt1 + myInt1).value == 10)
+print_bool((myInt1 + myInt2).value == 11)
