@@ -198,6 +198,19 @@ module Molen
         end
     end
 
+    class StaticArray < Expression
+        attr_accessor :elements
+
+        def initialize(el)
+            @elements = el
+            @elements.each { |e| e.parent = self }
+        end
+
+        def ==(other)
+            other.class == self.class && other.elements == elements
+        end
+    end
+
     class Var < Expression
         attr_accessor :value
 

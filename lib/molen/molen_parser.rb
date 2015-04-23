@@ -69,6 +69,12 @@ module Molen
             next_token # Consume )
             node
         end
+        parser.expr -> x { x.is? "[" } do
+            contents = Molen::parse_paren_list self, '[', ']' do
+                parse_expression
+            end
+            StaticArray.new contents
+        end
 
         parser.infix 11, -> x { x.is_operator? "+" }, &create_function_binary_parser(11)
         parser.infix 11, -> x { x.is_operator? "-" }, &create_function_binary_parser(11)
@@ -195,14 +201,14 @@ module Molen
         end
     end
 
-    def self.parse_paren_list(parser, &block)
-        raise "Expected ( in parenthesized list, received #{parser.token.kind} with value \"#{parser.token.value.to_s}\" instead." unless parser.token.is_kind? :lparen
+    def self.parse_paren_list(parser, begin_tok = '(', end_tok = ')', &block)
+        raise "Expected #{begin_tok} in parenthesized list, received #{parser.token.kind} with value \"#{parser.token.value.to_s}\" instead." unless parser.token.is? begin_tok
         parser.next_token # Consume (
 
         ret = []
-        until parser.token.is_kind? :rparen
+        until parser.token.is? end_tok
             ret << parser.instance_exec(&block)
-            raise "Expected ',' or ')' in argument list, received #{parser.token.kind} with value \"#{parser.token.value.to_s}\" instead." unless parser.token.is? "," or parser.token.is_kind? :rparen
+            raise "Expected ',' or '#{end_tok}' in argument list, received #{parser.token.kind} with value \"#{parser.token.value.to_s}\" instead." unless parser.token.is? "," or parser.token.is? end_tok
             parser.next_token if parser.token.is? ","
         end
         parser.next_token # Consume )
