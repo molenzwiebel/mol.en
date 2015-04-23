@@ -12,12 +12,13 @@ module Molen
         end
     end
 
-    def self.run_raw(src)
+    def self.run_raw(src, dump = false)
         tree = parse src
         mod = Module.new
 
         type tree, mod
         llvm_mod = gen tree, mod
+        llvm_mod.dump if dump
         run_mod llvm_mod
     end
 
@@ -31,7 +32,7 @@ module Molen
     def self.gen(body, mod)
         visitor = GeneratingVisitor.new mod, body.type
         body.accept visitor
-        gen_visitor.end_main_func unless body.definitely_returns
+        visitor.end_main_func unless body.definitely_returns
 
         visitor.llvm_mod
     end
@@ -117,12 +118,16 @@ module Molen
         end
 
         def visit_vardef(node)
-            node.value.accept self
+            node.value.accept self if node.value
             var = @scope.define(node.name.value, {
                 ptr: builder.alloca(node.type.llvm_type, node.name.value),
                 type: node.type
             })
-            builder.store get_last, var[:ptr] if node.value and @last
+            if node.value and @last then
+                val = get_last
+                val = builder.bit_cast val, node.type.llvm_type if node.requires_upcasting
+                builder.store val, var[:ptr]
+            end
         end
 
         def visit_assign(node)

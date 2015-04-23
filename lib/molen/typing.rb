@@ -27,6 +27,10 @@ module Molen
         attr_accessor :this_type
     end
 
+    class VarDef
+        attr_accessor :requires_upcasting
+    end
+
     def self.type(body, mod)
         visitor = TypingVisitor.new mod
         body.accept visitor
@@ -197,9 +201,20 @@ module Molen
         def visit_vardef(node)
             node.value.accept self if node.value
             defined_type = mod[node.type.name] if node.type
-            raise "Conflicting types: var statement specified type #{defined_type.name} while being assigned value of type #{node.value.type.name}" if defined_type and node.value and defined_type != node.type
 
-            node.type = defined_type || node.value.type
+            valid = false
+            if defined_type and not node.value then
+                valid = true
+                node.type = defined_type
+            elsif node.value and not defined_type then
+                valid = true
+                node.type = node.value.type
+            elsif node.value and defined_type then
+                valid, dist = node.value.type.castable_to defined_type
+                node.type = defined_type
+                node.requires_upcasting = dist > 0
+            end
+            raise "Conflicting types: var statement specified type #{defined_type.name} while being assigned value of type #{node.value.type.name}" if not valid
             raise "Vardef has no type?" unless node.type
 
             @scope.define node.name.value, node.type
