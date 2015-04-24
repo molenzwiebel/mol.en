@@ -125,7 +125,7 @@ module Molen
             })
             if node.value and @last then
                 val = get_last
-                val = builder.bit_cast val, node.type.llvm_type if node.requires_upcasting
+                val = builder.bit_cast val, node.type.llvm_type if node.type != node.value.type
                 builder.store val, var[:ptr]
             end
         end
@@ -134,11 +134,13 @@ module Molen
             if node.name.is_a? Var then
                 node.value.accept self
                 val = get_last
+                val = builder.bit_cast val, node.type.llvm_type if node.type != node.value.type
                 builder.store val, @scope[node.name.value][:ptr]
                 @last = val
             else
                 node.value.accept self
                 val = get_last
+                val = builder.bit_cast val, node.type.llvm_type if node.type != node.value.type
                 builder.store val, member_to_ptr(node.name)
                 @last = val
             end

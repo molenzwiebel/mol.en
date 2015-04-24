@@ -27,10 +27,6 @@ module Molen
         attr_accessor :this_type
     end
 
-    class VarDef
-        attr_accessor :requires_upcasting
-    end
-
     def self.type(body, mod)
         visitor = TypingVisitor.new mod
         body.accept visitor
@@ -189,12 +185,12 @@ module Molen
                 old_type = @scope[node.name.value]
                 raise "Undefined variable '#{node.name.value}'" unless old_type
 
-                node.type = node.name.type = node.value.type
-                raise "Cannot assign #{node.type.name} to '#{node.name.value}' (a #{old_type.name})" if old_type != node.type
+                node.type = node.name.type = old_type
+                raise "Cannot assign #{node.type.name} to '#{node.name.value}' (a #{old_type.name})" unless node.value.type.castable_to(old_type).first
             else
                 node.name.accept self
-                raise "Cannot assign #{node.name.type.name} to '#{node.name.to_s}' (a #{node.name.type.name})" if node.name.type != node.value.type
-                node.type = node.name.type = node.value.type
+                raise "Cannot assign #{node.name.type.name} to '#{node.name.to_s}' (a #{node.name.type.name})" unless node.value.type.castable_to(node.name.type).first
+                node.type = node.name.type
             end
         end
 
@@ -212,7 +208,6 @@ module Molen
             elsif node.value and defined_type then
                 valid, dist = node.value.type.castable_to defined_type
                 node.type = defined_type
-                node.requires_upcasting = dist > 0
             end
             raise "Conflicting types: var statement specified type #{defined_type.name} while being assigned value of type #{node.value.type.name}" if not valid
             raise "Vardef has no type?" unless node.type
