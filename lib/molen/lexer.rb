@@ -10,7 +10,7 @@ module Molen
             # Regex for matching token  => token kind
             /[+-]?[0-9]*\.[0-9][0-9]*/          => :double,
             /[+-]?[0-9]+/                       => :integer,
-            #/(["'])(\\?.)*?\1/                  => :string,
+            /(["'])(\\?.)*?\1/                  => :string,
 
             /true/                              => :true,
             /false/                             => :false,
@@ -89,7 +89,7 @@ module Molen
         def raise_lexing_error(msg, pos)
             header = "#{@file_name}##{line_num}: "
             str = "Error: #{msg}\n".red
-            str << "#{@file_name}##{line_num - 1}: #{@source.lines[line_num - 2].chomp}\n".light_black if @source.lines[line_num - 2]
+            str << "#{@file_name}##{line_num - 1}: #{@source.lines[line_num - 2].chomp}\n".light_black if line_num > 1
             str << "#{header}#{@source.lines[line_num - 1].chomp}\n"
             str << (' ' * (col_num + header.length - 1))
             str << '^' << "\n"

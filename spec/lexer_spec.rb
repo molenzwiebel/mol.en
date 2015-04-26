@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Lexer do
     def self.it_lexes(str, *tokens)
         it "lexes #{str}" do
-            lex = Lexer.new str
+            lex = Lexer.new str, "test-src"
             tokens.each do |tok|
                 parsed = lex.next_token
                 expect(parsed.kind).to eq tok.first
