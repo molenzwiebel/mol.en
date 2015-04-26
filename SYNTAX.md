@@ -85,10 +85,23 @@ Note that the initialization and step are optional. A while loop can thus be cre
     }
 
 ### Operators
-Every operator in mol.en is simply a function call. This way, a custom object can override them easily. The names for the methods are simply the operator:
+Every operator in mol.en is simply a function call. This way, a custom object can override them easily. The names for the methods are as following:
+
+Operator  | Function Name
+--------- | -------------
++ | __add
+- | __sub
+* | __mul
+/ | __div
+> | __gt
+< | __lt
+== | __eq
+
+Other operators are simply combined. For example, `3 >= 4` translates to `3 > 4 || 3 == 4`
+
 
     class MyObject {
-        def +(other: Object) {
+        def __add(other: Object) {
             10
         }
     }
