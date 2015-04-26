@@ -1,3 +1,4 @@
+require 'colorize'
 
 module Molen
     # This is the main mol.en lexer responsible for taking an input string and
@@ -9,7 +10,7 @@ module Molen
             # Regex for matching token  => token kind
             /[+-]?[0-9]*\.[0-9][0-9]*/          => :double,
             /[+-]?[0-9]+/                       => :integer,
-            /(["'])(\\?.)*?\1/                  => :string,
+            #/(["'])(\\?.)*?\1/                  => :string,
 
             /true/                              => :true,
             /false/                             => :false,
@@ -60,9 +61,10 @@ module Molen
             /!=/                                => :operator
         }
 
-        def initialize(source)
+        def initialize(source, file_name = "src")
             @source = source
             @scanner = StringScanner.new source
+            @file_name = file_name
         end
 
         def next_token
@@ -76,17 +78,32 @@ module Molen
                 if content = @scanner.scan(matcher) then
                     pos = @scanner.pos
                     tok = Token.new kind, content, pos - content.length, pos, line_num
-                    @curpos = pos
 
                     return tok
                 end
             end
 
-            raise "Unexpected character '#{@scanner.getch}' at position #{@scanner.charpos} while scanning."
+            raise_lexing_error "Unexpected character '#{@scanner.getch}' while scanning.", @scanner.pos
+        end
+
+        def raise_lexing_error(msg, pos)
+            header = "#{@file_name}##{line_num}: "
+            str = "Error: #{msg}\n".red
+            str << "#{@file_name}##{line_num - 1}: #{@source.lines[line_num - 2].chomp}\n".light_black if @source.lines[line_num - 2]
+            str << "#{header}#{@source.lines[line_num - 1].chomp}\n"
+            str << (' ' * (col_num + header.length - 1))
+            str << '^' << "\n"
+            str << "#{@file_name}##{line_num + 1}: #{@source.lines[line_num].chomp}\n".light_black if @source.lines[line_num]
+            raise str
         end
 
         def line_num
             @source[0..@scanner.pos].count("\n") + 1
+        end
+
+        def col_num
+            len_before_this_line = @source[0..@scanner.pos].lines[0..-2].map{|x| x.length}.reduce{|x, y| x + y} || 0
+            @scanner.pos - len_before_this_line
         end
     end
 end
