@@ -85,6 +85,15 @@ module Molen
         end
     end
 
+    class New < Expression
+        attr_accessor :type, :args
+        attr_eq :type, :args
+
+        def initialize(type, args)
+            @type, @args = type, args
+        end
+    end
+
     class FunctionArg < ASTNode
         attr_accessor :name, :given_type
         attr_eq :name, :given_type

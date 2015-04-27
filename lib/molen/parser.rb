@@ -115,7 +115,7 @@ module Molen
             @expression_parsers.each do |matcher, parser|
                 next unless matcher.call @current_token
 
-                left = call_and_populate_parser parser
+                left = instance_exec &parser
                 while precedence < cur_token_precedence
                     _, contents = @infix_parsers.select{|key, val| key.call @current_token}.first
                     left = instance_exec left, &contents.last
@@ -146,10 +146,14 @@ module Molen
             two_matches = two ? two.is_a?(Symbol) ? tok.is_kind?(two) : tok.is?(two) : true
             return tok if one_matches and two_matches
 
-            err_msg = "Expected token of type #{type.to_s.upcase}"
-            err_msg << " with value of '#{value.to_s}'" if value
+            type = one.is_a?(Symbol) ? one : two.is_a?(Symbol) ? two : nil
+            val = one.is_a?(String) ? one : two.is_a?(String) ? two : nil
+
+            err_msg = "Expected token"
+            err_msg << " of type #{type.to_s.upcase}" if type
+            err_msg << " with value of '#{val.to_s}'" if val
             err_msg << ", received a #{tok.kind.upcase} with value '#{tok.value.to_s}'"
-            raise_error err_msg, tok.line_num, tok.column, tok.length
+            raise_error err_msg, tok
         end
 
         # Creates and raises a neatly formatted error message that indicates

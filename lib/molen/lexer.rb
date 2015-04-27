@@ -77,7 +77,7 @@ module Molen
             RULES.each do |matcher, kind|
                 if content = @scanner.scan(matcher) then
                     pos = @scanner.pos
-                    tok = Token.new kind, content, col_num(pos), content.length, line_num
+                    tok = Token.new kind, content, col_num(pos) - content.length + 1, content.length, line_num
 
                     return tok
                 end
