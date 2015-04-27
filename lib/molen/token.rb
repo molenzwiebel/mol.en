@@ -1,18 +1,22 @@
 
 module Molen
     class Token
-        attr_accessor :kind, :value, :start_pos, :end_pos, :line_num
+        attr_accessor :kind, :value, :column, :length, :line_num
 
-        def initialize(kind, value, startp, endp, line)
+        def initialize(kind, value, col, len, line)
             @kind = kind
             @value = value
-            @start_pos = startp
-            @end_pos = endp
+            @column = col
+            @length = len
             @line_num = line
         end
 
         def is?(val)
             value == val
+        end
+
+        def is_kind?(type)
+            kind == type
         end
 
         def method_missing(name, *args)

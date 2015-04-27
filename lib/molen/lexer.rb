@@ -69,7 +69,7 @@ module Molen
 
         def next_token
             if @scanner.eos? then
-                return Token.new nil, :eof, @scanner.pos, @scanner.pos, line_num
+                return Token.new nil, :eof, 0, 0, line_num
             end
 
             @scanner.skip(/\s+/)
@@ -77,7 +77,7 @@ module Molen
             RULES.each do |matcher, kind|
                 if content = @scanner.scan(matcher) then
                     pos = @scanner.pos
-                    tok = Token.new kind, content, pos - content.length, pos, line_num
+                    tok = Token.new kind, content, col_num(pos), content.length, line_num
 
                     return tok
                 end
@@ -91,7 +91,7 @@ module Molen
             str = "Error: #{msg}\n".red
             str << "#{@file_name}##{line_num - 1}: #{@source.lines[line_num - 2].chomp}\n".light_black if line_num > 1
             str << "#{header}#{@source.lines[line_num - 1].chomp}\n"
-            str << (' ' * (col_num + header.length - 1))
+            str << (' ' * (col_num(@scanner.pos) + header.length - 1))
             str << '^' << "\n"
             str << "#{@file_name}##{line_num + 1}: #{@source.lines[line_num].chomp}\n".light_black if @source.lines[line_num]
             raise str
@@ -101,9 +101,9 @@ module Molen
             @source[0..@scanner.pos].count("\n") + 1
         end
 
-        def col_num
-            len_before_this_line = @source[0..@scanner.pos].lines[0..-2].map{|x| x.length}.reduce{|x, y| x + y} || 0
-            @scanner.pos - len_before_this_line
+        def col_num(pos)
+            len_before_this_line = @source[0..pos].lines[0..-2].map{|x| x.length}.reduce{|x, y| x + y} || 0
+            pos - len_before_this_line
         end
     end
 end
