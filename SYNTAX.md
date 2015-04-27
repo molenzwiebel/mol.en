@@ -49,17 +49,16 @@ Classes are not too hard either:
 This defines a `MyObject` class, with a superclass and 3 instance variables. Note that here we need use `var` in front of the declaration. Assigning an initial value (such as `var x: int = 10`) is illegal, and can be done in the constructor. Note that the constructor is named `create`, and can be invoked using the syntax `new MyObject(args...)`. Class constructors support overloading as described earlier. **NOTE**: Class names in mol.en *have* to start with a capital!
 
 ### Types and casting
-mol.en has 4 publicly accessible primitive types: `int`, `double`, `bool` and `str`. Those are interally represented in the LLVM IR as their native types (`i32`, `double`, `i1` and `i8*`). Although these are primitives, it is possible to define functions on them (and they have some built-in functions as well). Simply opening up the class is enough:
+Every type in mol.en is a primitive and passed by reference. Literals are automatically converted into objects by the code generator: every `10` is secretly converted into `new Integer(10)`. The built in "primitive" types are `String`, `Double`, `Integer` and `Boolean`. They all contain a single field, but you will never need to access that field as all the operators are implemented on them (see later this document). As mol.en allows reopening of classes, methods can simply be added to a class:
 
-    class int {
+    class Integer {
         def times_10() {
+            # This could also have been written as this.__mul(10), as you can see later
             this * 10
         }
     }
 
     10.times_10() # -> 100
-
-Just like Java, mol.en also has object types of the previously named primitives, namely `Integer`, `Double`, `Boolean` and `String`. These behave like you would expect them to.
 
 ### Control flow
 If statements:
@@ -94,8 +93,13 @@ Operator  | Function Name
 * | __mul
 / | __div
 > | __gt
+>= | __gte
 < | __lt
+<= | __lte
 == | __eq
+!= | __neq
+&&, and | __and
+&#124;&#124;, or | __or
 
 Other operators are simply combined. For example, `3 >= 4` translates to `3 > 4 || 3 == 4`
 
