@@ -90,6 +90,14 @@ module Molen
             infix 8, -> x { x.is_operator? "==" }, &create_binary_parser(8)
             infix 8, -> x { x.is_operator? "!=" }, &create_binary_parser(8)
 
+            infix 1, -> x { x.is? "=" } do |left|
+                raise_error "Expected left hand side of assignment to be an identifier", token unless left.is_a? Identifier
+                next_token # Consume =
+                right = parse_expression
+                raise_error "Expected expression at right hand side of assignment", token unless right
+                Assign.new left, right
+            end
+
             infix 50, -> x { x.is? "." } do |left|
                 next_token # Consume .
                 right = parse_expression 50
@@ -154,6 +162,45 @@ module Molen
                 expect_and_consume(:rparen)
 
                 For.new init, cond, step, parse_body(false)
+            end
+
+            stmt -> x { x.is_keyword? "return" } do
+                next_token # Consume return
+                Return.new parse_expression
+            end
+
+            stmt -> x { x.is_keyword? "var" } do
+                name = expect_next_and_consume(:identifier).value
+                expect_and_consume(":")
+                type = expect_and_consume(:constant).value
+                InstanceVar.new name, type
+            end
+
+            stmt -> x { x.is_keyword? "class" } do
+                name = expect_next_and_consume(:constant).value
+                parent = nil
+
+                if token.is? "::" then
+                    parent = expect_next_and_consume(:constant).value
+                end
+                expect_and_consume(:begin_block)
+
+                clazz = ClassDef.new(name, parent, [], [])
+
+                until token.is_end_block?
+                    raise_error "Unexpected EOF in class body", token if token.is_eof?
+                    node = parse_node
+                    raise_error "Expected variable declaration or function in class body", token unless node.is_a?(InstanceVar) or node.is_a?(Function)
+
+                    if node.is_a? Function then
+                        node.owner = clazz
+                        clazz.functions << node
+                    else
+                        clazz.instance_vars << node
+                    end
+                end
+
+                clazz
             end
         end
     end

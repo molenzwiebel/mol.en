@@ -27,6 +27,11 @@ describe Parser do
     it_parses "__var", "__var".ident
     it_parses "Var", "Var".const
 
+    it_parses "x = 10", Assign.new("x".ident, 10.literal)
+    it_parses "return", Return.new(nil)
+    it_parses "return 10", Return.new(10.literal)
+    it_parses "var x: Int", InstanceVar.new("x", "Int")
+
     it_parses "(10)", 10.literal
     it_errors_on "()", /Expected node in parenthesized expression/
     it_errors_on "(test", /Expected token of type RPAREN/
@@ -72,4 +77,9 @@ describe Parser do
     it_errors_on "for (,,) 10", /Expected condition in for loop/
     it_errors_on "for true", /Expected token of type LPAREN/
     it_errors_on "for (true 1)", /Expected token with value of ','/
+
+    it_parses "class Test {}", ClassDef.new("Test", nil, [], [])
+    it_parses "class Test :: Super {}", ClassDef.new("Test", "Super", [], [])
+    it_parses "class Test :: Super { var foo: Int }", ClassDef.new("Test", "Super", [InstanceVar.new("foo", "Int")], [])
+    it_parses "class Test :: Super { def test() 10 }", ClassDef.new("Test", "Super", [], [Function.new(nil, "test", nil, [], Return.new(10.literal))])
 end

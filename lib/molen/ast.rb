@@ -104,11 +104,11 @@ module Molen
     end
 
     class Function < Statement
-        attr_accessor :class, :name, :return_type, :args, :body
-        attr_eq :class, :name, :return_type, :args, :body
+        attr_accessor :owner, :name, :return_type, :args, :body
+        attr_eq :name, :return_type, :args, :body
 
-        def initialize(clazz, name, ret_type, args, body)
-            @class, @name, @return_type, @args = clazz, name, ret_type, args
+        def initialize(owner, name, ret_type, args, body)
+            @owner, @name, @return_type, @args = owner, name, ret_type, args
             @body = Body.from body
         end
     end

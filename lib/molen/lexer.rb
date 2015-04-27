@@ -68,11 +68,11 @@ module Molen
         end
 
         def next_token
+            @scanner.skip(/\s+/)
+
             if @scanner.eos? then
                 return Token.new :eof, nil, col_num(pos) + 1, 1, line_num
             end
-
-            @scanner.skip(/\s+/)
 
             RULES.each do |matcher, kind|
                 if content = @scanner.scan(matcher) then

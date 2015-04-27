@@ -1,0 +1,38 @@
+def print_density(d: Double) {
+    if (d > 8) {
+        putchar(32)
+    } elseif (d > 4) {
+        putchar(46)
+    } elseif (d > 2) {
+        putchar(43)
+    } else {
+        putchar(42)
+    }
+}
+
+def mandelconverger(real: Double, imag: Double, iters: Double, creal: Double, cimag: Double) -> Double {
+    if (iters > 255 || real * real + imag * imag > 4) {
+        return iters
+    } else {
+        return mandelconverger(real * real - imag * imag + creal, 2 * real * imag + cimag, iters + 1, creal, cimag)
+    }
+}
+
+def mandelconverge(real: Double, imag: Double) -> Double {
+    return mandelconverger(real, imag, 0.0, real, imag)
+}
+
+def mandelhelp(xmin: Double, xmax: Double, xstep: Double, ymin: Double, ymax: Double, ystep: Double) {
+    for (y = ymin, y < ymax, y = y + ystep) {
+        for (x = xmin, x < xmax, x = x + xstep) {
+            print_density(mandelconverge(x, y))
+        }
+        putchar(10)
+    }
+}
+
+def mandel(realstart: Double, imagstart: Double, realmag: Double, imagmag: Double) {
+    mandelhelp(realstart, realstart + realmag * 78, realmag, imagstart, imagstart + imagmag * 78, imagmag)
+}
+
+mandel(-2.3, -1.3, 0.05, 0.07)
