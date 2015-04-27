@@ -20,9 +20,11 @@ module Molen
         end
 
         def method_missing(name, *args)
-            return super unless name =~ /is_(.*)?/
-            func_kind = /is_(.*)?/.match(name).captures.first
-            func_kind.to_sym == kind && (args.size > 0) ? args.first == val : true
+            return super unless name =~ /is_(.*)\?/
+            func_kind = /is_(.*)\?/.match(name).captures.first
+            matches = func_kind.to_sym == kind
+            matches = matches and is?(args.first) if args.size == 1
+            return matches
         end
     end
 end

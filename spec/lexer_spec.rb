@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Lexer do
     def self.it_lexes(str, *tokens)
         it "lexes #{str}" do
-            lex = Lexer.new str, "test-src"
+            lex = Lexer.new str, "lexer_spec"
             tokens.each do |tok|
                 parsed = lex.next_token
                 expect(parsed.kind).to eq tok.first
@@ -33,7 +33,7 @@ describe Lexer do
         it_lexes "10 #{op} 10", [:integer, "10"], [:operator, op], [:integer, "10"]
     end
 
-    it_lexes "Test", [:class_name]
+    it_lexes "Test", [:constant]
     it_lexes "_test", [:identifier]
 
     it_lexes ":::", [:special, "::"], [:special, ":"]
@@ -44,20 +44,5 @@ describe Lexer do
         expect(lex.next_token.line_num).to eq 1
         expect(lex.next_token.line_num).to eq 2
         expect(lex.next_token.line_num).to eq 3
-    end
-
-    it "keeps track of positions" do
-        lex = Lexer.new "10 9 8"
-        tok = lex.next_token
-        expect(tok.start_pos).to eq 0
-        expect(tok.end_pos).to   eq 2
-
-        tok = lex.next_token
-        expect(tok.start_pos).to eq 3
-        expect(tok.end_pos).to   eq 4
-
-        tok = lex.next_token
-        expect(tok.start_pos).to eq 5
-        expect(tok.end_pos).to   eq 6
     end
 end

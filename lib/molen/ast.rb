@@ -1,7 +1,7 @@
 
 module Molen
     class ASTNode
-        attr_accessor :start_line, :end_line, :start_index, :end_index
+        attr_accessor :line, :column, :length
 
         def self.attr_eq(*fields)
             define_method "==" do |other|

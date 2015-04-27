@@ -30,7 +30,7 @@ module Molen
     #   return PlusExpression.new(left_expression, right_expression)
     # end
     class Parser
-        def initialize(src, file = "src", &block = nil)
+        def initialize(src, file = "src", &block)
             @source = src
             @file = file
             @lexer = Lexer.new src, file
@@ -102,8 +102,8 @@ module Molen
         # Parses a statement. Returns nil if no statements are able to be parsed
         def parse_statement
             @statement_parsers.each do |matcher, parser|
-                next unless if matcher.call current_token
-                return call_and_populate_parser parser
+                next unless matcher.call current_token
+                return instance_exec(&parser)
             end
             nil
         end
@@ -118,7 +118,7 @@ module Molen
                 left = call_and_populate_parser parser
                 while precedence < cur_token_precedence
                     _, contents = @infix_parsers.select{|key, val| key.call @current_token}.first
-                    left = call_and_populate_parser left, &contents.last
+                    left = instance_exec left, &contents.last
                 end
                 return left
             end
@@ -127,22 +127,25 @@ module Molen
 
         # Checks if the current token is of the specified kind and value,
         # and raises an error when this is not the case.
-        def expect(type, value = nil)
+        def expect(one, two = nil)
             tok = token
-            check_eq tok, type, value
+            check_eq tok, one, two
         end
 
         # Checks if the next token is of the specified kind and value,
         # and raises an error when this is not the case.
-        def expect_next(type, value = nil)
+        def expect_next(one, two = nil)
             tok = next_token
-            check_eq tok, type, value
+            check_eq tok, one, two
         end
 
         # Helper method for expect and expect_next that compares a token
         # and composes an error message when they are not equal.
-        def check_eq(tok, type, value = nil)
-            return tok if tok.is_kind?(type) and (value ? tok.is?(value) : true)
+        def check_eq(tok, one, two)
+            one_matches = one.is_a?(Symbol) ? tok.is_kind?(one) : tok.is?(one)
+            two_matches = two ? two.is_a?(Symbol) ? tok.is_kind?(two) : tok.is?(two) : true
+            return tok if one_matches and two_matches
+
             err_msg = "Expected token of type #{type.to_s.upcase}"
             err_msg << " with value of '#{value.to_s}'" if value
             err_msg << ", received a #{tok.kind.upcase} with value '#{tok.value.to_s}'"
@@ -152,12 +155,15 @@ module Molen
         # Creates and raises a neatly formatted error message that indicates
         # the location and surroundings of the error. Line, col and length
         # are used for the fancy indication of where the error lies and can
-        # be easily gotten from a token (as seen in check_eq).
-        def raise_error(message, line, col, length)
+        # be easily gotten from a token (as seen in check_eq). You can also
+        # pass in a token, in which case that token will be used for positioning.
+        def raise_error(message, line, col = 0, length = 0)
+            line, col, length = line.line_num, line.column, line.length if line.is_a? Token
+
             header = "#{@file}##{line}: "
             str = "Error: #{message}\n".red
             str << "#{@file}##{line - 1}: #{@source.lines[line - 2].chomp}\n".light_black if line > 1
-            str << "#{header}#{@source.lines[line_num - 1].chomp}\n"
+            str << "#{header}#{(@source.lines[line - 1] || "").chomp}\n"
             str << (' ' * (col + header.length - 1))
             str << '^' << ('~' * (length - 1)) << "\n"
             str << "#{@file}##{line + 1}: #{@source.lines[line].chomp}\n".light_black if @source.lines[line]
@@ -172,14 +178,6 @@ module Molen
             return 0 if filtered.size == 0
             _, contents = filtered.first
             contents[0]
-        end
-
-        def call_and_populate_parser(parser, *args)
-            cur_line, cur_index = @lexer.line_num, @lexer.pos
-            parsed = instance_exec(&parser, *args)
-            parsed.start_line, parser.end_line = cur_line, @lexer.line_num
-            parsed.start_index, parsed.end_index = cur_index, @lexer.pos
-            return parsed
         end
     end
 end

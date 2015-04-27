@@ -52,7 +52,7 @@ module Molen
             /<=?/                               => :operator,
 
             # We need this after the keywords and 'and', 'or' or it will match them as identifiers.
-            /[A-Z][_0-9a-zA-Z]*/                => :class_name,
+            /[A-Z][_0-9a-zA-Z]*/                => :constant,
             /[_a-zA-Z][_0-9a-zA-Z]*/            => :identifier,
 
             # Note that the order of these matters! This lexer is lazy, so it will always match `=` over `==` unless we specify `==` first.
@@ -69,7 +69,7 @@ module Molen
 
         def next_token
             if @scanner.eos? then
-                return Token.new nil, :eof, 0, 0, line_num
+                return Token.new :eof, nil, col_num(pos) + 1, 1, line_num
             end
 
             @scanner.skip(/\s+/)
@@ -90,7 +90,7 @@ module Molen
             header = "#{@file_name}##{line_num}: "
             str = "Error: #{msg}\n".red
             str << "#{@file_name}##{line_num - 1}: #{@source.lines[line_num - 2].chomp}\n".light_black if line_num > 1
-            str << "#{header}#{@source.lines[line_num - 1].chomp}\n"
+            str << "#{header}#{(@source.lines[line_num - 1] || "").chomp}\n"
             str << (' ' * (col_num(@scanner.pos) + header.length - 1))
             str << '^' << "\n"
             str << "#{@file_name}##{line_num + 1}: #{@source.lines[line_num].chomp}\n".light_black if @source.lines[line_num]
