@@ -102,7 +102,8 @@ module Molen
         # Parses a statement. Returns nil if no statements are able to be parsed
         def parse_statement
             @statement_parsers.each do |matcher, parser|
-                return instance_exec(&parser) if matcher.call current_token
+                next unless if matcher.call current_token
+                return call_and_populate_parser parser
             end
             nil
         end
@@ -114,10 +115,10 @@ module Molen
             @expression_parsers.each do |matcher, parser|
                 next unless matcher.call @current_token
 
-                left = instance_exec &parser
+                left = call_and_populate_parser parser
                 while precedence < cur_token_precedence
                     _, contents = @infix_parsers.select{|key, val| key.call @current_token}.first
-                    left = instance_exec left, &contents.last
+                    left = call_and_populate_parser left, &contents.last
                 end
                 return left
             end
@@ -171,6 +172,14 @@ module Molen
             return 0 if filtered.size == 0
             _, contents = filtered.first
             contents[0]
+        end
+
+        def call_and_populate_parser(parser, *args)
+            cur_line, cur_index = @lexer.line_num, @lexer.pos
+            parsed = instance_exec(&parser, *args)
+            parsed.start_line, parser.end_line = cur_line, @lexer.line_num
+            parsed.start_index, parsed.end_index = cur_index, @lexer.pos
+            return parsed
         end
     end
 end

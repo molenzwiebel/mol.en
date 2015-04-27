@@ -101,6 +101,10 @@ module Molen
             @source[0..@scanner.pos].count("\n") + 1
         end
 
+        def pos
+            @scanner.pos
+        end
+
         def col_num(pos)
             len_before_this_line = @source[0..pos].lines[0..-2].map{|x| x.length}.reduce{|x, y| x + y} || 0
             pos - len_before_this_line
