@@ -80,15 +80,24 @@ module Molen
             infix 12, -> x { x.is_operator? "*" }, &create_binary_parser(12)
             infix 12, -> x { x.is_operator? "/" }, &create_binary_parser(12)
 
-            infix 4, -> x { x.is_operator? "&&" or x.is_operator? "and" }, &create_binary_parser(4)
-            infix 3, -> x { x.is_operator? "||" or x.is_operator? "or"  }, &create_binary_parser(3)
-            infix 9, -> x { x.is_operator? "<" },  &create_binary_parser(9)
+            infix 4, -> x { x.is_operator?("&&") or x.is_operator?("and") }, &create_binary_parser(4)
+            infix 3, -> x { x.is_operator?("||") or x.is_operator?("or")  }, &create_binary_parser(3)
+            infix 9, -> x { x.is_operator? "<"  }, &create_binary_parser(9)
             infix 9, -> x { x.is_operator? "<=" }, &create_binary_parser(9)
-            infix 9, -> x { x.is_operator? ">" },  &create_binary_parser(9)
+            infix 9, -> x { x.is_operator? ">"  }, &create_binary_parser(9)
             infix 9, -> x { x.is_operator? ">=" }, &create_binary_parser(9)
 
             infix 8, -> x { x.is_operator? "==" }, &create_binary_parser(8)
             infix 8, -> x { x.is_operator? "!=" }, &create_binary_parser(8)
+
+            infix 50, -> x { x.is? "." } do |left|
+                next_token # Consume .
+                right = parse_expression 50
+                raise_error "Expected identifier or call after '.'", token unless right.is_a?(Call) or right.is_a?(Identifier)
+
+                next Call.new left, right.name, right.args if right.is_a? Call
+                next MemberAccess.new left, right
+            end
         end
     end
 
@@ -116,9 +125,10 @@ module Molen
 
         def create_binary_parser(prec, right_associative = false)
             return lambda do |left|
-                op = consume.value # Consume operator
+                op_tok = consume # Consume operator
                 right = parse_expression right_associative ? prec - 1 : prec
-                return Call.new(left, OPERATOR_NAMES[op], [right])
+                raise_error "Expected expression at right hand side of #{op_tok.value}", op_tok unless right
+                return Call.new(left, OPERATOR_NAMES[op_tok.value], [right])
             end
         end
     end

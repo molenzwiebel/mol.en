@@ -23,7 +23,7 @@ module Molen
             return super unless name =~ /is_(.*)\?/
             func_kind = /is_(.*)\?/.match(name).captures.first
             matches = func_kind.to_sym == kind
-            matches = matches and is?(args.first) if args.size == 1
+            matches = (matches && is?(args.first)) if args.size == 1
             return matches
         end
     end

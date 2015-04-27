@@ -39,5 +39,13 @@ describe Parser do
 
     Molen::OPERATOR_NAMES.each do |op, name|
         it_parses "3 #{op} 3", Call.new(3.literal, name, [3.literal])
+        it_errors_on "3 #{op}", /Expected expression at right hand side/
     end
+
+    it_parses "a.b", MemberAccess.new("a".ident, "b".ident)
+    it_parses "a.b.c", MemberAccess.new(MemberAccess.new("a".ident, "b".ident), "c".ident)
+    it_parses "a.b()", Call.new("a".ident, "b", [])
+    it_parses "a.b().c()", Call.new(Call.new("a".ident, "b", []), "c", [])
+    it_errors_on "a.", /Expected identifier or call after/
+    it_errors_on "a.new Bla()", /Expected identifier or call after/
 end
