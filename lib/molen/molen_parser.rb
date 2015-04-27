@@ -142,6 +142,19 @@ module Molen
 
                 If.new cond, if_then, if_else, else_ifs
             end
+
+            stmt -> x { x.is_keyword? "for" } do
+                expect_next_and_consume(:lparen)
+                init = parse_node
+                expect_and_consume(",")
+                cond = parse_expression
+                raise_error "Expected condition in for loop", token unless cond
+                expect_and_consume(",")
+                step = parse_node
+                expect_and_consume(:rparen)
+
+                For.new init, cond, step, parse_body(false)
+            end
         end
     end
 

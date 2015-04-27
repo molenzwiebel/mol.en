@@ -64,4 +64,12 @@ describe Parser do
     it_errors_on "if true", /Expected token of type LPAREN/
     it_errors_on "if (true", /Expected token of type RPAREN/
     it_errors_on "if ()", /Expected condition/
+
+    it_parses "for (true, true, true) 10", For.new(true.literal, true.literal, true.literal, 10.literal)
+    it_parses "for (, true, true) 10", For.new(nil, true.literal, true.literal, 10.literal)
+    it_parses "for (true, true, ) 10", For.new(true.literal, true.literal, nil, 10.literal)
+    it_parses "for (, true, ) 10", For.new(nil, true.literal, nil, 10.literal)
+    it_errors_on "for (,,) 10", /Expected condition in for loop/
+    it_errors_on "for true", /Expected token of type LPAREN/
+    it_errors_on "for (true 1)", /Expected token with value of ','/
 end
