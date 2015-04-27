@@ -27,7 +27,7 @@ describe Lexer do
         it_lexes kw, [:keyword, kw]
     end
 
-    it_lexes "(){}[]", [:lparen], [:rparen], [:lbracket], [:rbracket], [:special, "["], [:special, "]"]
+    it_lexes "(){}[]", [:lparen], [:rparen], [:begin_block], [:end_block], [:special, "["], [:special, "]"]
 
     ["+", "-", "*", "/", "&&", "||", "and", "or", "==", "=", "!=", "<", "<=", ">", ">="].each do |op|
         it_lexes "10 #{op} 10", [:integer, "10"], [:operator, op], [:integer, "10"]

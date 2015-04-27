@@ -26,8 +26,8 @@ module Molen
             /var/                               => :keyword,
             /class/                             => :keyword,
 
-            /\{/                                => :lbracket,
-            /\}/                                => :rbracket,
+            /\{/                                => :begin_block,
+            /\}/                                => :end_block,
             /\(/                                => :lparen,
             /\)/                                => :rparen,
 

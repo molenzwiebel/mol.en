@@ -132,11 +132,23 @@ module Molen
             check_eq tok, one, two
         end
 
+        def expect_and_consume(one, two = nil)
+            ret = expect one, two
+            next_token
+            return ret
+        end
+
         # Checks if the next token is of the specified kind and value,
         # and raises an error when this is not the case.
         def expect_next(one, two = nil)
             tok = next_token
             check_eq tok, one, two
+        end
+
+        def expect_next_and_consume(one, two = nil)
+            ret = expect_next one, two
+            next_token
+            return ret
         end
 
         # Helper method for expect and expect_next that compares a token

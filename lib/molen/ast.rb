@@ -123,10 +123,10 @@ module Molen
 
             else_body = Body.from if_else
             elseifs.reverse.each do |else_if|
-                else_body = If.new else_if.first, else_if.last, else_body
+                else_body = If.new else_if.first, else_if.last, else_body, []
             end
 
-            @else = else_body unless else_body.empty?
+            @else = else_body
         end
     end
 

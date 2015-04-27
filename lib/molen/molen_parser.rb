@@ -98,6 +98,50 @@ module Molen
                 next Call.new left, right.name, right.args if right.is_a? Call
                 next MemberAccess.new left, right
             end
+
+            stmt -> x { x.is_keyword? "def" } do
+                name = expect_next_and_consume(:identifier).value
+
+                args = parse_delimited do |parser|
+                    n = parser.expect(:identifier).value
+                    parser.expect_next(":")
+                    type = parser.expect_next_and_consume(:constant).value
+                    FunctionArg.new n, type
+                end
+                type = nil
+                if token.is? "->" then
+                    expect_next(:constant)
+                    type = consume.value
+                end
+                Function.new nil, name, type, args, parse_body
+            end
+
+            stmt -> x { x.is_keyword? "if" } do
+                expect_next_and_consume(:lparen)
+                cond = parse_expression
+                raise_error "Expected condition in if statement", token unless cond
+                expect_and_consume(:rparen)
+
+                if_then = parse_body false
+                else_ifs = []
+                if_else = nil
+
+                while token.is_keyword? "else" or token.is_keyword? "elseif"
+                    raise_error "Multiple else blocks in if statement", token if token.is_keyword? "else" and if_else
+                    if consume.is_keyword? "else" then
+                        if_else = parse_body false
+                    else
+                        expect_and_consume(:lparen)
+                        elseif_cond = parse_expression
+                        raise_error "Expected condition in elseif statement", token unless cond
+                        expect_and_consume(:rparen)
+
+                        else_ifs << [elseif_cond, parse_body(false)]
+                    end
+                end
+
+                If.new cond, if_then, if_else, else_ifs
+            end
         end
     end
 
@@ -130,6 +174,28 @@ module Molen
                 raise_error "Expected expression at right hand side of #{op_tok.value}", op_tok unless right
                 return Call.new(left, OPERATOR_NAMES[op_tok.value], [right])
             end
+        end
+
+        def parse_body(auto_return = true)
+            unless token.is_begin_block?
+                node = parse_node
+                raise_error "Expected node in body. Did you forget '{'?", token unless node
+                node = Return.new(node) if node.is_a?(Expression) and auto_return
+                return Body.from node
+            end
+
+            expect(:begin_block)
+            next_token # Consume {
+
+            contents = []
+            until token.is_end_block?
+                raise_error("Unexpected EOF", token) if token.is_eof?
+                contents << parse_node
+            end
+            next_token # Consume }
+
+            contents.push(Return.new(contents.pop)) if contents.size > 0 and contents.last.is_a?(Expression) and auto_return
+            Body.from contents
         end
     end
 end

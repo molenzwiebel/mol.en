@@ -48,4 +48,20 @@ describe Parser do
     it_parses "a.b().c()", Call.new(Call.new("a".ident, "b", []), "c", [])
     it_errors_on "a.", /Expected identifier or call after/
     it_errors_on "a.new Bla()", /Expected identifier or call after/
+
+    it_parses "def test(a: Int) -> Int 10", Function.new(nil, "test", "Int", [FunctionArg.new("a", "Int")], Body.from(Return.new(10.literal)))
+    it_parses "def test() -> Int 10", Function.new(nil, "test", "Int", [], Body.from(Return.new(10.literal)))
+    it_parses "def test(a: Int) 10", Function.new(nil, "test", nil, [FunctionArg.new("a", "Int")], Body.from(Return.new(10.literal)))
+    it_parses "def test() 10", Function.new(nil, "test", nil, [], Body.from(Return.new(10.literal)))
+    it_parses "def test() {}", Function.new(nil, "test", nil, [], nil)
+    it_parses "def test() { 10 }", Function.new(nil, "test", nil, [], Body.from(Return.new(10.literal)))
+
+    it_parses "if (true) 10", If.new(true.literal, Body.from(10.literal), nil, [])
+    it_parses "if (true) 10 else 11", If.new(true.literal, Body.from(10.literal), Body.from(11.literal), [])
+    it_parses "if (true) 10 elseif (false) 11", If.new(true.literal, Body.from(10.literal), nil, [[false.literal, Body.from(11.literal)]])
+    it_parses "if (true) 10 elseif (false) 11 else 12",  If.new(true.literal, Body.from(10.literal), Body.from(12.literal), [[false.literal, Body.from(11.literal)]])
+    it_errors_on "if (true) 10 else 11 else 12", /Multiple else blocks in if statement/
+    it_errors_on "if true", /Expected token of type LPAREN/
+    it_errors_on "if (true", /Expected token of type RPAREN/
+    it_errors_on "if ()", /Expected condition/
 end
