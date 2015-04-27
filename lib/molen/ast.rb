@@ -1,5 +1,11 @@
 
 module Molen
+    class Visitor
+        def visit_any(node)
+            nil
+        end
+    end
+
     class ASTNode
         attr_accessor :line, :column, :length
 
@@ -12,6 +18,22 @@ module Molen
                 end
                 return eq
             end
+        end
+
+        def self.inherited(klass)
+            name = klass.name.split('::').last.gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').gsub(/([a-z\d])([A-Z])/,'\1_\2').tr("-", "_").downcase
+
+            klass.class_eval %Q(
+                def accept(visitor)
+                    visitor.visit_any(self) || visitor.visit_#{name}(self)
+                end
+            )
+
+            Visitor.class_eval %Q(
+                def visit_#{name}(node)
+                    nil
+                end
+            )
         end
     end
 
