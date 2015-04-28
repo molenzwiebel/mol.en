@@ -12,6 +12,10 @@ module Molen
         def llvm_type
             raise "Unimplemented llvm_type?"
         end
+
+        def castable_to?(other)
+            raise "Unimplemented castable_to"
+        end
     end
 
     class ObjectType < Type
@@ -35,6 +39,18 @@ module Molen
         def ==(other)
             other.class == self.class and other.name == name and other.superclass == superclass and other.instance_variables == instance_variables
         end
+
+        def castable_to(other)
+            return true, 0 if other == self
+            clazz = superclass
+            dist = 1
+            until clazz.nil?
+                return true, dist if other == clazz
+                dist += 1
+                clazz = clazz.superclass
+            end
+            return false, -1
+        end
     end
 
     class PrimitiveType < Type
@@ -52,6 +68,10 @@ module Molen
 
         def ==(other)
             other.class == self.class and other.name == name and other.type == type
+        end
+
+        def castable_to?(other)
+            return other.class == self.class && other.type == type, 0
         end
     end
 end
