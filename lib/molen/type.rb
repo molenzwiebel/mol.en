@@ -46,11 +46,8 @@ module Molen
         end
 
         def llvm_type
-            LLVM::Pointer llvm_struct
-        end
-
-        def llvm_struct
-            LLVM::Struct @type
+            # Primitives are pointers to their type so they can support actual null, instead of a workaround.
+            LLVM::Pointer @type
         end
 
         def ==(other)
