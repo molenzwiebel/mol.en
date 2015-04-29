@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe Lexer do
     def self.it_lexes(str, *tokens)
-        it "lexes #{str}" do
+        it "lexes '#{str}'" do
             lex = Lexer.new str, "lexer_spec"
             tokens.each do |tok|
                 parsed = lex.next_token

@@ -17,6 +17,19 @@ module Molen
         ">="        => "__gte"
     }
 
+    def parse(src, name = "unknown_file")
+        Molen.parse src
+    end
+
+    def self.parse(src, name = "unknown_file")
+        parser = create_parser src, name
+        contents = []
+        until (n = parser.parse_node).nil?
+            contents << n
+        end
+        Body.from contents
+    end
+
     # Alias for create_parser that allows you to call
     # it when including the Molen module.
     def create_parser(source, file)
@@ -91,7 +104,7 @@ module Molen
             infix 8, -> x { x.is_operator? "!=" }, &create_binary_parser(8)
 
             infix 1, -> x { x.is? "=" } do |left|
-                raise_error "Expected left hand side of assignment to be an identifier", token unless left.is_a? Identifier
+                raise_error "Expected left hand side of assignment to be an identifier", token unless left.is_a?(Identifier) or left.is_a?(MemberAccess)
                 next_token # Consume =
                 right = parse_expression
                 raise_error "Expected expression at right hand side of assignment", token unless right
@@ -121,7 +134,7 @@ module Molen
                     expect_next(:constant)
                     type = consume.value
                 end
-                Function.new nil, name, type, args, parse_body
+                Function.new nil, name, type, args, parse_body(type != nil)
             end
 
             stmt -> x { x.is_keyword? "if" } do
@@ -178,14 +191,14 @@ module Molen
 
             stmt -> x { x.is_keyword? "class" } do
                 name = expect_next_and_consume(:constant).value
-                parent = nil
+                parent = "Object"
 
                 if token.is? "::" then
                     parent = expect_next_and_consume(:constant).value
                 end
                 expect_and_consume(:begin_block)
 
-                clazz = ClassDef.new(name, parent, [], [])
+                clazz = ClassDef.new(name, parent)
 
                 until token.is_end_block?
                     raise_error "Unexpected EOF in class body", token if token.is_eof?
@@ -199,6 +212,7 @@ module Molen
                         clazz.instance_vars << node
                     end
                 end
+                next_token # Consume }
 
                 clazz
             end

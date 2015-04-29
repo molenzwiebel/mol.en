@@ -2,14 +2,14 @@ require 'spec_helper'
 
 describe Parser do
     def self.it_parses(src, compare_to)
-        it "parses #{src}" do
+        it "parses '#{src}'" do
             parser = Molen.create_parser src, "parser_spec"
             expect(parser.parse_node).to eq compare_to
         end
     end
 
     def self.it_errors_on(src, msg)
-        it "prints a descriptive error message when trying to parse #{src}" do
+        it "prints a descriptive error message when trying to parse '#{src}'" do
             parser = Molen.create_parser src, "parser_spec"
             expect {
                 parser.parse_node
@@ -56,10 +56,10 @@ describe Parser do
 
     it_parses "def test(a: Int) -> Int 10", Function.new(nil, "test", "Int", [FunctionArg.new("a", "Int")], Body.from(Return.new(10.literal)))
     it_parses "def test() -> Int 10", Function.new(nil, "test", "Int", [], Body.from(Return.new(10.literal)))
-    it_parses "def test(a: Int) 10", Function.new(nil, "test", nil, [FunctionArg.new("a", "Int")], Body.from(Return.new(10.literal)))
-    it_parses "def test() 10", Function.new(nil, "test", nil, [], Body.from(Return.new(10.literal)))
+    it_parses "def test(a: Int) 10", Function.new(nil, "test", nil, [FunctionArg.new("a", "Int")], Body.from(10.literal))
+    it_parses "def test() 10", Function.new(nil, "test", nil, [], Body.from(10.literal))
     it_parses "def test() {}", Function.new(nil, "test", nil, [], nil)
-    it_parses "def test() { 10 }", Function.new(nil, "test", nil, [], Body.from(Return.new(10.literal)))
+    it_parses "def test() { 10 }", Function.new(nil, "test", nil, [], Body.from(10.literal))
 
     it_parses "if (true) 10", If.new(true.literal, Body.from(10.literal), nil, [])
     it_parses "if (true) 10 else 11", If.new(true.literal, Body.from(10.literal), Body.from(11.literal), [])
@@ -78,8 +78,8 @@ describe Parser do
     it_errors_on "for true", /Expected token of type LPAREN/
     it_errors_on "for (true 1)", /Expected token with value of ','/
 
-    it_parses "class Test {}", ClassDef.new("Test", nil, [], [])
+    it_parses "class Test {}", ClassDef.new("Test", "Object", [], [])
     it_parses "class Test :: Super {}", ClassDef.new("Test", "Super", [], [])
     it_parses "class Test :: Super { var foo: Int }", ClassDef.new("Test", "Super", [InstanceVar.new("foo", "Int")], [])
-    it_parses "class Test :: Super { def test() 10 }", ClassDef.new("Test", "Super", [], [Function.new(nil, "test", nil, [], Return.new(10.literal))])
+    it_parses "class Test :: Super { def test() 10 }", ClassDef.new("Test", "Super", [], [Function.new(nil, "test", nil, [], 10.literal)])
 end

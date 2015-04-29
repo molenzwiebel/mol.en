@@ -31,6 +31,10 @@ module Molen
             (@parent ? @parent.keys : []) + @this.keys
         end
 
+        def has_local_key?(k)
+            @this.has_key? k
+        end
+
         def ==(other)
             other.class == self.class and other.keys == keys and other.values == values
         end

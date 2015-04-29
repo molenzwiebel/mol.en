@@ -6,10 +6,12 @@ module Molen
         def initialize
             @types = {}
 
-            self["Int"] = PrimitiveType.new "Int", LLVM::Int32
-            self["Double"] = PrimitiveType.new "Double", LLVM::Double
-            self["String"] = PrimitiveType.new "String", LLVM::Pointer(LLVM::Int8)
-            self["Bool"] = PrimitiveType.new "Bool", LLVM::Int1
+            self["Object"] = object = ObjectType.new "Object"
+
+            self["Int"] = PrimitiveType.new "Int", object, LLVM::Int32
+            self["Double"] = PrimitiveType.new "Double", object, LLVM::Double
+            self["String"] = PrimitiveType.new "String", object, LLVM::Pointer(LLVM::Int8)
+            self["Bool"] = PrimitiveType.new "Bool", object, LLVM::Int1
         end
 
         def [](key)

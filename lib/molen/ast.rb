@@ -142,7 +142,7 @@ module Molen
             return false, -1 if args.size != types.size
             total_dist = 0
             types.each_with_index do |arg_type, i|
-                can, dist = arg_type.castable_to args[i].type
+                can, dist = arg_type.castable_to? args[i].type
                 return false, -1 unless can
                 total_dist += dist
             end
@@ -163,12 +163,12 @@ module Molen
                 else_body = If.new else_if.first, else_if.last, else_body, []
             end
 
-            @else = else_body
+            @else = else_body if if_else || elseifs.size > 0
         end
 
         def definitely_returns?
-            returns = self.then.definitely_returns
-            returns = (returns and self.else.definitely_returns) unless self.else.empty?
+            returns = self.then.definitely_returns?
+            returns = returns && self.else.definitely_returns? if self.else
             returns
         end
     end
@@ -205,7 +205,7 @@ module Molen
         attr_accessor :name, :superclass, :instance_vars, :functions
         attr_eq :name, :superclass, :instance_vars, :functions
 
-        def initialize(name, superclass, vars, funcs)
+        def initialize(name, superclass, vars = [], funcs = [])
             @name, @superclass, @instance_vars, @functions = name, superclass, vars, funcs
         end
     end

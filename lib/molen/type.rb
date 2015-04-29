@@ -1,3 +1,5 @@
+require 'llvm/core'
+require 'llvm/execution_engine'
 
 module Molen
     class Type
@@ -10,11 +12,11 @@ module Molen
         end
 
         def llvm_type
-            raise "Unimplemented llvm_type?"
+            raise "Unimplemented llvm_type on #{self.class.name}?"
         end
 
         def castable_to?(other)
-            raise "Unimplemented castable_to"
+            raise "Unimplemented castable_to on #{self.class.name}"
         end
     end
 
@@ -40,7 +42,7 @@ module Molen
             other.class == self.class and other.name == name and other.superclass == superclass and other.instance_variables == instance_variables
         end
 
-        def castable_to(other)
+        def castable_to?(other)
             return true, 0 if other == self
             clazz = superclass
             dist = 1
@@ -56,8 +58,8 @@ module Molen
     class PrimitiveType < Type
         attr_accessor :type
 
-        def initialize(name, llvm_type)
-            super name, nil
+        def initialize(name, supert, llvm_type)
+            super name, supert
             @type = llvm_type
         end
 
@@ -71,7 +73,7 @@ module Molen
         end
 
         def castable_to?(other)
-            return other.class == self.class && other.type == type, 0
+            return other == self, 0
         end
     end
 end
