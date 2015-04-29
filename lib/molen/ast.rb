@@ -58,6 +58,10 @@ module Molen
         def empty?
             contents.size == 0
         end
+
+        def definitely_returns?
+            contents.count{ |node| node.is_a?(Return) || (node.is_a?(If) and node.definitely_returns?) } > 0
+        end
     end
 
     class Literal < Expression
@@ -160,6 +164,12 @@ module Molen
             end
 
             @else = else_body
+        end
+
+        def definitely_returns?
+            returns = self.then.definitely_returns
+            returns = (returns and self.else.definitely_returns) unless self.else.empty?
+            returns
         end
     end
 

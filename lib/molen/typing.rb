@@ -63,6 +63,23 @@ module Molen
             raise "Expected condition in loop to be a boolean" if node.cond.type != mod["Bool"]
         end
 
+        def visit_member_access(node)
+            node.object.accept self
+            obj_type = node.object.type
+            raise "Cannot access member of primitive type" if obj_type.is_a? PrimitiveType
+            raise "Unknown member #{node.field.value} on object of type #{obj_type.name}" unless obj_type.instance_variables[node.child.value]
+            node.type = obj_type.instance_variables[node.child.value]
+        end
+
+        def visit_body(node)
+            node.nodes.each_with_index do |n, index|
+                n.accept self
+                raise "Unreachable code." if n.is_a?(If) && n.definitely_returns && index != node.nodes.size - 1
+            end
+            last = node.nodes.last
+            node.type = (last and last.is_a?(Return)) ? last.type : nil
+        end
+
         private
         def find_overloaded_method(in_scope, name, args)
             return nil if in_scope[name].nil? || !in_scope[name].is_a?(::Array) || in_scope[name].size == 0
