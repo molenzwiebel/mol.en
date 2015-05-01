@@ -61,6 +61,10 @@ module Molen
             node.contents.each {|n| n.accept self}
         end
 
+        def visit_member_access(node)
+            builder.load member_to_ptr(node), node.field.value
+        end
+
         def visit_assign(node)
             if node.name.is_a?(Identifier) then
                 val = node.value.accept(self)
@@ -80,7 +84,84 @@ module Molen
             end
         end
 
+        def visit_return(node)
+            builder.ret node.value ? node.value.accept(self) : nil
+        end
+
+        def visit_call(node)
+            func = @function_pointers[node.target_function.ir_name]
+            unless func
+                func = generate_function(node.target_function)
+            end
+
+            # Setup arguments and cast them if needed.
+            args = []
+            node.args.each_with_index do |arg, i|
+                val = arg.accept(self)
+                if arg.type != node.target_function.args[i].type then
+                    val = builder.bit_cast val, node.target_function.args[i].type.llvm_type
+                end
+                args << val
+            end
+
+            if node.object then
+                obj = node.object.accept(self)
+                casted_this = builder.bit_cast obj, node.target_function.owner.type.llvm_type
+                args = [casted_this] + args
+            end
+
+            ret_ptr = builder.call func, *args
+            return ret_ptr if func.function_type.return_type != LLVM.Void
+            return nil
+        end
+
+        # This is not a normal visit_### function because we only
+        # generate functions that are actually called. Performance :)
+        def generate_function(node)
+            # Save the old position of the builder to return to it at the end
+            old_pos = builder.insert_block
+
+            # Add a 'this' argument at the start if this is an instance method
+            args = node.args
+            args = [Arg.new("this", node.owner.type)] + args if node.owner
+
+            # Compute types and create the actual LLVM function
+            ret_type = node.return_type ? node.return_type.llvm_type : LLVM.Void
+            llvm_arg_types = args.map(&:type).map(&:llvm_type)
+
+            func = llvm_mod.functions.add(node.ir_name, llvm_arg_types, ret_type)
+            func.linkage = :internal # Allow llvm to optimize this function away
+            @function_pointers[node.ir_name] = func
+
+            # Create a new block at jump to it
+            entry = func.basic_blocks.append "entry"
+            builder.position_at_end entry
+
+            with_new_variable_scope(false) do
+                # Save each variable to a fresh pointer so you can change function arguments
+                args.each_with_index do |arg, i|
+                    ptr = builder.alloca arg.type.llvm_type, arg.name
+                    @variable_pointers.define arg.name, ptr
+                    builder.store func.params[i], ptr
+                end
+
+                node.body.accept self
+            end
+
+            builder.ret nil if node.return_type.nil? and not node.body.definitely_returns
+            builder.position_at_end old_pos
+            func
+        end
+
         private
+        def with_new_variable_scope(inherit = true)
+            old_var_scope = @variable_pointers
+
+            @variable_pointers = inherit ? Scope.new(@variable_pointers) : Scope.new
+            yield
+            @variable_pointers = old_var_scope
+        end
+
         def member_to_ptr(node)
             ptr_to_obj = node.object.accept(self)
             index = node.ptr_to_obj.type.instance_var_index node.field.value
