@@ -18,6 +18,23 @@ module Molen
         def castable_to?(other)
             raise "Unimplemented castable_to on #{self.class.name}"
         end
+
+        def define_native_function(name, return_type, *args, &block)
+            body = NativeBody.new block
+            func_def = Function.new ClassDef.new(nil, nil, [], []), name, return_type, args.each_with_index.map{|type, id| FunctionArg.new "arg#{id.to_s}", type}, nil
+            func_def.body = body
+            func_def.owner.type = self
+            functions.has_local_key?(name) ? functions[name] << func_def : functions.define(name, [func_def])
+        end
+    end
+
+    class NativeBody < ASTNode
+        attr_accessor :block
+        attr_eq :block
+
+        def initialize(bl)
+            @block = bl
+        end
     end
 
     class ObjectType < Type

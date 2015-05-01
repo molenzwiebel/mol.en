@@ -74,6 +74,10 @@ module Molen
             node.contents.each {|n| n.accept self}
         end
 
+        def visit_native_body(node)
+            instance_exec *builder.insert_block.parent.params.to_a, &node.block
+        end
+
         def visit_member_access(node)
             builder.load member_to_ptr(node), node.field.value
         end

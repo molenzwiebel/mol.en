@@ -76,6 +76,11 @@ module Molen
             raise "Expected condition in loop to be a boolean" if node.cond.type != mod["Bool"]
         end
 
+        # We just assume that the native body returns the same value as the function its in.
+        def visit_native_body(node)
+            node.type = @current_function.return_type
+        end
+
         # Types a return node and makes sure that the value can
         # be returned from that function.
         def visit_return(node)
