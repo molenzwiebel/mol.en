@@ -1,0 +1,59 @@
+
+module Molen
+    class Module
+        def add_natives
+            int, double, bool = self["Int"], self["Double"], self["Bool"]
+
+            int.define_native_function("__add", int, int) { |this, other| builder.ret builder.add this, other }
+            int.define_native_function("__sub", int, int) { |this, other| builder.ret builder.sub this, other }
+            int.define_native_function("__mul", int, int) { |this, other| builder.ret builder.mul this, other }
+            int.define_native_function("__div", int, int) { |this, other| builder.ret builder.div this, other }
+
+            int.define_native_function("__lt", bool, int) { |this, other| builder.ret builder.icmp :ult, this, other }
+            int.define_native_function("__lte", bool, int) { |this, other| builder.ret builder.icmp :ule, this, other }
+            int.define_native_function("__gt", bool, int) { |this, other| builder.ret builder.icmp :ugt, this, other }
+            int.define_native_function("__gte", bool, int) { |this, other| builder.ret builder.icmp :uge, this, other }
+
+            int.define_native_function("__eq", bool, int) { |this, other| builder.ret builder.icmp :eq, this, other }
+            int.define_native_function("__neq", bool, int) { |this, other| builder.ret builder.icmp :neq, this, other }
+
+            int.define_native_function("__add", double, double) { |this, other| builder.ret builder.fadd builder.si2fp(this, double.llvm_type), other }
+            int.define_native_function("__sub", double, double) { |this, other| builder.ret builder.fsub builder.si2fp(this, double.llvm_type), other }
+            int.define_native_function("__mul", double, double) { |this, other| builder.ret builder.fmul builder.si2fp(this, double.llvm_type), other }
+            int.define_native_function("__div", double, double) { |this, other| builder.ret builder.fdiv builder.si2fp(this, double.llvm_type), other }
+
+            int.define_native_function("__lt", bool, double) { |this, other| builder.ret builder.fcmp :ult, builder.si2fp(this, double.llvm_type), other }
+            int.define_native_function("__lte", bool, double) { |this, other| builder.ret builder.fcmp :ule, builder.si2fp(this, double.llvm_type), other }
+            int.define_native_function("__gt", bool, double) { |this, other| builder.ret builder.fcmp :ugt, builder.si2fp(this, double.llvm_type), other }
+            int.define_native_function("__lte", bool, double) { |this, other| builder.ret builder.fcmp :uge, builder.si2fp(this, double.llvm_type), other }
+
+            double.define_native_function("__add", double, double) { |this, other| builder.ret builder.fadd this, other }
+            double.define_native_function("__sub", double, double) { |this, other| builder.ret builder.fsub this, other }
+            double.define_native_function("__mul", double, double) { |this, other| builder.ret builder.fmul this, other }
+            double.define_native_function("__div", double, double) { |this, other| builder.ret builder.fdiv this, other }
+
+            double.define_native_function("__lt", bool, double) { |this, other| builder.ret builder.fcmp :ult, this, other }
+            double.define_native_function("__lte", bool, double) { |this, other| builder.ret builder.fcmp :ule, this, other }
+            double.define_native_function("__gt", bool, double) { |this, other| builder.ret builder.fcmp :ugt, this, other }
+            double.define_native_function("__gte", bool, double) { |this, other| builder.ret builder.fcmp :uge, this, other }
+
+            double.define_native_function("__eq", bool, double) { |this, other| builder.ret builder.fcmp :eq, this, other }
+            double.define_native_function("__neq", bool, double) { |this, other| builder.ret builder.fcmp :neq, this, other }
+
+            double.define_native_function("__add", double, int) { |this, other| builder.ret builder.fadd this, builder.si2fp(other, double.llvm_type) }
+            double.define_native_function("__sub", double, int) { |this, other| builder.ret builder.fsub this, builder.si2fp(other, double.llvm_type) }
+            double.define_native_function("__mul", double, int) { |this, other| builder.ret builder.fmul this, builder.si2fp(other, double.llvm_type) }
+            double.define_native_function("__div", double, int) { |this, other| builder.ret builder.fdiv this, builder.si2fp(other, double.llvm_type) }
+
+            double.define_native_function("__lt", bool, int) { |this, other| builder.ret builder.fcmp :ult, this, builder.si2fp(other, double.llvm_type) }
+            double.define_native_function("__lte", bool, int) { |this, other| builder.ret builder.fcmp :ule, this, builder.si2fp(other, double.llvm_type) }
+            double.define_native_function("__gt", bool, int) { |this, other| builder.ret builder.fcmp :ugt, this, builder.si2fp(other, double.llvm_type) }
+            double.define_native_function("__gte", bool, int) { |this, other| builder.ret builder.fcmp :uge, this, builder.si2fp(other, double.llvm_type) }
+
+            bool.define_native_function("__or", bool, bool) { |this, other| builder.ret builder.or this, other }
+            bool.define_native_function("__and", bool, bool) { |this, other| builder.ret builder.and this, other }
+            bool.define_native_function("__eq", bool, bool) { |this, other| builder.ret builder.icmp :eq, this, other }
+            bool.define_native_function("__neq", bool, bool) { |this, other| builder.ret builder.icmp, :neq, this, other }
+        end
+    end
+end

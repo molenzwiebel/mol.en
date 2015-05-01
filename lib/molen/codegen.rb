@@ -48,6 +48,8 @@ module Molen
 
             @variable_pointers = Scope.new
             @function_pointers = {}
+            @function_pointers["putchar<Int>"] = llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
+            @function_pointers["puts<String>"] = llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
         end
 
         def visit_int(node)

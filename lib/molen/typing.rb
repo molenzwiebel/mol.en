@@ -20,6 +20,8 @@ module Molen
 
             @scope = Scope.new
             @functions = Scope.new
+            @functions["putchar"] = [Function.new(nil, "putchar", mod["Int"], [FunctionArg.new("x", mod["Int"])], nil)]
+            @functions["puts"] = [Function.new(nil, "puts", mod["Int"], [FunctionArg.new("x", mod["String"])], nil)]
         end
 
         # Types an int node. Simply assigns the type to be Int
