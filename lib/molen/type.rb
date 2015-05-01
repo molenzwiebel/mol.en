@@ -35,7 +35,7 @@ module Molen
         end
 
         def llvm_struct
-            LLVM::Struct *(vars.values.map(&:llvm_type))
+            LLVM::Struct *(instance_variables.values.map(&:llvm_type))
         end
 
         def ==(other)
@@ -43,7 +43,7 @@ module Molen
         end
 
         def instance_var_index(name)
-            @instance_variables.key.index name
+            @instance_variables.keys.index name
         end
 
         def castable_to?(other)

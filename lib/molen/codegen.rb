@@ -1,5 +1,17 @@
+require 'llvm/execution_engine'
 
 module Molen
+    def run(src, filename = "unknown_file")
+        Molen.run(src, filename)
+    end
+
+    def self.run(src, filename = "unknown_file")
+        mod = generate(src, filename)
+        LLVM.init_jit
+        engine = LLVM::JITCompiler.new mod
+        engine.run_function mod.functions["molen_main"]
+    end
+
     def generate(src, filename = "unknown_file")
         Molen.generate(src, filename)
     end
@@ -10,6 +22,7 @@ module Molen
         body.accept TypingVisitor.new(mod)
         visitor = GeneratingVisitor.new(mod, body.type)
         body.accept visitor
+        visitor.builder.ret nil
         visitor.llvm_mod
     end
 
@@ -88,6 +101,25 @@ module Molen
             builder.ret node.value ? node.value.accept(self) : nil
         end
 
+        def visit_new(node)
+            allocated_struct = builder.malloc node.type.llvm_struct, node.type.name
+
+            if node.target_constructor then
+                create_func = @functions[node.target_constructor.ir_name]
+                create_func = generate_function(node.target_constructor) unless create_func
+                casted_this = builder.bit_cast allocated_struct, node.target_constructor.object.type.llvm_type
+
+                args = [casted_this]
+                node.args.each do |arg|
+                    args << arg.accept(self)
+                end
+
+                builder.call create_func, *args
+            end
+
+            allocated_struct
+        end
+
         def visit_call(node)
             func = @function_pointers[node.target_function.ir_name]
             unless func
@@ -123,7 +155,7 @@ module Molen
 
             # Add a 'this' argument at the start if this is an instance method
             args = node.args
-            args = [Arg.new("this", node.owner.type)] + args if node.owner
+            args = [FunctionArg.new("this", node.owner.type)] + args if node.owner
 
             # Compute types and create the actual LLVM function
             ret_type = node.return_type ? node.return_type.llvm_type : LLVM.Void
@@ -148,7 +180,7 @@ module Molen
                 node.body.accept self
             end
 
-            builder.ret nil if node.return_type.nil? and not node.body.definitely_returns
+            builder.ret nil if node.return_type.nil? and not node.body.definitely_returns?
             builder.position_at_end old_pos
             func
         end
@@ -164,7 +196,7 @@ module Molen
 
         def member_to_ptr(node)
             ptr_to_obj = node.object.accept(self)
-            index = node.ptr_to_obj.type.instance_var_index node.field.value
+            index = node.object.type.instance_var_index node.field.value
 
             return builder.gep ptr_to_obj, [LLVM::Int(0), LLVM::Int(index)], node.field.value + "_ptr"
         end

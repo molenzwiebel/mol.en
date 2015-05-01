@@ -121,11 +121,11 @@ module Molen
     end
 
     class FunctionArg < ASTNode
-        attr_accessor :name, :given_type
-        attr_eq :name, :given_type
+        attr_accessor :name, :type
+        attr_eq :name, :type
 
         def initialize(name, type)
-            @name, @given_type = name, type
+            @name, @type = name, type
         end
     end
 

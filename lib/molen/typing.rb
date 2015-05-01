@@ -148,8 +148,8 @@ module Molen
         # Resolves the type of a function argument, or errors if
         # not found.
         def visit_function_arg(node)
-            raise "Unknown type #{node.given_type} for argument #{name}." unless mod[node.given_type]
-            node.type = mod[node.given_type]
+            raise "Unknown type #{node.type} for argument #{name}." unless mod[node.type]
+            node.type = mod[node.type]
         end
 
         # Resolves a function and registers it in the appropriate
