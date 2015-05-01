@@ -42,6 +42,10 @@ module Molen
             other.class == self.class and other.name == name and other.superclass == superclass and other.instance_variables == instance_variables
         end
 
+        def instance_var_index(name)
+            @instance_variables.key.index name
+        end
+
         def castable_to?(other)
             return true, 0 if other == self
             clazz = superclass

@@ -41,12 +41,38 @@ module Molen
         end
 
         def visit_identifier(node)
-            var = @variable_pointers[node.value]
-            builder.load var[:ptr], node.value
+            builder.load @variable_pointers[node.value], node.value
         end
 
         def visit_body(node)
             node.contents.each {|n| n.accept self}
+        end
+
+        def visit_assign(node)
+            if node.name.is_a?(Identifier) then
+                val = node.value.accept(self)
+                val = builder.bit_cast(val, node.type.llvm_type) if node.type != node.value.type
+
+                unless @variable_pointers[node.name.value]
+                    @variable_pointers.define node.name.value, builder.alloca(node.type.llvm_type, node.name.value)
+                end
+                builder.store val, @variable_pointers[node.name.value]
+                return val
+            else
+                val = node.value.accept(self)
+                val = builder.bit_cast(val, node.type.llvm_type) if node.type != node.value.type
+
+                builder.store val, member_to_ptr(node.name)
+                return val
+            end
+        end
+
+        private
+        def member_to_ptr(node)
+            ptr_to_obj = node.object.accept(self)
+            index = node.ptr_to_obj.type.instance_var_index node.field.value
+
+            return builder.gep ptr_to_obj, [LLVM::Int(0), LLVM::Int(index)], node.field.value + "_ptr"
         end
     end
 
