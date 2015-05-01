@@ -38,15 +38,15 @@ module Molen
         end
 
         def visit_int(node)
-            ptr_to(LLVM::Int32, LLVM::Int32.from_i(node.value))
+            LLVM::Int32.from_i node.value
         end
 
         def visit_double(node)
-            ptr_to(LLVM::Double, LLVM::Double(node.value))
+            LLVM::Double node.value
         end
 
         def visit_bool(node)
-            ptr_to(LLVM::Int1, node.value ? LLVM::TRUE : LLVM::FALSE)
+            node.value ? LLVM::TRUE : LLVM::FALSE
         end
 
         def visit_str(node)
@@ -86,12 +86,6 @@ module Molen
             index = node.ptr_to_obj.type.instance_var_index node.field.value
 
             return builder.gep ptr_to_obj, [LLVM::Int(0), LLVM::Int(index)], node.field.value + "_ptr"
-        end
-
-        def ptr_to(type, val)
-            ptr = builder.alloca type
-            builder.store val, ptr
-            ptr
         end
     end
 

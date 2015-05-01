@@ -68,8 +68,8 @@ module Molen
         end
 
         def llvm_type
-            # Primitives are pointers to their type so they can support actual null, instead of a workaround.
-            LLVM::Pointer @type
+            # TODO: Later maybe? (Primitives are pointers to their type so they can support actual null, instead of a workaround.)
+            @type
         end
 
         def ==(other)
