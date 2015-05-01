@@ -1,5 +1,18 @@
 
 module Molen
+    def generate(src, filename = "unknown_file")
+        Molen.generate(src, filename)
+    end
+
+    def self.generate(src, filename = "unknown_file")
+        body = parse(src, filename)
+        mod = Molen::Module.new
+        body.accept TypingVisitor.new(mod)
+        visitor = GeneratingVisitor.new(mod, body.type)
+        body.accept visitor
+        visitor.llvm_mod
+    end
+
     class GeneratingVisitor < Visitor
         attr_accessor :mod, :llvm_mod, :builder
 
@@ -25,15 +38,15 @@ module Molen
         end
 
         def visit_int(node)
-            LLVM::Int32.from_i node.value
+            ptr_to(LLVM::Int32, LLVM::Int32.from_i(node.value))
         end
 
         def visit_double(node)
-            LLVM::Double node.value
+            ptr_to(LLVM::Double, LLVM::Double(node.value))
         end
 
         def visit_bool(node)
-            node.value ? LLVM::TRUE : LLVM::FALSE
+            ptr_to(LLVM::Int1, node.value ? LLVM::TRUE : LLVM::FALSE)
         end
 
         def visit_str(node)
@@ -73,6 +86,12 @@ module Molen
             index = node.ptr_to_obj.type.instance_var_index node.field.value
 
             return builder.gep ptr_to_obj, [LLVM::Int(0), LLVM::Int(index)], node.field.value + "_ptr"
+        end
+
+        def ptr_to(type, val)
+            ptr = builder.alloca type
+            builder.store val, ptr
+            ptr
         end
     end
 
