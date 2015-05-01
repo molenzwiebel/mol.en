@@ -191,6 +191,51 @@ module Molen
             func
         end
 
+        def visit_if(node)
+            the_func = builder.insert_block.parent
+
+            then_block = the_func.basic_blocks.append "then"
+            else_block = the_func.basic_blocks.append "else" if node.else
+            merge_block = the_func.basic_blocks.append "merge" unless node.definitely_returns?
+
+            cond = node.condition.accept(self)
+            node.else ? builder.cond(cond, then_block, else_block) : builder.cond(cond, then_block, merge_block)
+
+            builder.position_at_end then_block
+            with_new_variable_scope { node.then.accept self }
+            builder.br merge_block unless node.then.definitely_returns?
+
+            if node.else then
+                builder.position_at_end else_block
+                with_new_variable_scope { node.else.accept self }
+                builder.br merge_block unless node.else.definitely_returns?
+            end
+
+            builder.position_at_end merge_block if merge_block
+            nil
+        end
+
+        def visit_for(node)
+            the_func = builder.insert_block.parent
+
+            cond_block = the_func.basic_blocks.append "loop_cond"
+            body_block = the_func.basic_blocks.append "loop_body"
+            after_block = the_func.basic_blocks.append "after_loop"
+
+            node.init.accept self if node.init
+            builder.br cond_block
+
+            builder.position_at_end cond_block
+            builder.cond node.cond.accept(self), body_block, after_block
+
+            builder.position_at_end body_block
+            with_new_variable_scope { node.body.accept self }
+            node.step.accept self if node.step
+            builder.br cond_block
+
+            builder.position_at_end after_block
+        end
+
         private
         def with_new_variable_scope(inherit = true)
             old_var_scope = @variable_pointers
