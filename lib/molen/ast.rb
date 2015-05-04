@@ -121,6 +121,15 @@ module Molen
         end
     end
 
+    class NewArray < Expression
+        attr_accessor :type, :elements
+        attr_eq :type, :elements
+
+        def initialize(type, els)
+            @type, @elements = type, els
+        end
+    end
+
     class FunctionArg < ASTNode
         attr_accessor :name, :type
         attr_eq :name, :type

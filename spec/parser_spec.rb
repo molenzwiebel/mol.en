@@ -44,6 +44,11 @@ describe Parser do
     it_parses "new Test(10, 11)", New.new("Test".const, [10.literal, 11.literal])
     it_errors_on "new test()", /Expected token of type CONSTANT/
 
+    it_parses "new Test[](10)", NewArray.new("Test", [10.literal])
+    it_parses "new Test[]", NewArray.new("Test", [])
+
+    it_parses "[1, 2, 3]", NewArray.new(nil, [1.literal, 2.literal, 3.literal])
+
     Molen::OPERATOR_NAMES.each do |op, name|
         it_parses "3 #{op} 3", Call.new(3.literal, name, [3.literal])
         it_errors_on "3 #{op}", /Expected expression at right hand side/

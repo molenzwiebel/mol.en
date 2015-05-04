@@ -79,8 +79,20 @@ module Molen
             expr -> tok { tok.is_keyword? "new" } do
                 expect_next :constant
                 name = token.value
-                args = !next_token.is?("(") ? [] : parse_delimited { |parser| parser.parse_expression }
-                New.new Constant.new(name), args
+
+                if next_token.is?("[") then
+                    expect_next_and_consume "]"
+                    is_arr = true
+                end
+
+                args = !token.is?("(") ? [] : parse_delimited { |parser| parser.parse_expression }
+
+                next New.new Constant.new(name), args unless is_arr
+                NewArray.new name, args
+            end
+
+            expr -> tok { tok.is? "[" } do
+                NewArray.new nil, parse_delimited("[", ",", "]") { |parser| parser.parse_expression }
             end
 
             expr -> tok { tok.is_lparen? } do
