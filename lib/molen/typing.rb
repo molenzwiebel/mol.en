@@ -189,7 +189,7 @@ module Molen
 
             if node.owner then
                 func_scope = node.owner.type.functions
-                raise "Redefinition of #{node.owner.type.name}##{node.name} with same argument types" unless assure_unique func_scope, node.name, node.args.map(&:type)
+                raise "Redefinition of #{node.owner.type.name}##{node.name} with same argument types" unless assure_unique func_scope.this, node.name, node.args.map(&:type)
                 func_scope.has_local_key?(node.name) ? func_scope[node.name] << node : func_scope.define(node.name, [node])
             else
                 raise "Redefinition of #{node.name} with same argument types" unless assure_unique @functions, node.name, node.args.map(&:type)

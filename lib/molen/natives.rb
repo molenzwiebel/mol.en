@@ -7,7 +7,7 @@ module Molen
             int.define_native_function("__add", int, int) { |this, other| builder.ret builder.add this, other }
             int.define_native_function("__sub", int, int) { |this, other| builder.ret builder.sub this, other }
             int.define_native_function("__mul", int, int) { |this, other| builder.ret builder.mul this, other }
-            int.define_native_function("__div", int, int) { |this, other| builder.ret builder.div this, other }
+            int.define_native_function("__div", int, int) { |this, other| builder.ret builder.sdiv this, other }
 
             int.define_native_function("__lt", bool, int) { |this, other| builder.ret builder.icmp :ult, this, other }
             int.define_native_function("__lte", bool, int) { |this, other| builder.ret builder.icmp :ule, this, other }
