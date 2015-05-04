@@ -48,8 +48,6 @@ module Molen
 
             @variable_pointers = Scope.new
             @function_pointers = {}
-            @function_pointers[Function.new(nil, "putchar", mod["Int"], [FunctionArg.new("x", mod["Int"])], nil)] = llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
-            @function_pointers[Function.new(nil, "puts", mod["Int"], [FunctionArg.new("x", mod["String"])], nil)] = llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
         end
 
         def visit_int(node)
@@ -111,9 +109,9 @@ module Molen
             allocated_struct = builder.malloc node.type.llvm_struct, node.type.name
 
             if node.target_constructor then
-                create_func = @functions[node.target_constructor.ir_name]
+                create_func = @function_pointers[node.target_constructor]
                 create_func = generate_function(node.target_constructor) unless create_func
-                casted_this = builder.bit_cast allocated_struct, node.target_constructor.object.type.llvm_type
+                casted_this = builder.bit_cast allocated_struct, node.target_constructor.owner.type.llvm_type
 
                 args = [casted_this]
                 node.args.each do |arg|

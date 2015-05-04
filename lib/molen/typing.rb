@@ -20,8 +20,14 @@ module Molen
 
             @scope = Scope.new
             @functions = Scope.new
-            @functions["putchar"] = [Function.new(nil, "putchar", mod["Int"], [FunctionArg.new("x", mod["Int"])], nil)]
-            @functions["puts"] = [Function.new(nil, "puts", mod["Int"], [FunctionArg.new("x", mod["String"])], nil)]
+            @functions["putchar"] = [Function.new(nil, "putchar", mod["Int"], [FunctionArg.new("x", mod["Int"])], NativeBody.new(lambda { |arg|
+                putc_func = llvm_mod.functions["putchar"] || llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
+                builder.ret builder.call putc_func, arg
+            }))]
+            @functions["puts"] = [Function.new(nil, "puts", mod["Int"], [FunctionArg.new("x", mod["String"])], NativeBody.new(lambda { |arg|
+                puts_func = llvm_mod.functions["puts"] || llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
+                builder.ret builder.call puts_func, arg
+            }))]
         end
 
         # Types an int node. Simply assigns the type to be Int
