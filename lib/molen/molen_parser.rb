@@ -141,14 +141,14 @@ module Molen
 
                 args = parse_delimited do |parser|
                     n = parser.expect(:identifier).value
-                    parser.expect_next(":")
-                    type = parser.expect_next_and_consume(:constant).value
+                    parser.expect_next_and_consume(":")
+                    type = parser.parse_type
                     FunctionArg.new n, type
                 end
                 type = nil
                 if token.is? "->" then
-                    expect_next(:constant)
-                    type = consume.value
+                    next_token # Consume ->
+                    type = parse_type
                 end
                 Function.new nil, name, type, args, parse_body(type != nil)
             end
@@ -201,7 +201,7 @@ module Molen
             stmt -> x { x.is_keyword? "var" } do
                 name = expect_next_and_consume(:identifier).value
                 expect_and_consume(":")
-                type = expect_and_consume(:constant).value
+                type = parse_type
                 InstanceVar.new name, type
             end
 
@@ -264,6 +264,15 @@ module Molen
                 raise_error "Expected expression at right hand side of #{op_tok.value}", op_tok unless right
                 return Call.new(left, OPERATOR_NAMES[op_tok.value], [right])
             end
+        end
+
+        def parse_type
+            type = expect_and_consume(:constant).value
+            if token.is?("[") then
+                expect_next_and_consume "]"
+                type += "[]"
+            end
+            type
         end
 
         def parse_body(auto_return = true)

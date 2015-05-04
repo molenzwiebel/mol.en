@@ -33,6 +33,7 @@ describe Parser do
     it_parses "return", Return.new(nil)
     it_parses "return 10", Return.new(10.literal)
     it_parses "var x: Int", InstanceVar.new("x", "Int")
+    it_parses "var x: Int[]", InstanceVar.new("x", "Int[]")
 
     it_parses "(10)", 10.literal
     it_errors_on "()", /Expected node in parenthesized expression/
@@ -67,6 +68,8 @@ describe Parser do
     it_parses "def test() 10", Function.new(nil, "test", nil, [], Body.from(10.literal))
     it_parses "def test() {}", Function.new(nil, "test", nil, [], nil)
     it_parses "def test() { 10 }", Function.new(nil, "test", nil, [], Body.from(10.literal))
+
+    it_parses "def test(a: Int[], b: Bool[]) -> Int[] 10", Function.new(nil, "test", "Int[]", [FunctionArg.new("a", "Int[]"), FunctionArg.new("b", "Bool[]")], Body.from(Return.new(10.literal)))
 
     it_parses "if (true) 10", If.new(true.literal, Body.from(10.literal), nil, [])
     it_parses "if (true) 10 else 11", If.new(true.literal, Body.from(10.literal), Body.from(11.literal), [])
