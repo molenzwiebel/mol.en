@@ -2,7 +2,22 @@
 module Molen
     class Module
         def add_natives
-            int, double, bool = self["Int"], self["Double"], self["Bool"]
+            int, double, bool, object, string = self["Int"], self["Double"], self["Bool"], self["Object"], self["String"]
+
+            object.define_native_function("to_s", string) do |this|
+                sprintf_func = llvm_mod.functions["sprintf"] || llvm_mod.functions.add("sprintf", [string.llvm_type], int.llvm_type, varargs: true)
+                strlen_func = llvm_mod.functions["strlen"] || llvm_mod.functions.add("strlen", [string.llvm_type], int.llvm_type)
+
+                vtable = builder.load builder.struct_gep this, 0
+                name_ptr = builder.load builder.struct_gep vtable, 1
+
+                name_len = builder.call strlen_func, name_ptr
+                buf_len = builder.add name_len, LLVM::Int(23)
+
+                buffer = builder.array_malloc(LLVM::Int8, buf_len)
+                builder.call sprintf_func, buffer, builder.global_string_pointer("#<%s:0x%016lx>"), name_ptr, this
+                builder.ret buffer
+            end
 
             int.define_native_function("__add", int, int) { |this, other| builder.ret builder.add this, other }
             int.define_native_function("__sub", int, int) { |this, other| builder.ret builder.sub this, other }

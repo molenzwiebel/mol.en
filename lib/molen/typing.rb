@@ -135,6 +135,7 @@ module Molen
         def visit_new(node)
             node.args.each {|arg| arg.accept self}
             raise "Undefined type '#{node.type.value}'" unless mod[node.type.value]
+            raise "Cannot instantiate primitive" if mod[node.type.value].is_a? PrimitiveType
             node.type = mod[node.type.value]
 
             if (fn = find_overloaded_method(node.type.functions, "create", node.args)) then

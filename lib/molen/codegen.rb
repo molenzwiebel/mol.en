@@ -46,6 +46,8 @@ module Molen
                 end
             end
 
+            @vtables = {}
+
             @variable_pointers = Scope.new
             @function_pointers = {}
         end
@@ -120,6 +122,7 @@ module Molen
 
         def visit_new(node)
             allocated_struct = builder.malloc node.type.llvm_struct, node.type.name
+            populate_vtable allocated_struct, node.type
 
             if node.target_constructor then
                 create_func = @function_pointers[node.target_constructor]
@@ -261,6 +264,26 @@ module Molen
             index = node.object.type.instance_var_index node.field.value
 
             return builder.gep ptr_to_obj, [LLVM::Int(0), LLVM::Int(index)], node.field.value + "_ptr"
+        end
+
+        def get_or_create_vtable(type)
+            return @vtables[type.name] if @vtables[type.name]
+
+            parent_ptr = type.superclass ? get_or_create_vtable(type.superclass) : builder.int2ptr(LLVM::Int(0), LLVM::Pointer(type.vtable_type))
+
+            const = LLVM::ConstantStruct.const([parent_ptr, builder.global_string_pointer(type.name)])
+
+            global = @vtables[type.name] = llvm_mod.globals.add(const, "#{type.name}_vtable") do |var|
+                var.linkage = :private
+                var.global_constant = true
+                var.initializer = const
+            end
+        end
+
+        def populate_vtable(allocated_struct, type)
+            str = builder.struct_gep allocated_struct, 0
+            vtable = get_or_create_vtable(type).bitcast_to LLVM::Pointer(type.vtable_type)
+            builder.store vtable, str
         end
     end
 

@@ -52,7 +52,15 @@ module Molen
         end
 
         def llvm_struct
-            LLVM::Struct *(instance_variables.values.map(&:llvm_type))
+            LLVM::Struct *([LLVM::Pointer(vtable_type)] + instance_variables.values.map(&:llvm_type))
+        end
+
+        def vtable_type
+            @vtable_type ||= begin
+                struct = LLVM::Struct("#{name}_vtable_type")
+                struct.element_types = [LLVM::Pointer(superclass ? superclass.vtable_type : struct), LLVM::Pointer(LLVM::Int8)]
+                struct
+            end
         end
 
         def ==(other)
@@ -60,7 +68,7 @@ module Molen
         end
 
         def instance_var_index(name)
-            @instance_variables.keys.index name
+            @instance_variables.keys.index(name) + 1 # Add 1 to skip the vtable
         end
 
         def castable_to?(other)
