@@ -44,7 +44,7 @@ class SettableBaseClass :: BaseClass {
     }
 
     def print_msg() {
-        puts(this.message)
+        puts(@message)
     }
 
     def print_z() {

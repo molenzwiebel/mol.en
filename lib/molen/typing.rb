@@ -159,7 +159,7 @@ module Molen
         def visit_call(node)
             node.args.each {|arg| arg.accept self}
 
-            unless node.object.nil? then
+            if node.object then
                 node.object.accept self
                 function = find_overloaded_method node.object.type.functions, node.name, node.args
             else
@@ -193,7 +193,7 @@ module Molen
                 func_scope.has_local_key?(node.name) ? func_scope[node.name] << node : func_scope.define(node.name, [node])
             else
                 raise "Redefinition of #{node.name} with same argument types" unless assure_unique @functions, node.name, node.args.map(&:type)
-                (@functions[node.name] ||= []) << node
+                @functions.has_local_key?(node.name) ? @functions[node.name] << node : @functions.define(node.name, [node])
             end
 
             @current_function = node
