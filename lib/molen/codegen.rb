@@ -130,8 +130,10 @@ module Molen
                 casted_this = builder.bit_cast allocated_struct, node.target_constructor.owner.type.llvm_type
 
                 args = [casted_this]
-                node.args.each do |arg|
-                    args << arg.accept(self)
+                node.args.each_with_index do |arg, i|
+                    val = arg.accept(self)
+                    val = builder.bit_cast val, node.target_constructor.args[i].type.llvm_type
+                    args << val
                 end
 
                 builder.call create_func, *args
