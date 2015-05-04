@@ -82,6 +82,12 @@ module Molen
             builder.load member_to_ptr(node), node.field.value
         end
 
+        def visit_instance_variable(node)
+            obj_ptr = builder.load @variable_pointers["this"]
+            index = node.owner.instance_var_index node.value
+            builder.load builder.gep(obj_ptr, [LLVM::Int(0), LLVM::Int(index)], node.value + "_ptr"), node.value
+        end
+
         def visit_assign(node)
             if node.name.is_a?(Identifier) then
                 val = node.value.accept(self)
@@ -92,12 +98,19 @@ module Molen
                 end
                 builder.store val, @variable_pointers[node.name.value]
                 return val
-            else
+            elsif node.name.is_a?(MemberAccess) then
                 val = node.value.accept(self)
                 val = builder.bit_cast(val, node.type.llvm_type) if node.type != node.value.type
 
                 builder.store val, member_to_ptr(node.name)
                 return val
+            else
+                val = node.value.accept(self)
+                val = builder.bit_cast(val, node.type.llvm_type) if node.type != node.value.type
+
+                obj_ptr = builder.load @variable_pointers["this"]
+                index = node.name.owner.instance_var_index node.name.value
+                builder.store val, builder.gep(obj_ptr, [LLVM::Int(0), LLVM::Int(index)], node.name.value + "_ptr")
             end
         end
 

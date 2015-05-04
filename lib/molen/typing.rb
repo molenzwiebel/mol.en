@@ -12,6 +12,10 @@ module Molen
         attr_accessor :target_constructor
     end
 
+    class InstanceVariable
+        attr_accessor :owner
+    end
+
     class TypingVisitor < Visitor
         attr_accessor :mod
 
@@ -73,6 +77,7 @@ module Molen
             raise "Cannot access instance variable of primitive type" if obj_type.is_a? PrimitiveType
             raise "Unknown instance variable #{node.value} on object of type #{obj_type.name}" unless obj_type.instance_variables[node.value]
             node.type = obj_type.instance_variables[node.value]
+            node.owner = obj_type
         end
 
         # Simply makes sure that all of the if children are typed. Also
