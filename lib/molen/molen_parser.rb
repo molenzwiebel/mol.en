@@ -72,6 +72,10 @@ module Molen
                 Constant.new consume.value
             end
 
+            expr -> tok { tok.is_instance_variable? } do
+                InstanceVariable.new consume.value[1..-1]
+            end
+
             expr -> tok { tok.is_keyword? "new" } do
                 expect_next :constant
                 name = token.value

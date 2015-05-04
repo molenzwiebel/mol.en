@@ -79,6 +79,7 @@ module Molen
     class Double < Literal; end
     class Identifier < Literal; end
     class Constant < Literal; end
+    class InstanceVariable < Literal; end
 
     class Null < Expression
         attr_eq

@@ -44,6 +44,10 @@ class String
     def const
         Constant.new self
     end
+
+    def var
+        InstanceVariable.new self
+    end
 end
 
 class Float

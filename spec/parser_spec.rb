@@ -26,6 +26,8 @@ describe Parser do
     it_parses "\"test\"", "test".literal
     it_parses "__var", "__var".ident
     it_parses "Var", "Var".const
+    it_parses "@test", "test".var
+    it_parses "@__bla_322", "__bla_322".var
 
     it_parses "x = 10", Assign.new("x".ident, 10.literal)
     it_parses "return", Return.new(nil)
