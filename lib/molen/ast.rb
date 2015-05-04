@@ -149,6 +149,14 @@ module Molen
             end
             return true, total_dist
         end
+
+        def eql?(other)
+            self == other
+        end
+
+        def hash
+            [owner, name, return_type, args, body].hash
+        end
     end
 
     class If < Statement

@@ -48,8 +48,8 @@ module Molen
 
             @variable_pointers = Scope.new
             @function_pointers = {}
-            @function_pointers["putchar<Int>"] = llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
-            @function_pointers["puts<String>"] = llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
+            @function_pointers[Function.new(nil, "putchar", mod["Int"], [FunctionArg.new("x", mod["Int"])], nil)] = llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
+            @function_pointers[Function.new(nil, "puts", mod["Int"], [FunctionArg.new("x", mod["String"])], nil)] = llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
         end
 
         def visit_int(node)
@@ -127,7 +127,7 @@ module Molen
         end
 
         def visit_call(node)
-            func = @function_pointers[node.target_function.ir_name]
+            func = @function_pointers[node.target_function]
             unless func
                 func = generate_function(node.target_function)
             end
@@ -169,7 +169,7 @@ module Molen
 
             func = llvm_mod.functions.add(node.ir_name, llvm_arg_types, ret_type)
             func.linkage = :internal # Allow llvm to optimize this function away
-            @function_pointers[node.ir_name] = func
+            @function_pointers[node] = func
 
             # Create a new block at jump to it
             entry = func.basic_blocks.append "entry"
