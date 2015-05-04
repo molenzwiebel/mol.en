@@ -134,13 +134,17 @@ module Molen
         # optionally assigns a constructor to it (if there is one).
         def visit_new(node)
             node.args.each {|arg| arg.accept self}
-            raise "Undefined type '#{node.type.value}'" unless mod[node.type.value]
-            raise "Cannot instantiate primitive" if mod[node.type.value].is_a? PrimitiveType
-            node.type = mod[node.type.value]
+            type = resolve_type node.type.value
+            raise "Cannot instantiate primitive" if type.is_a? PrimitiveType
+            node.type = type
 
             if (fn = find_overloaded_method(node.type.functions, "create", node.args)) then
                 node.target_constructor = fn
             end
+        end
+
+        def visit_new_array(node)
+            node.type = resolve_type node.type
         end
 
         # Loops through all nodes in the body to type them. Also errors
@@ -178,14 +182,14 @@ module Molen
         # Resolves the type of a function argument, or errors if
         # not found.
         def visit_function_arg(node)
-            raise "Unknown type #{node.type} for argument #{name}." unless mod[node.type]
-            node.type = mod[node.type]
+            raise "Unknown type #{node.type} for argument #{name}." unless resolve_type(node.type)
+            node.type = resolve_type node.type
         end
 
         # Resolves a function and registers it in the appropriate
         # scope.
         def visit_function(node)
-            node.return_type = node.return_type ? mod[node.return_type] : nil
+            node.return_type = node.return_type ? resolve_type(node.return_type) : nil
             node.args.each {|arg| arg.accept self}
 
             if node.owner then
@@ -240,7 +244,7 @@ module Molen
             node.type = mod.types[node.name] ||= ObjectType.new(node.name, superclass)
 
             node.instance_vars.each do |var|
-                type = mod[var.type]
+                type = resolve_type var.type
                 raise "Unknown type #{var.type} (used in #{node.name}##{var.name})" unless type
                 node.type.instance_variables.define var.name, type
             end
@@ -278,6 +282,17 @@ module Molen
             @scope = inherit ? (Scope.new inherit_from || old_scope) : Scope.new
             yield
             @scope = old_scope
+        end
+
+        def resolve_type(name)
+            return mod[name] if mod[name]
+
+            unless name.include? "["
+                # It is not an array and it wasn't in mod, which means it is undefined
+                raise "Undefined type '#{name}'"
+            end
+
+            mod[name] = ArrayType.new resolve_type(name[0...-2])
         end
     end
 end

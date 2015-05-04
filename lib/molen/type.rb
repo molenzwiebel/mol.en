@@ -105,4 +105,25 @@ module Molen
             return other == self, 0
         end
     end
+
+    class ArrayType < Type
+        attr_accessor :element_type
+
+        def initialize(el_type)
+            super(el_type.name + "[]", nil)
+            @element_type = el_type
+        end
+
+        def llvm_type
+            LLVM::Pointer element_type.llvm_type
+        end
+
+        def ==(other)
+            other.class == self.class and other.element_type == element_type
+        end
+
+        def castable_to?(other)
+            return other == self, 0
+        end
+    end
 end

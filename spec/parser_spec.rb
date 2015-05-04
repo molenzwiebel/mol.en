@@ -34,6 +34,7 @@ describe Parser do
     it_parses "return 10", Return.new(10.literal)
     it_parses "var x: Int", InstanceVar.new("x", "Int")
     it_parses "var x: Int[]", InstanceVar.new("x", "Int[]")
+    it_parses "var x: Int[][]", InstanceVar.new("x", "Int[][]")
 
     it_parses "(10)", 10.literal
     it_errors_on "()", /Expected node in parenthesized expression/
@@ -45,8 +46,8 @@ describe Parser do
     it_parses "new Test(10, 11)", New.new("Test".const, [10.literal, 11.literal])
     it_errors_on "new test()", /Expected token of type CONSTANT/
 
-    it_parses "new Test[](10)", NewArray.new("Test", [10.literal])
-    it_parses "new Test[]", NewArray.new("Test", [])
+    it_parses "new Test[](10)", NewArray.new("Test[]", [10.literal])
+    it_parses "new Test[]", NewArray.new("Test[]", [])
 
     it_parses "[1, 2, 3]", NewArray.new(nil, [1.literal, 2.literal, 3.literal])
 

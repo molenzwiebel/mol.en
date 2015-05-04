@@ -49,6 +49,10 @@ describe TypingVisitor do
     it_fails_on "new X", /Undefined type 'X'/
     it_fails_on "new Int", /Cannot instantiate primitive/
 
+    it_types "new String[](10)", "String[]"
+    it_types "new String[][](10)", "String[][]"
+    it_fails_on "new Bla[](10)", /Undefined type 'Bla'/
+
     it_types "class Test {}", "Test"
     it_fails_on "class Test :: Foo {}", /Class Foo \(superclass of Test\) not found!/
 
@@ -70,5 +74,6 @@ describe TypingVisitor do
 
     it_types "def test() -> Int 10 def test(a: Int) -> Double 10.1 test()", "Int"
     it_types "def test() -> Int 10 def test(a: Int) -> Double 10.1 test(1)", "Double"
+    it_types "def test() -> Int[] new Int[]() test()", "Int[]"
     it_types "class Int { def test() -> Int this } 10.test()", "Int"
 end

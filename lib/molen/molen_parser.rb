@@ -78,16 +78,11 @@ module Molen
 
             expr -> tok { tok.is_keyword? "new" } do
                 expect_next :constant
-                name = token.value
-
-                if next_token.is?("[") then
-                    expect_next_and_consume "]"
-                    is_arr = true
-                end
+                name = parse_type
 
                 args = !token.is?("(") ? [] : parse_delimited { |parser| parser.parse_expression }
 
-                next New.new Constant.new(name), args unless is_arr
+                next New.new Constant.new(name), args unless name.include? "["
                 NewArray.new name, args
             end
 
@@ -268,7 +263,7 @@ module Molen
 
         def parse_type
             type = expect_and_consume(:constant).value
-            if token.is?("[") then
+            while token.is?("[")
                 expect_next_and_consume "]"
                 type += "[]"
             end
