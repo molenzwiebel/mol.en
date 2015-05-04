@@ -57,6 +57,9 @@ describe TypingVisitor do
     it_fails_on "class X { def test() @test }", /Unknown instance variable test/
     it_types "class X { var foo: Int def get_foo() -> Int @foo } y = new X y.get_foo()", "Int"
 
+    it_types "class X { var foo: Int def set_foo(x: Int) @foo = x } y = new X y.set_foo(12)", nil
+    it_fails_on "class X { var foo: Int def set_foo(x: Double) @foo = x } y = new X y.set_foo(12.0)", /Cannot assign Double to/
+
     it_fails_on "def test() { if (true) { return } 10 }", /Unreachable code/
     it_fails_on "def test() { if (true) { return } else { return } 10 }", /Unreachable code/
     it_types "def test() { if (true) { return } else { } 10 }", nil
