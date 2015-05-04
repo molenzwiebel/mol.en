@@ -20,11 +20,11 @@ class BaseClass {
     }
 
     def print_x() {
-        put_int(this.x)
+        put_int(@x)
     }
 
     def print_z() {
-        if (this.z) {
+        if (@z) {
             puts("true")
         } else {
             puts("false")
@@ -36,11 +36,11 @@ class SettableBaseClass :: BaseClass {
     var message: String
 
     def set_x(x: Int) {
-        this.x = x
+        @x = x
     }
 
     def set_msg(x: String) {
-        this.message = x
+        @message = x
     }
 
     def print_msg() {
