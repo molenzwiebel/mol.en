@@ -1,0 +1,43 @@
+class Foo { }
+class Bar :: Foo { }
+class Baz :: Bar { }
+class Integer { }
+
+def print(x: Object) {
+    puts("x is an Object!")
+}
+
+def print(x: Foo) {
+    puts("x is a Foo!")
+}
+
+def print(x: Bar) {
+    puts("x is a Bar!")
+}
+
+def print(x: Baz) {
+    puts("x is a Baz!")
+}
+
+print(new Foo)
+print(new Bar)
+print(new Baz)
+print(new Integer)
+
+class Sample {
+    def create() {
+        puts("Created with 0 arguments!")
+    }
+
+    def create(x: Int) {
+        puts("Created with an int!")
+    }
+
+    def create(x: Object) {
+        puts("Created with an Object!")
+    }
+}
+
+new Sample
+new Sample(10)
+new Sample(new Foo)

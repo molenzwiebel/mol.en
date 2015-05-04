@@ -1,0 +1,69 @@
+def put_int(n: Int) {
+    if (n > 10) {
+        put_int(n / 10)
+        put_int(n - (n / 10) * 10)
+    } else {
+        putchar(48 + n)
+    }
+    putchar(10)
+}
+
+class BaseClass {
+    var x: Int
+    var y: Double
+    var z: Bool
+
+    def create(x: Int, y: Double, z: Bool) {
+        this.x = x
+        this.y = y
+        this.z = z
+    }
+
+    def print_x() {
+        put_int(this.x)
+    }
+
+    def print_z() {
+        if (this.z) {
+            puts("true")
+        } else {
+            puts("false")
+        }
+    }
+}
+
+class SettableBaseClass :: BaseClass {
+    var message: String
+
+    def set_x(x: Int) {
+        this.x = x
+    }
+
+    def set_msg(x: String) {
+        this.message = x
+    }
+
+    def print_msg() {
+        puts(this.message)
+    }
+
+    def print_z() {
+        puts("I overrode print_z in BaseClass, muhahaha!")
+    }
+}
+
+base = new BaseClass(1, 3.14, false)
+settable_base = new SettableBaseClass(1, 3.14, false)
+
+base.print_z()
+settable_base.print_z()
+
+settable_base.print_x()
+settable_base.set_x(4)
+settable_base.print_x()
+
+settable_base.set_msg("Hello, world!")
+settable_base.print_msg()
+
+settable_base.set_msg("mol.en FTW!")
+settable_base.print_msg()
