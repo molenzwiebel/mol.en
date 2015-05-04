@@ -64,6 +64,17 @@ module Molen
             node.type = @scope[node.value]
         end
 
+        # Tries to find the specified instance variable and errors
+        # if the variable was not found.
+        def visit_instance_variable(node)
+            raise "Cannot access instance variables if not in a function" unless @current_function
+            raise "Cannot access instance variables if not in a class function" unless @current_function.owner
+            obj_type = @current_function.owner.type
+            raise "Cannot access instance variable of primitive type" if obj_type.is_a? PrimitiveType
+            raise "Unknown instance variable #{node.value} on object of type #{obj_type.name}" unless obj_type.instance_variables[node.value]
+            node.type = obj_type.instance_variables[node.value]
+        end
+
         # Simply makes sure that all of the if children are typed. Also
         # checks that the if condition actually returns a boolean.
         # TODO: Want to change if to call to_b or something?
