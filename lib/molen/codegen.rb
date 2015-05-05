@@ -88,12 +88,6 @@ module Molen
             builder.load get_arr_pointer(node)
         end
 
-        def get_arr_pointer(node)
-            arr_struct = node.array.accept(self)
-            arr_buffer = builder.load builder.struct_gep arr_struct, 2
-            builder.gep arr_buffer, [node.index.accept(self)]
-        end
-
         def visit_instance_variable(node)
             obj_ptr = builder.load @variable_pointers["this"]
             index = node.owner.instance_var_index node.value
@@ -321,6 +315,12 @@ module Molen
             str = builder.struct_gep allocated_struct, 0
             vtable = get_or_create_vtable(type).bitcast_to LLVM::Pointer(type.vtable_type)
             builder.store vtable, str
+        end
+
+        def get_arr_pointer(node)
+            arr_struct = node.array.accept(self)
+            arr_buffer = builder.load builder.struct_gep arr_struct, 2
+            builder.gep arr_buffer, [node.index.accept(self)]
         end
     end
 

@@ -142,6 +142,43 @@ module Molen
             define_native_function "size", mod["Int"] do |this|
                 builder.ret builder.load builder.struct_gep this, 0
             end
+
+            define_native_function "capacity", mod["Int"] do |this|
+                builder.ret builder.load builder.struct_gep this, 1
+            end
+
+            define_native_function "add", el_type, el_type do |this, arg|
+                realloc_func = llvm_mod.functions["realloc"] || llvm_mod.functions.add("realloc", [LLVM::Pointer(LLVM::Int8), LLVM::Int], LLVM::Pointer(LLVM::Int8))
+
+                the_func = builder.insert_block.parent
+                resize_block = the_func.basic_blocks.append("resize")
+                exit_block = the_func.basic_blocks.append("exit")
+
+                arr_size = builder.load builder.struct_gep(this, 0)
+                arr_cap = builder.load builder.struct_gep(this, 1)
+                arr_el_size = el_type.llvm_type.is_a?(LLVM::Type) ? el_type.llvm_type.size : el_type.llvm_type.type.size
+                builder.cond(builder.icmp(:eq, arr_size, arr_cap), resize_block, exit_block)
+
+                builder.position_at_end resize_block
+                new_capacity = builder.mul arr_cap, LLVM::Int(2)
+                new_buffer_size = builder.mul new_capacity, builder.trunc(arr_el_size, LLVM::Int32)
+
+                old_buffer = builder.load builder.struct_gep(this, 2)
+                old_buffer = builder.bit_cast old_buffer, LLVM::Pointer(LLVM::Int8)
+                new_buffer = builder.call realloc_func, old_buffer, new_buffer_size
+
+                builder.store builder.bit_cast(new_buffer, LLVM::Pointer(el_type.llvm_type)), builder.struct_gep(this, 2)
+                builder.store new_capacity, builder.struct_gep(this, 1)
+                builder.br exit_block
+
+                builder.position_at_end exit_block
+                new_size = builder.add arr_size, LLVM::Int(1)
+                builder.store new_size, builder.struct_gep(this, 0)
+
+                arr_buffer = builder.load builder.struct_gep this, 2
+                builder.store arg, builder.gep(arr_buffer, [arr_size])
+                builder.ret arg
+            end
         end
 
         def llvm_type
