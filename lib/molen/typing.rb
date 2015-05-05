@@ -144,7 +144,19 @@ module Molen
         end
 
         def visit_new_array(node)
-            node.type = resolve_type node.type
+            if node.type then
+                node.type = resolve_type node.type
+            else
+                raise "Cannot deduce type of array: No initial elements or type given." if node.elements.size == 0
+                node.elements.each { |el| el.accept self }
+                available_types = node.elements.first.type.inheritance_chain
+                node.elements.drop(1).each do |el|
+                    types = el.type.inheritance_chain
+                    available_types.each { |t| available_types.delete(t) unless types.include? t }
+                end
+                raise "Cannot deduce type of array: No common superclass found." if available_types.size == 0
+                node.type = resolve_type available_types.first.name + "[]" # Pretty dirty hack.
+            end
         end
 
         # Loops through all nodes in the body to type them. Also errors

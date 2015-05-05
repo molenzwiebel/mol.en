@@ -53,6 +53,14 @@ describe TypingVisitor do
     it_types "new String[][](10)", "String[][]"
     it_fails_on "new Bla[](10)", /Undefined type 'Bla'/
 
+    it_fails_on "[]", /Cannot deduce type of array: No initial elements or type given\./
+    it_fails_on "[1, 3.3]", /Cannot deduce type of array: No common superclass found\./
+    it_types "[10]", "Int[]"
+    it_types "[10, 3, 4]", "Int[]"
+    it_types "[[1,3], [3, 2]]", "Int[][]"
+    it_types "class X {} class Y :: X {} [new X, new Y]", "X[]"
+    it_types "class X {} class Y {} [new X, new Y]", "Object[]"
+
     it_types "class Test {}", "Test"
     it_fails_on "class Test :: Foo {}", /Class Foo \(superclass of Test\) not found!/
 

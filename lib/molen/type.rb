@@ -19,6 +19,15 @@ module Molen
             raise "Unimplemented castable_to on #{self.class.name}"
         end
 
+        def inheritance_chain
+            ret = [self]
+            type = self
+            while type = type.superclass
+                ret << type
+            end
+            ret
+        end
+
         def define_native_function(name, return_type, *args, &block)
             body = NativeBody.new block
             func_def = Function.new ClassDef.new(nil, nil, [], []), name, return_type, args.each_with_index.map{|type, id| FunctionArg.new "arg#{id.to_s}", type}, nil
@@ -104,6 +113,10 @@ module Molen
         def castable_to?(other)
             return other == self, 0
         end
+
+        def inheritance_chain
+            [self]
+        end
     end
 
     class ArrayType < Type
@@ -124,6 +137,10 @@ module Molen
 
         def castable_to?(other)
             return other == self, 0
+        end
+
+        def inheritance_chain
+            [self]
         end
     end
 end
