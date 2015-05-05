@@ -104,14 +104,13 @@ module Molen
     class PrimitiveType < Type
         attr_accessor :type
 
-        def initialize(name, supert, llvm_type, llvm_size)
-            super name, supert
+        def initialize(name, llvm_type, llvm_size)
+            super name, nil
             @type = llvm_type
             @size = llvm_size
         end
 
         def llvm_type
-            # TODO: Later maybe? (Primitives are pointers to their type so they can support actual null, instead of a workaround.)
             @type
         end
 
