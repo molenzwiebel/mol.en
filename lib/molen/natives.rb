@@ -4,8 +4,6 @@ module Molen
         def add_natives
             int, double, bool, object, string = self["Int"], self["Double"], self["Bool"], self["Object"], self["String"]
 
-            add_to_s_functions
-
             int.define_native_function("__add", int, int) { |this, other| builder.ret builder.add this, other }
             int.define_native_function("__sub", int, int) { |this, other| builder.ret builder.sub this, other }
             int.define_native_function("__mul", int, int) { |this, other| builder.ret builder.mul this, other }
@@ -56,6 +54,14 @@ module Molen
             bool.define_native_function("__and", bool, bool) { |this, other| builder.ret builder.and this, other }
             bool.define_native_function("__eq", bool, bool) { |this, other| builder.ret builder.icmp :eq, this, other }
             bool.define_native_function("__neq", bool, bool) { |this, other| builder.ret builder.icmp, :neq, this, other }
+
+            string.define_native_function("__add", string, int) { |this, other| builder.ret perform_sprintf(builder, "%s%i", this, other) }
+            string.define_native_function("__add", string, double) { |this, other| builder.ret perform_sprintf(builder, "%s%f", this, other) }
+            string.define_native_function("__add", string, string) { |this, other| builder.ret perform_sprintf(builder, "%s%s", this, other) }
+            string.define_native_function("__add", string, bool) { |this, other| builder.ret perform_sprintf(builder, "%s%s", this, builder.select(other, builder.global_string_pointer("true"), builder.global_string_pointer("false"))) }
+
+            add_to_s_functions
+            add_std
         end
 
         def add_to_s_functions
@@ -86,6 +92,11 @@ module Molen
             end
         end
 
+        def add_std
+            Dir[File.expand_path("../std/**/*.en",  __FILE__)].each do |file|
+                Molen.type(self, Parser.parse(File.read(file), file))
+            end
+        end
     end
 
     class GeneratingVisitor

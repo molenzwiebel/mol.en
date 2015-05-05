@@ -16,6 +16,16 @@ module Molen
         attr_accessor :owner
     end
 
+    def type(mod, tree)
+        Molen.type(mod, tree)
+    end
+
+    def self.type(mod, tree)
+        vis = TypingVisitor.new mod
+        tree.accept vis
+        tree
+    end
+
     class TypingVisitor < Visitor
         attr_accessor :mod
 
@@ -185,7 +195,7 @@ module Molen
 
             node_arg_types = node.args.map(&:type)
             extra_str = node.object ? " (on object of type #{node.object.type.name}) " : " "
-            raise "No function with name '#{node.name}'#{extra_str}and matching parameters found (given #{node_arg_types.map(&:name).join ", "})" unless function
+            raise "No function with name '#{node.name}'#{extra_str}and matching parameters found (given #{node_arg_types.map(&:name).join ", "})." unless function
 
             node.type = function.return_type
             node.target_function = function
