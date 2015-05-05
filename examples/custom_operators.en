@@ -24,6 +24,14 @@ class MyInt {
     def __add(other: MyInt) -> MyInt {
         new MyInt(this.value + other.value)
     }
+
+    def __index_get(index: Int) -> String {
+        "Index Get: " + index
+    }
+
+    def __index_set(index: Int, value: Object) -> String {
+        "Index #" + index + " Set: " + value
+    }
 }
 
 myInt1 = new MyInt(5)
@@ -32,3 +40,6 @@ myInt2 = new MyInt(6)
 print_Bool(myInt1.value >= 5)
 print_Bool((myInt1 + myInt1).value == 10)
 print_Bool((myInt1 + myInt2).value == 11)
+
+puts(myInt1[10])
+puts(myInt1[4] = new MyInt(3))
