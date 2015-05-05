@@ -104,14 +104,10 @@ module Molen
     class PrimitiveType < Type
         attr_accessor :type
 
-        def initialize(mod, name, supert, llvm_type, llvm_size)
+        def initialize(name, supert, llvm_type, llvm_size)
             super name, supert
             @type = llvm_type
             @size = llvm_size
-
-            define_native_function "size", mod["Int"] do |this|
-                builder.ret builder.load builder.struct_gep this, 0
-            end
         end
 
         def llvm_type
@@ -139,9 +135,13 @@ module Molen
     class ArrayType < Type
         attr_accessor :element_type
 
-        def initialize(el_type)
+        def initialize(mod, el_type)
             super(el_type.name + "[]", nil)
             @element_type = el_type
+
+            define_native_function "size", mod["Int"] do |this|
+                builder.ret builder.load builder.struct_gep this, 0
+            end
         end
 
         def llvm_type

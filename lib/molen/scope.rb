@@ -18,7 +18,6 @@ module Molen
 
         def define(key, val)
             raise "Redefinition of #{key}" if @this.has_key? key
-            puts "Warning: Definition of #{key} hides parent" if parent[key]
             @this[key] = val
             val
         end
