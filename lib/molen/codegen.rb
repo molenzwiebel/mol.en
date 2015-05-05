@@ -84,6 +84,16 @@ module Molen
             builder.load member_to_ptr(node), node.field.value
         end
 
+        def visit_array_access(node)
+            builder.load get_arr_pointer(node)
+        end
+
+        def get_arr_pointer(node)
+            arr_struct = node.array.accept(self)
+            arr_buffer = builder.load builder.struct_gep arr_struct, 2
+            builder.gep arr_buffer, [node.index.accept(self)]
+        end
+
         def visit_instance_variable(node)
             obj_ptr = builder.load @variable_pointers["this"]
             index = node.owner.instance_var_index node.value
@@ -106,13 +116,18 @@ module Molen
 
                 builder.store val, member_to_ptr(node.name)
                 return val
-            else
+            elsif node.name.is_a?(InstanceVariable) then
                 val = node.value.accept(self)
                 val = builder.bit_cast(val, node.type.llvm_type) if node.type != node.value.type
 
                 obj_ptr = builder.load @variable_pointers["this"]
                 index = node.name.owner.instance_var_index node.name.value
                 builder.store val, builder.gep(obj_ptr, [LLVM::Int(0), LLVM::Int(index)], node.name.value + "_ptr")
+            else
+                val = node.value.accept(self)
+                val = builder.bit_cast(val, node.name.type.llvm_type) if node.name.type != node.value.type
+
+                builder.store val, get_arr_pointer(node.name)
             end
         end
 
@@ -140,6 +155,26 @@ module Molen
             end
 
             allocated_struct
+        end
+
+        def visit_new_array(node)
+            arr_struct = builder.malloc node.type.llvm_struct, node.type.name
+            # If < 8, cap = 8, else cap = nearest power of 2
+            capacity = node.elements.size <= 8 ? 8 : 2 ** Math.log(node.elements.size, 2).ceil
+
+            builder.store LLVM::Int(node.elements.size), builder.struct_gep(arr_struct, 0)
+            builder.store LLVM::Int(capacity), builder.struct_gep(arr_struct, 1)
+
+            arr_buffer = builder.array_malloc(node.type.element_type.llvm_type, LLVM::Int(capacity))
+            builder.store arr_buffer, builder.struct_gep(arr_struct, 2)
+
+            node.elements.each_with_index do |elem, index|
+                val = elem.accept(self)
+                val = builder.bit_cast val, node.type.element_type.llvm_type if node.type.element_type != elem.type
+                builder.store val, builder.gep(arr_buffer, [LLVM::Int(index)])
+            end
+
+            arr_struct
         end
 
         def visit_call(node)

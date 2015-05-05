@@ -61,6 +61,14 @@ describe TypingVisitor do
     it_types "class X {} class Y :: X {} [new X, new Y]", "X[]"
     it_types "class X {} class Y {} [new X, new Y]", "Object[]"
 
+    it_types "x = [1, 2, 3] x[0]", "Int"
+    it_types "x = [[1], [2]] x[0]", "Int[]"
+    it_types "x = [[1], [2]] x[0][0]", "Int"
+    it_types "x = [0, 2] x[0] = 1", "Int"
+    it_fails_on "x = [1, 2] x[0] = 3.14", /Cannot assign Double to/
+    it_fails_on "x = [1, 2] x[1.0] = 3", /Cannot index array with type Double, Int expected/
+    it_fails_on "x = 3 x[3]", /Cannot index array: Target is not an array/
+
     it_types "class Test {}", "Test"
     it_fails_on "class Test :: Foo {}", /Class Foo \(superclass of Test\) not found!/
 

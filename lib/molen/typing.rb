@@ -226,6 +226,14 @@ module Molen
             raise "Function #{node.name} has a path that does not return!" if !node.body.definitely_returns? && node.return_type != nil
         end
 
+        def visit_array_access(node)
+            node.array.accept(self)
+            node.index.accept(self)
+            raise "Cannot index array: Target is not an array" unless node.array.type.is_a? ArrayType
+            raise "Cannot index array with type #{node.index.type.name}, Int expected" unless node.index.type == mod["Int"]
+            node.type = node.array.type.element_type
+        end
+
         # Types and validates the assignment of a variable. Defines
         # the variable if it wasn't set already.
         def visit_assign(node)
@@ -304,7 +312,7 @@ module Molen
                 raise "Undefined type '#{name}'"
             end
 
-            mod[name] = ArrayType.new resolve_type(name[0...-2])
+            mod[name] = ArrayType.new mod, resolve_type(name[0...-2])
         end
     end
 end

@@ -12,7 +12,11 @@ module Molen
         end
 
         def llvm_type
-            raise "Unimplemented llvm_type on #{self.class.name}?"
+            raise "Unimplemented llvm_type on #{self.class.name}"
+        end
+
+        def llvm_size
+            raise "Unimplemented llvm_size on #{self.class.name}"
         end
 
         def castable_to?(other)
@@ -64,6 +68,10 @@ module Molen
             LLVM::Struct *([LLVM::Pointer(vtable_type)] + instance_variables.values.map(&:llvm_type))
         end
 
+        def llvm_size
+            8 # Size of a pointer
+        end
+
         def vtable_type
             @vtable_type ||= begin
                 struct = LLVM::Struct("#{name}_vtable_type")
@@ -96,14 +104,23 @@ module Molen
     class PrimitiveType < Type
         attr_accessor :type
 
-        def initialize(name, supert, llvm_type)
+        def initialize(mod, name, supert, llvm_type, llvm_size)
             super name, supert
             @type = llvm_type
+            @size = llvm_size
+
+            define_native_function "size", mod["Int"] do |this|
+                builder.ret builder.load builder.struct_gep this, 0
+            end
         end
 
         def llvm_type
             # TODO: Later maybe? (Primitives are pointers to their type so they can support actual null, instead of a workaround.)
             @type
+        end
+
+        def llvm_size
+            @size
         end
 
         def ==(other)
@@ -128,7 +145,16 @@ module Molen
         end
 
         def llvm_type
-            LLVM::Pointer element_type.llvm_type
+            LLVM::Pointer llvm_struct
+        end
+
+        def llvm_struct
+            # First int is for size, second for capacity, third is the actual contents
+            LLVM::Struct LLVM::Int, LLVM::Int, LLVM::Pointer(element_type.llvm_type)
+        end
+
+        def llvm_size
+            4 + 4 + 8 # Size of two ints and a pointer
         end
 
         def ==(other)

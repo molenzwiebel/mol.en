@@ -115,7 +115,7 @@ module Molen
             infix 8, -> x { x.is_operator? "!=" }, &create_binary_parser(8)
 
             infix 1, -> x { x.is? "=" } do |left|
-                raise_error "Expected left hand side of assignment to be an identifier", token unless left.is_a?(Identifier) or left.is_a?(MemberAccess) or left.is_a?(InstanceVariable)
+                raise_error "Expected left hand side of assignment to be an identifier", token unless left.is_a?(Identifier) or left.is_a?(MemberAccess) or left.is_a?(InstanceVariable) or left.is_a?(ArrayAccess)
                 next_token # Consume =
                 right = parse_expression
                 raise_error "Expected expression at right hand side of assignment", token unless right
@@ -129,6 +129,15 @@ module Molen
 
                 next Call.new left, right.name, right.args if right.is_a? Call
                 next MemberAccess.new left, right
+            end
+
+            infix 25, -> x { x.is? "[" } do |left|
+                next_token # Consume [
+                ind = parse_expression
+                raise_error "Expected indexing expression in []", token unless ind
+                expect_and_consume "]"
+
+                ArrayAccess.new left, ind
             end
 
             stmt -> x { x.is_keyword? "def" } do
