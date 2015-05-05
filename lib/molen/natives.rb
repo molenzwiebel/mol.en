@@ -4,10 +4,13 @@ module Molen
         def add_natives
             int, double, bool, object, string = self["Int"], self["Double"], self["Bool"], self["Object"], self["String"]
 
+            object.define_native_function("is_null", bool) { |this| builder.ret builder.icmp :eq, builder.ptr2int(this, LLVM::Int), LLVM::Int(0) }
+
             int.define_native_function("__add", int, int) { |this, other| builder.ret builder.add this, other }
             int.define_native_function("__sub", int, int) { |this, other| builder.ret builder.sub this, other }
             int.define_native_function("__mul", int, int) { |this, other| builder.ret builder.mul this, other }
             int.define_native_function("__div", int, int) { |this, other| builder.ret builder.sdiv this, other }
+            int.define_native_function("__rem", int, int) { |this, other| builder.ret builder.srem this, other }
 
             int.define_native_function("__lt", bool, int) { |this, other| builder.ret builder.icmp :ult, this, other }
             int.define_native_function("__lte", bool, int) { |this, other| builder.ret builder.icmp :ule, this, other }
@@ -72,7 +75,6 @@ module Molen
             end
 
             int.define_native_function("to_s", string) do |this|
-                # 12 = (CHAR_BIT * sizeof(int) - 1) / 3 + 2
                 builder.ret perform_sprintf(builder, "%i", this)
             end
 

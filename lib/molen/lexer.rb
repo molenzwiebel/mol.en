@@ -43,6 +43,7 @@ module Molen
             /\-/                                => :operator,
             /\*/                                => :operator,
             /\./                                => :operator,
+            /%/                                 => :operator,
 
             /&&/                                => :operator,
             /and/                               => :operator,
@@ -69,8 +70,11 @@ module Molen
         end
 
         def next_token
-            @scanner.skip(/\s+#.*\n/)
             @scanner.skip(/\s+/)
+            @scanner.skip(/\n+/)
+            @scanner.skip(/(#.*\n)+/)
+            @scanner.skip(/\s+/)
+            @scanner.skip(/\n+/)
 
             if @scanner.eos? then
                 return Token.new :eof, nil, col_num(pos) + 1, 1, line_num

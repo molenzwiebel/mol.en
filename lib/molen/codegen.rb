@@ -113,7 +113,7 @@ module Molen
                 obj_ptr = builder.load @variable_pointers["this"]
                 index = node.name.owner.instance_var_index node.name.value
                 builder.store val, builder.gep(obj_ptr, [LLVM::Int(0), LLVM::Int(index)], node.name.value + "_ptr")
-            end                
+            end
         end
 
         def visit_return(node)
@@ -122,6 +122,7 @@ module Molen
 
         def visit_new(node)
             allocated_struct = builder.malloc node.type.llvm_struct, node.type.name
+            memset allocated_struct, LLVM::Int(0), node.type.llvm_struct.size
             populate_vtable allocated_struct, node.type
 
             if node.target_constructor then
@@ -144,6 +145,8 @@ module Molen
 
         def visit_new_array(node)
             arr_struct = builder.malloc node.type.llvm_struct, node.type.name
+            memset arr_struct, LLVM::Int(0), node.type.llvm_struct.size
+
             # If < 8, cap = 8, else cap = nearest power of 2
             capacity = node.elements.size <= 8 ? 8 : 2 ** Math.log(node.elements.size, 2).ceil
 
@@ -279,6 +282,13 @@ module Molen
             @variable_pointers = inherit ? Scope.new(@variable_pointers) : Scope.new
             yield
             @variable_pointers = old_var_scope
+        end
+
+        def memset(pointer, value, size)
+            memset_func = llvm_mod.functions['memset'] || llvm_mod.functions.add('memset', [LLVM::Pointer(LLVM::Int8), LLVM::Int, LLVM::Int], LLVM::Pointer(LLVM::Int8))
+
+            pointer = builder.bit_cast pointer, LLVM::Pointer(LLVM::Int8)
+            builder.call memset_func, pointer, value, builder.trunc(size, LLVM::Int32)
         end
 
         def member_to_ptr(node)

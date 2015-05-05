@@ -14,7 +14,8 @@ module Molen
         "<"         => "__lt",
         "<="        => "__lte",
         ">"         => "__gt",
-        ">="        => "__gte"
+        ">="        => "__gte",
+        "%"         => "__rem"
     }
 
     def parse(src, name = "unknown_file")
@@ -103,6 +104,7 @@ module Molen
             infix 11, -> x { x.is_operator? "-" }, &create_binary_parser(11)
             infix 12, -> x { x.is_operator? "*" }, &create_binary_parser(12)
             infix 12, -> x { x.is_operator? "/" }, &create_binary_parser(12)
+            infix 10, -> x { x.is_operator? "%" }, &create_binary_parser(10)
 
             infix 4, -> x { x.is_operator?("&&") or x.is_operator?("and") }, &create_binary_parser(4)
             infix 3, -> x { x.is_operator?("||") or x.is_operator?("or")  }, &create_binary_parser(3)
