@@ -69,6 +69,7 @@ module Molen
         end
 
         def next_token
+            @scanner.skip(/\s+#.*\n/)
             @scanner.skip(/\s+/)
 
             if @scanner.eos? then
