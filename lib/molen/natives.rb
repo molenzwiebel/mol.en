@@ -55,10 +55,7 @@ module Molen
             bool.define_native_function("__eq", bool, bool) { |this, other| builder.ret builder.icmp :eq, this, other }
             bool.define_native_function("__neq", bool, bool) { |this, other| builder.ret builder.icmp, :neq, this, other }
 
-            string.define_native_function("__add", string, int) { |this, other| builder.ret perform_sprintf(builder, "%s%i", this, other) }
-            string.define_native_function("__add", string, double) { |this, other| builder.ret perform_sprintf(builder, "%s%f", this, other) }
             string.define_native_function("__add", string, string) { |this, other| builder.ret perform_sprintf(builder, "%s%s", this, other) }
-            string.define_native_function("__add", string, bool) { |this, other| builder.ret perform_sprintf(builder, "%s%s", this, builder.select(other, builder.global_string_pointer("true"), builder.global_string_pointer("false"))) }
 
             add_to_s_functions
             add_std

@@ -2,4 +2,16 @@ class String {
     def __add(other: Object) -> String {
         this + other.to_s()
     }
+
+    def __add(other: Bool) -> String {
+        this + other.to_s()
+    }
+
+    def __add(other: Int) -> String {
+        this + other.to_s()
+    }
+
+    def __add(other: Double) -> String {
+        this + other.to_s()
+    }
 }
