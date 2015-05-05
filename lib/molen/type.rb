@@ -48,6 +48,10 @@ module Molen
         def initialize(bl)
             @block = bl
         end
+
+        def definitely_returns?
+            true
+        end
     end
 
     class ObjectType < Type

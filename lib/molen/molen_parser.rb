@@ -19,7 +19,7 @@ module Molen
     }
 
     def parse(src, name = "unknown_file")
-        Molen.parse src
+        Molen.parse src, name
     end
 
     def self.parse(src, name = "unknown_file")
@@ -28,7 +28,7 @@ module Molen
         until (n = parser.parse_node).nil?
             contents << n
         end
-        Body.from contents
+        ret = Body.from contents
     end
 
     # Alias for create_parser that allows you to call

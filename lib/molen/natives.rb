@@ -55,6 +55,20 @@ module Molen
                 type1.define_native_function("to_#{type2.name}", type2) do |this|
                     builder.ret convert_type(builder, type2, type1, this)
                 end
+
+                int_type = self["Int"]
+                type1.define_native_function("to_i", int_type) do |this|
+                    val = builder.malloc int_type.llvm_struct
+                    builder.store convert_type(builder, int_type, type1, this), builder.struct_gep(val, 1)
+                    builder.ret val
+                end
+
+                double_type = self["cdouble"]
+                type1.define_native_function("to_d", int_type) do |this|
+                    val = builder.malloc double_type.llvm_struct
+                    builder.store convert_type(builder, int_type, type1, this), builder.struct_gep(val, 1)
+                    builder.ret val
+                end
             end
 
             [self["cuint8"], self["cuint16"], self["cuint32"], self["cuint64"], self["cint8"], self["cint16"], self["cint32"], self["cint64"], self["cfloat"], self["cdouble"]].each do |prim_type|
@@ -64,6 +78,26 @@ module Molen
 
                 self["String"].define_native_function("__add", self["String"], prim_type) do |this, other|
                     builder.ret perform_sprintf(builder, "%s%#{TYPE_FORMATS[prim_type.name.to_sym]}", this, other)
+                end
+
+                int_type = self["cint32"]
+                self["Int"].define_native_function("create", nil, prim_type) do |this, arg|
+                    builder.store convert_type(builder, int_type, prim_type, arg), builder.struct_gep(this, 1)
+                    builder.ret nil
+                end
+
+                self["Int"].define_native_function("to_#{prim_type.name}", prim_type) do |this|
+                    builder.ret convert_type(builder, prim_type, int_type, builder.load(builder.struct_gep(this, 1)))
+                end
+
+                double_type = self["cdouble"]
+                self["Double"].define_native_function("create", nil, prim_type) do |this, arg|
+                    builder.store convert_type(builder, double_type, prim_type, arg), builder.struct_gep(this, 1)
+                    builder.ret nil
+                end
+
+                self["Double"].define_native_function("to_#{prim_type.name}", prim_type) do |this|
+                    builder.ret convert_type(builder, prim_type, double_type, builder.load(builder.struct_gep(this, 1)))
                 end
             end
         end

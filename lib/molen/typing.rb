@@ -215,6 +215,7 @@ module Molen
             node.args.each {|arg| arg.accept self}
 
             if node.owner then
+                node.owner.accept(self) unless node.owner.type
                 func_scope = node.owner.type.functions
                 raise "Redefinition of #{node.owner.type.name}##{node.name} with same argument types" unless assure_unique func_scope.this, node.name, node.args.map(&:type)
                 func_scope.has_local_key?(node.name) ? func_scope[node.name] << node : func_scope.define(node.name, [node])
@@ -315,6 +316,7 @@ module Molen
         end
 
         def resolve_type(name)
+            return name if name.is_a? Type
             return mod[name] if mod[name]
 
             unless name.include? "["
