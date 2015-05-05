@@ -1,24 +1,24 @@
 require 'llvm/execution_engine'
 
 module Molen
-    def run(src, filename = "unknown_file")
-        Molen.run(src, filename)
+    def run(src, filename = "unknown_file", load_std = true)
+        Molen.run(src, filename, load_std)
     end
 
-    def self.run(src, filename = "unknown_file")
-        mod = generate(src, filename)
+    def self.run(src, filename = "unknown_file", load_std = true)
+        mod = generate(src, filename, load_std)
         LLVM.init_jit
         engine = LLVM::JITCompiler.new mod
         engine.run_function mod.functions["molen_main"]
     end
 
-    def generate(src, filename = "unknown_file")
-        Molen.generate(src, filename)
+    def generate(src, filename = "unknown_file", load_std = true)
+        Molen.generate(src, filename, load_std)
     end
 
-    def self.generate(src, filename = "unknown_file")
+    def self.generate(src, filename = "unknown_file", load_std = true)
         body = parse(src, filename)
-        mod = Molen::Module.new
+        mod = Molen::Module.new(load_std)
         body.accept TypingVisitor.new(mod)
         visitor = GeneratingVisitor.new(mod, body.type)
         body.accept visitor
@@ -53,19 +53,27 @@ module Molen
         end
 
         def visit_int(node)
-            LLVM::Int32.from_i node.value
+            val = builder.malloc node.type.llvm_struct, "Int"
+            builder.store LLVM::Int32.from_i(node.value), builder.struct_gep(val, 1)
+            val
         end
 
         def visit_double(node)
-            LLVM::Double node.value
+            val = builder.malloc node.type.llvm_struct, "Double"
+            builder.store LLVM::Double(node.value), builder.struct_gep(val, 1)
+            val
         end
 
         def visit_bool(node)
-            node.value ? LLVM::TRUE : LLVM::FALSE
+            val = builder.malloc node.type.llvm_struct, "Bool"
+            builder.store node.value ? LLVM::TRUE : LLVM::FALSE, builder.struct_gep(val, 1)
+            val
         end
 
         def visit_str(node)
-            builder.global_string_pointer node.value
+            val = builder.malloc node.type.llvm_struct, "String"
+            builder.store builder.global_string_pointer(node.value), builder.struct_gep(val, 1)
+            val
         end
 
         def visit_identifier(node)

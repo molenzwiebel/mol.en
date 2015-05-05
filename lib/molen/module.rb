@@ -3,7 +3,7 @@ module Molen
     class Module
         attr_accessor :types
 
-        def initialize
+        def initialize(load_std = true)
             @types = {}
 
             self["Object"] = object = ObjectType.new "Object"
@@ -19,7 +19,7 @@ module Molen
             self["cuint64"] = cuint64 = PrimitiveType.new "cuint64", LLVM::UInt64, 8
 
             self["cfloat"] = cfloat = PrimitiveType.new "cfloat", LLVM::Float, 4
-            self["cdouble"] = cdouble = PrimitiveType.new "cdouble", LLVM::Float, 8
+            self["cdouble"] = cdouble = PrimitiveType.new "cdouble", LLVM::Double, 8
 
             self["cstr"] = cstr = PrimitiveType.new "cstr", LLVM::Pointer(LLVM::Int8), 8
 
@@ -33,7 +33,7 @@ module Molen
             string.instance_variables.define "value", cstr
             bool.instance_variables.define "value", cint1
 
-            add_natives
+            add_natives load_std
         end
 
         def [](key)
