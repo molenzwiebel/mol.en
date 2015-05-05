@@ -118,6 +118,18 @@ module Molen
             @size
         end
 
+        def integer?
+            name.include? "int"
+        end
+
+        def fp?
+            name.include?("double") or name.include?("float")
+        end
+
+        def unsigned?
+            name.include?("cu")
+        end
+
         def ==(other)
             other.class == self.class and other.name == name and other.type == type
         end

@@ -2,99 +2,113 @@
 module Molen
     class Module
         def add_natives
-            int, double, bool, object, string = self["Int"], self["Double"], self["Bool"], self["Object"], self["String"]
-
-            object.define_native_function("is_null", bool) { |this| builder.ret builder.icmp :eq, builder.ptr2int(this, LLVM::Int), LLVM::Int(0) }
-
-            int.define_native_function("__add", int, int) { |this, other| builder.ret builder.add this, other }
-            int.define_native_function("__sub", int, int) { |this, other| builder.ret builder.sub this, other }
-            int.define_native_function("__mul", int, int) { |this, other| builder.ret builder.mul this, other }
-            int.define_native_function("__div", int, int) { |this, other| builder.ret builder.sdiv this, other }
-            int.define_native_function("__rem", int, int) { |this, other| builder.ret builder.srem this, other }
-
-            int.define_native_function("__lt", bool, int) { |this, other| builder.ret builder.icmp :ult, this, other }
-            int.define_native_function("__lte", bool, int) { |this, other| builder.ret builder.icmp :ule, this, other }
-            int.define_native_function("__gt", bool, int) { |this, other| builder.ret builder.icmp :ugt, this, other }
-            int.define_native_function("__gte", bool, int) { |this, other| builder.ret builder.icmp :uge, this, other }
-
-            int.define_native_function("__eq", bool, int) { |this, other| builder.ret builder.icmp :eq, this, other }
-            int.define_native_function("__neq", bool, int) { |this, other| builder.ret builder.icmp :neq, this, other }
-
-            int.define_native_function("__add", double, double) { |this, other| builder.ret builder.fadd builder.si2fp(this, double.llvm_type), other }
-            int.define_native_function("__sub", double, double) { |this, other| builder.ret builder.fsub builder.si2fp(this, double.llvm_type), other }
-            int.define_native_function("__mul", double, double) { |this, other| builder.ret builder.fmul builder.si2fp(this, double.llvm_type), other }
-            int.define_native_function("__div", double, double) { |this, other| builder.ret builder.fdiv builder.si2fp(this, double.llvm_type), other }
-
-            int.define_native_function("__lt", bool, double) { |this, other| builder.ret builder.fcmp :ult, builder.si2fp(this, double.llvm_type), other }
-            int.define_native_function("__lte", bool, double) { |this, other| builder.ret builder.fcmp :ule, builder.si2fp(this, double.llvm_type), other }
-            int.define_native_function("__gt", bool, double) { |this, other| builder.ret builder.fcmp :ugt, builder.si2fp(this, double.llvm_type), other }
-            int.define_native_function("__lte", bool, double) { |this, other| builder.ret builder.fcmp :uge, builder.si2fp(this, double.llvm_type), other }
-
-            double.define_native_function("__add", double, double) { |this, other| builder.ret builder.fadd this, other }
-            double.define_native_function("__sub", double, double) { |this, other| builder.ret builder.fsub this, other }
-            double.define_native_function("__mul", double, double) { |this, other| builder.ret builder.fmul this, other }
-            double.define_native_function("__div", double, double) { |this, other| builder.ret builder.fdiv this, other }
-
-            double.define_native_function("__lt", bool, double) { |this, other| builder.ret builder.fcmp :ult, this, other }
-            double.define_native_function("__lte", bool, double) { |this, other| builder.ret builder.fcmp :ule, this, other }
-            double.define_native_function("__gt", bool, double) { |this, other| builder.ret builder.fcmp :ugt, this, other }
-            double.define_native_function("__gte", bool, double) { |this, other| builder.ret builder.fcmp :uge, this, other }
-
-            double.define_native_function("__eq", bool, double) { |this, other| builder.ret builder.fcmp :eq, this, other }
-            double.define_native_function("__neq", bool, double) { |this, other| builder.ret builder.fcmp :neq, this, other }
-
-            double.define_native_function("__add", double, int) { |this, other| builder.ret builder.fadd this, builder.si2fp(other, double.llvm_type) }
-            double.define_native_function("__sub", double, int) { |this, other| builder.ret builder.fsub this, builder.si2fp(other, double.llvm_type) }
-            double.define_native_function("__mul", double, int) { |this, other| builder.ret builder.fmul this, builder.si2fp(other, double.llvm_type) }
-            double.define_native_function("__div", double, int) { |this, other| builder.ret builder.fdiv this, builder.si2fp(other, double.llvm_type) }
-
-            double.define_native_function("__lt", bool, int) { |this, other| builder.ret builder.fcmp :ult, this, builder.si2fp(other, double.llvm_type) }
-            double.define_native_function("__lte", bool, int) { |this, other| builder.ret builder.fcmp :ule, this, builder.si2fp(other, double.llvm_type) }
-            double.define_native_function("__gt", bool, int) { |this, other| builder.ret builder.fcmp :ugt, this, builder.si2fp(other, double.llvm_type) }
-            double.define_native_function("__gte", bool, int) { |this, other| builder.ret builder.fcmp :uge, this, builder.si2fp(other, double.llvm_type) }
-
-            bool.define_native_function("__or", bool, bool) { |this, other| builder.ret builder.or this, other }
-            bool.define_native_function("__and", bool, bool) { |this, other| builder.ret builder.and this, other }
-            bool.define_native_function("__eq", bool, bool) { |this, other| builder.ret builder.icmp :eq, this, other }
-            bool.define_native_function("__neq", bool, bool) { |this, other| builder.ret builder.icmp, :neq, this, other }
-
-            string.define_native_function("__add", string, string) { |this, other| builder.ret perform_sprintf(builder, "%s%s", this, other) }
-
-            add_to_s_functions
             add_std
-        end
-
-        def add_to_s_functions
-            int, double, bool, object, string = self["Int"], self["Double"], self["Bool"], self["Object"], self["String"]
-
-            object.define_native_function("to_s", string) do |this|
-                vtable = builder.load builder.struct_gep this, 0
-                name_ptr = builder.load builder.struct_gep vtable, 1
-
-                builder.ret perform_sprintf(builder, "#<%s:0x%016lx>", name_ptr, this)
-            end
-
-            int.define_native_function("to_s", string) do |this|
-                builder.ret perform_sprintf(builder, "%i", this)
-            end
-
-            bool.define_native_function("to_s", string) do |this|
-                builder.ret builder.select this, builder.global_string_pointer("true"), builder.global_string_pointer("false")
-            end
-
-            string.define_native_function("to_s", string) do |this|
-                builder.ret this
-            end
-
-            double.define_native_function("to_s", string) do |this|
-                builder.ret perform_sprintf(builder, "%f", this)
-            end
+            add_numeric_builtins
         end
 
         def add_std
             Dir[File.expand_path("../std/**/*.en",  __FILE__)].each do |file|
                 Molen.type(self, Parser.parse(File.read(file), file))
             end
+        end
+
+        INT_FUNCS = { "__add" => :add, "__sub" => :sub, "__mul" => :mul, "__div" => :sdiv }
+        UINT_FUNCS = { "__add" => :add, "__sub" => :sub, "__mul" => :mul, "__div" => :udiv }
+        FP_FUNCS = { "__add" => :fadd, "__sub" => :fsub, "__mul" => :fmul, "__div" => :fdiv }
+
+        INT_COMP_OPS = { "__eq" => :eq, "__gt"=> :sgt, "__gte" => :sge, "__lt"=> :slt, "__lte" => :sle, "__neq" => :ne }
+        UINT_COMP_OPS = { "__eq" => :eq, "__gt"=> :ugt, "__gte" => :uge, "__lt"=> :ult, "__lte" => :ule, "__neq" => :ne }
+        FP_COMP_OPS = { "__eq" => :oeq, "__gt"=> :ogt, "__gte" => :oge, "__lt"=> :olt, "__lte" => :ole, "__neq" => :one }
+
+        def add_numeric_builtins
+            [self["cuint8"], self["cuint16"], self["cuint32"], self["cuint64"], self["cint8"], self["cint16"], self["cint32"], self["cint64"], self["cfloat"], self["cdouble"]].repeated_permutation 2 do |type1, type2|
+                ret_type = greatest_type type1, type2
+
+                ["__add", "__sub", "__mul", "__div"].each do |op|
+                    if ret_type.fp? then
+                        type1.define_native_function(op, ret_type, type2) do |this, other|
+                            converted_this = convert_type(builder, ret_type, type1, this)
+                            converted_other = convert_type(builder, ret_type, type2, other)
+                            builder.ret build_calc_op(builder, op, ret_type, converted_this, converted_other)
+                        end
+                    else
+                        type1.define_native_function(op, type1, type2) do |this, other|
+                            converted_this = convert_type(builder, ret_type, type1, this)
+                            converted_other = convert_type(builder, ret_type, type2, other)
+                            ret = build_calc_op(builder, op, ret_type, converted_this, converted_other)
+                            builder.ret convert_back(builder, type1, ret_type, ret)
+                        end
+                    end
+                end
+
+                ["__eq", "__lt", "__lte", "__gt", "__gte", "__eq", "__neq"].each do |op|
+                    type1.define_native_function(op, self["cint1"], type2) do |this, other|
+                        converted_this = convert_type(builder, ret_type, type1, this)
+                        converted_other = convert_type(builder, ret_type, type2, other)
+                        builder.ret build_comp_op(builder, ret_type, converted_this, converted_other)
+                    end
+                end
+
+                type1.define_native_function("to_#{type2.name}", type2) do |this|
+                    builder.ret convert_type(builder, type2, type1, this)
+                end
+            end
+        end
+
+        private
+        def get_rank(type)
+            types.keys.index(type.name)
+        end
+
+        def greatest_type(type1, type2)
+            get_rank(type1) >= get_rank(type2) ? type1 : type2
+        end
+
+        def convert_back(builder, ret_type, old_type, obj)
+            builder.zext(obj, ret_type.llvm_type) if get_rank(ret_type) > get_rank(old_type)
+            builder.trunc(obj, ret_type.llvm_type) if get_rank(ret_type) < get_rank(old_type)
+            obj
+        end
+
+        def convert_type(b, ret_type, type, obj)
+            # Don't cast if we don't have to
+            if ret_type == type || (ret_type.integer? && type.integer? && ret_type.llvm_size == type.llvm_size)
+                return obj
+            end
+
+            if ret_type.fp? then
+                if type.fp? then
+                    return b.fp_ext(obj, ret_type.llvm_type) if get_rank(ret_type) > get_rank(type)
+                    return b.fp_trunc obj, ret_type.llvm_type
+                elsif not type.unsigned?
+                    return b.si2fp obj, ret_type.llvm_type
+                else
+                    return b.ui2fp obj, ret_type.llvm_type
+                end
+            else
+                if type.fp? then
+                    return b.fp2si(obj, ret_type.llvm_type) unless ret_type.unsigned?
+                    return b.fp2ui obj, ret_type.llvm_type
+                else
+                    return b.trunc(obj, ret_type.llvm_type) if get_rank(ret_type) <= get_rank(type)
+                    return b.sext(obj, ret_type.llvm_type) unless type.signed?
+                    return b.zext obj, ret_type.llvm_type
+                end
+            end
+        end
+
+        def generate_numeric_op(builder, op, ret_type, this, other)
+            ops = FP_FUNCS if ret_type.fp?
+            ops = UINT_FUNCS if ret_type.unsigned?
+            ops = INT_FUNCS unless table
+
+            builder.send ops[op], this, other
+        end
+
+        def generate_comp_op(builder, op, ret_type, this, other)
+            ops = ret_type.fp? ? FP_COMP_OPS : ret_type.unsigned? ? UINT_COMP_OPS : INT_COMP_OPS
+
+            builder.send ret_type.fp? :fcmp : :icmp, ops[op], this, other
         end
     end
 
@@ -108,7 +122,7 @@ module Molen
 
             size_needed = builder.call snprintf_func, string_nullptr, LLVM::Int(0), form_ptr, *args
 
-            strbuf = builder.array_malloc(LLVM::Int8, builder.add(size_needed, LLVM::Int(1))) # Add 1 for null term
+            strbuf = builder.array_malloc(LLVM::Int8, builder.add(size_needed, LLVM::Int(1))) # Add 1 for null terminator
             builder.call sprintf_func, strbuf, form_ptr, *args
             strbuf
         end
