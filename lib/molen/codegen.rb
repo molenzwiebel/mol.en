@@ -84,10 +84,6 @@ module Molen
             builder.load member_to_ptr(node), node.field.value
         end
 
-        def visit_array_access(node)
-            builder.load get_arr_pointer(node)
-        end
-
         def visit_instance_variable(node)
             obj_ptr = builder.load @variable_pointers["this"]
             index = node.owner.instance_var_index node.value
@@ -117,12 +113,7 @@ module Molen
                 obj_ptr = builder.load @variable_pointers["this"]
                 index = node.name.owner.instance_var_index node.name.value
                 builder.store val, builder.gep(obj_ptr, [LLVM::Int(0), LLVM::Int(index)], node.name.value + "_ptr")
-            else
-                val = node.value.accept(self)
-                val = builder.bit_cast(val, node.name.type.llvm_type) if node.name.type != node.value.type
-
-                builder.store val, get_arr_pointer(node.name)
-            end
+            end                
         end
 
         def visit_return(node)
@@ -315,12 +306,6 @@ module Molen
             str = builder.struct_gep allocated_struct, 0
             vtable = get_or_create_vtable(type).bitcast_to LLVM::Pointer(type.vtable_type)
             builder.store vtable, str
-        end
-
-        def get_arr_pointer(node)
-            arr_struct = node.array.accept(self)
-            arr_buffer = builder.load builder.struct_gep arr_struct, 2
-            builder.gep arr_buffer, [node.index.accept(self)]
         end
     end
 

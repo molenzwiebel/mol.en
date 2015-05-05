@@ -65,9 +65,9 @@ describe TypingVisitor do
     it_types "x = [[1], [2]] x[0]", "Int[]"
     it_types "x = [[1], [2]] x[0][0]", "Int"
     it_types "x = [0, 2] x[0] = 1", "Int"
-    it_fails_on "x = [1, 2] x[0] = 3.14", /Cannot assign Double to/
-    it_fails_on "x = [1, 2] x[1.0] = 3", /Cannot index array with type Double, Int expected/
-    it_fails_on "x = 3 x[3]", /Cannot index array: Target is not an array/
+    it_fails_on "x = [1, 2] x[0] = 3.14", /No function with name '__index_set' \(on object of type Int\[\]\) and matching parameters found \(given Int, Double\)/
+    it_fails_on "x = [1, 2] x[1.0] = 3", /No function with name '__index_set' \(on object of type Int\[\]\) and matching parameters found \(given Double, Int\)/
+    it_fails_on "x = 3 x[3]", /No function with name '__index_get'/
 
     it_types "class Test {}", "Test"
     it_fails_on "class Test :: Foo {}", /Class Foo \(superclass of Test\) not found!/

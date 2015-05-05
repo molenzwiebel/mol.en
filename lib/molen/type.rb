@@ -139,6 +139,17 @@ module Molen
             super(el_type.name + "[]", nil)
             @element_type = el_type
 
+            define_native_function "__index_get", el_type, mod["Int"] do |this, index|
+                arr_buffer = builder.load builder.struct_gep this, 2
+                builder.ret builder.load builder.gep arr_buffer, [index]
+            end
+
+            define_native_function "__index_set", el_type, mod["Int"], el_type do |this, index, obj|
+                arr_buffer = builder.load builder.struct_gep this, 2
+                builder.store obj, builder.gep(arr_buffer, [index])
+                builder.ret obj
+            end
+
             define_native_function "size", mod["Int"] do |this|
                 builder.ret builder.load builder.struct_gep this, 0
             end

@@ -130,15 +130,6 @@ module Molen
         end
     end
 
-    class ArrayAccess < Expression
-        attr_accessor :array, :index
-        attr_eq :array, :index
-
-        def initialize(arr, ind)
-            @array, @index = arr, ind
-        end
-    end
-
     class FunctionArg < ASTNode
         attr_accessor :name, :type
         attr_eq :name, :type

@@ -29,8 +29,10 @@ describe Parser do
     it_parses "@test", "test".var
     it_parses "@__bla_322", "__bla_322".var
 
-    it_parses "x[10]", ArrayAccess.new("x".ident, 10.literal)
-    it_parses "x[10][3]", ArrayAccess.new(ArrayAccess.new("x".ident, 10.literal), 3.literal)
+    it_parses "x[10]", Call.new("x".ident, "__index_get", [10.literal])
+    it_parses "x[10][3]", Call.new(Call.new("x".ident, "__index_get", [10.literal]), "__index_get", [3.literal])
+    it_parses "x[10] = 12", Call.new("x".ident, "__index_set", [10.literal, 12.literal])
+    it_parses "x[10] = y = 12", Call.new("x".ident, "__index_set", [10.literal, Assign.new("y".ident, 12.literal)])
 
     it_parses "x = 10", Assign.new("x".ident, 10.literal)
     it_parses "return", Return.new(nil)
