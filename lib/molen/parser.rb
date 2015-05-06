@@ -101,28 +101,38 @@ module Molen
 
         # Parses a statement. Returns nil if no statements are able to be parsed
         def parse_statement
+            ret, line = nil, current_token.line_num
             @statement_parsers.each do |matcher, parser|
-                next unless matcher.call current_token
-                return instance_exec(&parser)
+                next unless matcher.call(current_token) && ret.nil?
+                ret = instance_exec(&parser)
             end
-            nil
+            if ret then
+                ret.line = line
+                ret.filename = @file
+            end
+            ret
         end
 
         # Parses an expression, optionally providing the precedence. This method
         # keeps in mind the precedence as described at the top of this file.
         # Returns nil when there is no expression to be parsed.
         def parse_expression(precedence = 0)
+            ret, line = nil, current_token.line_num
             @expression_parsers.each do |matcher, parser|
-                next unless matcher.call @current_token
+                next unless matcher.call(current_token) && ret.nil?
 
                 left = instance_exec &parser
                 while precedence < cur_token_precedence
                     _, contents = @infix_parsers.select{|key, val| key.call @current_token}.first
                     left = instance_exec left, &contents.last
                 end
-                return left
+                ret = left
             end
-            nil
+            if ret then
+                ret.line = line
+                ret.filename = @file
+            end
+            ret
         end
 
         # Checks if the current token is of the specified kind and value,
