@@ -12,6 +12,7 @@ module Molen
             self["Double"] = PrimitiveType.new "Double", LLVM::Double, 8
             self["String"] = PrimitiveType.new "String", LLVM::Pointer(LLVM::Int8), 8
             self["Bool"] = PrimitiveType.new "Bool", LLVM::Int1, 1
+            self["Pointer"] = PrimitiveType.new "Pointer", LLVM::Pointer(LLVM::Int8), 8
 
             add_natives
         end
