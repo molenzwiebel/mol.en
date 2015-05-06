@@ -7,7 +7,7 @@ module Molen
     end
 
     class ASTNode
-        attr_accessor :line, :column, :length
+        attr_accessor :filename, :line
 
         def self.attr_eq(*fields)
             define_method "==" do |other|
@@ -34,6 +34,10 @@ module Molen
                     nil
                 end
             )
+        end
+
+        def raise(msg)
+            Kernel::raise "#{filename}##{line}: #{msg}"
         end
     end
 

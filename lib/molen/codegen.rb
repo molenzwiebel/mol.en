@@ -1,24 +1,24 @@
 require 'llvm/execution_engine'
 
 module Molen
-    def run(src, filename = "unknown_file")
-        Molen.run(src, filename)
+    def run(src, filename = "unknown_file", load_std = true)
+        Molen.run(src, filename, load_std)
     end
 
-    def self.run(src, filename = "unknown_file")
-        mod = generate(src, filename)
+    def self.run(src, filename = "unknown_file", load_std = true)
+        mod = generate(src, filename, load_std)
         LLVM.init_jit
         engine = LLVM::JITCompiler.new mod
         engine.run_function mod.functions["molen_main"]
     end
 
-    def generate(src, filename = "unknown_file")
-        Molen.generate(src, filename)
+    def generate(src, filename = "unknown_file", load_std = true)
+        Molen.generate(src, filename, load_std)
     end
 
-    def self.generate(src, filename = "unknown_file")
+    def self.generate(src, filename = "unknown_file", load_std = true)
         body = parse(src, filename)
-        mod = Molen::Module.new
+        mod = Molen::Module.new(load_std)
         body.accept TypingVisitor.new(mod)
         visitor = GeneratingVisitor.new(mod, body.type)
         body.accept visitor
@@ -53,19 +53,19 @@ module Molen
         end
 
         def visit_int(node)
-            LLVM::Int32.from_i node.value
+            allocate_new_struct node.type, LLVM::Int32.from_i(node.value)
         end
 
         def visit_double(node)
-            LLVM::Double node.value
+            allocate_new_struct node.type, LLVM::Double(node.value)
         end
 
         def visit_bool(node)
-            node.value ? LLVM::TRUE : LLVM::FALSE
+            allocate_new_struct node.type, node.value ? LLVM::TRUE : LLVM::FALSE
         end
 
         def visit_str(node)
-            builder.global_string_pointer node.value
+            allocate_new_struct node.type, builder.global_string_pointer(node.value)
         end
 
         def visit_identifier(node)
@@ -121,9 +121,7 @@ module Molen
         end
 
         def visit_new(node)
-            allocated_struct = builder.malloc node.type.llvm_struct, node.type.name
-            memset allocated_struct, LLVM::Int(0), node.type.llvm_struct.size
-            populate_vtable allocated_struct, node.type
+            allocated_struct = allocate_new_struct node.type
 
             if node.target_constructor then
                 create_func = @function_pointers[node.target_constructor]
@@ -144,8 +142,7 @@ module Molen
         end
 
         def visit_new_array(node)
-            arr_struct = builder.malloc node.type.llvm_struct, node.type.name
-            memset arr_struct, LLVM::Int(0), node.type.llvm_struct.size
+            arr_struct = allocate_new_struct node.type
 
             # If < 8, cap = 8, else cap = nearest power of 2
             capacity = node.elements.size <= 8 ? 8 : 2 ** Math.log(node.elements.size, 2).ceil
@@ -238,7 +235,8 @@ module Molen
             merge_block = the_func.basic_blocks.append "merge" unless node.definitely_returns?
 
             cond = node.condition.accept(self)
-            node.else ? builder.cond(cond, then_block, else_block) : builder.cond(cond, then_block, merge_block)
+            bool_cond = builder.load builder.struct_gep(cond, 1)
+            node.else ? builder.cond(bool_cond, then_block, else_block) : builder.cond(bool_cond, then_block, merge_block)
 
             builder.position_at_end then_block
             with_new_variable_scope { node.then.accept self }
@@ -265,7 +263,9 @@ module Molen
             builder.br cond_block
 
             builder.position_at_end cond_block
-            builder.cond node.cond.accept(self), body_block, after_block
+            cond = node.cond.accept(self)
+            bool_cond = builder.load builder.struct_gep(cond, 1)
+            builder.cond bool_cond, body_block, after_block
 
             builder.position_at_end body_block
             with_new_variable_scope { node.body.accept self }
@@ -276,6 +276,18 @@ module Molen
         end
 
         private
+        def allocate_new_struct(type, *args)
+            allocated_struct = builder.malloc type.llvm_struct, type.name
+            memset allocated_struct, LLVM::Int(0), type.llvm_struct.size
+            populate_vtable allocated_struct, type
+
+            args.each_with_index do |arg, ind|
+                builder.store arg, builder.struct_gep(allocated_struct, ind + 1)
+            end
+
+            return allocated_struct
+        end
+
         def with_new_variable_scope(inherit = true)
             old_var_scope = @variable_pointers
 
