@@ -224,11 +224,11 @@ module Molen
     end
 
     class ClassDef < Statement
-        attr_accessor :name, :superclass, :instance_vars, :functions
-        attr_eq :name, :superclass, :instance_vars, :functions
+        attr_accessor :name, :superclass, :instance_vars, :functions, :class_functions
+        attr_eq :name, :superclass, :instance_vars, :functions, :class_functions
 
-        def initialize(name, superclass, vars = [], funcs = [])
-            @name, @superclass, @instance_vars, @functions = name, superclass, vars, funcs
+        def initialize(name, superclass, vars = [], funcs = [], class_funcs = [])
+            @name, @superclass, @instance_vars, @functions, @class_functions = name, superclass, vars, funcs, class_funcs
         end
     end
 end

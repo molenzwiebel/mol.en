@@ -94,8 +94,9 @@ describe Parser do
     it_errors_on "for true", /Expected token of type LPAREN/
     it_errors_on "for (true 1)", /Expected token with value of ','/
 
-    it_parses "class Test {}", ClassDef.new("Test", "Object", [], [])
-    it_parses "class Test :: Super {}", ClassDef.new("Test", "Super", [], [])
-    it_parses "class Test :: Super { var foo: Int }", ClassDef.new("Test", "Super", [InstanceVar.new("foo", "Int")], [])
-    it_parses "class Test :: Super { def test() 10 }", ClassDef.new("Test", "Super", [], [Function.new(nil, "test", nil, [], 10.literal)])
+    it_parses "class Test {}", ClassDef.new("Test", "Object", [], [], [])
+    it_parses "class Test :: Super {}", ClassDef.new("Test", "Super", [], [], [])
+    it_parses "class Test :: Super { var foo: Int }", ClassDef.new("Test", "Super", [InstanceVar.new("foo", "Int")], [], [])
+    it_parses "class Test :: Super { def test() 10 }", ClassDef.new("Test", "Super", [], [Function.new(nil, "test", nil, [], 10.literal)], [])
+    it_parses "class Test :: Super { static def test() 10 }", ClassDef.new("Test", "Super", [], [], [Function.new(nil, "test", nil, [], 10.literal)])
 end

@@ -3,12 +3,13 @@ require 'llvm/execution_engine'
 
 module Molen
     class Type
-        attr_accessor :name, :superclass, :functions
+        attr_accessor :name, :superclass, :functions, :class_functions
 
         def initialize(name, supercl)
             @name = name
             @superclass = supercl
             @functions = supercl ? Scope.new(supercl.functions) : Scope.new()
+            @class_functions = {} # Don't inherit class functions
         end
 
         def llvm_type

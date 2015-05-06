@@ -233,10 +233,19 @@ module Molen
 
                 until token.is_end_block?
                     raise_error "Unexpected EOF in class body", token if token.is_eof?
+
+                    is_static = false
+                    if token.is? "static" then
+                        is_static = true
+                        next_token # Consume static
+                    end
+
                     node = parse_node
                     raise_error "Expected variable declaration or function in class body", token unless node.is_a?(InstanceVar) or node.is_a?(Function)
 
-                    if node.is_a? Function then
+                    if node.is_a?(Function) and is_static then
+                        clazz.class_functions << node
+                    elsif node.is_a?(Function)
                         node.owner = clazz
                         clazz.functions << node
                     else

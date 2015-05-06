@@ -25,6 +25,7 @@ module Molen
             /new/                               => :keyword,
             /var/                               => :keyword,
             /class/                             => :keyword,
+            /static/                            => :keyword,
 
             /\{/                                => :begin_block,
             /\}/                                => :end_block,
