@@ -282,7 +282,9 @@ module Molen
         end
 
         def parse_type
-            type = expect_and_consume(:constant).value
+            raise_error "Expected type name, received #{token.kind.upcase}" unless token.is_identifier? or token.is_constant?
+            type = consume.value
+            raise_error "Illegal type (needs to be a c type or a constant)", token if type[0] == type[0].downcase && type[0] != "c"
             while token.is?("[")
                 expect_next_and_consume "]"
                 type += "[]"

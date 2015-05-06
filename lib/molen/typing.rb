@@ -34,13 +34,13 @@ module Molen
 
             @scope = Scope.new
             @functions = Scope.new
-            @functions["putchar"] = [Function.new(nil, "putchar", mod["Int"], [FunctionArg.new("x", mod["Int"])], NativeBody.new(lambda { |arg|
+            @functions["putchar"] = [Function.new(nil, "putchar", nil, [FunctionArg.new("x", mod["Int"])], NativeBody.new(lambda { |arg|
                 putc_func = llvm_mod.functions["putchar"] || llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
-                builder.ret builder.call putc_func, arg
+                builder.call putc_func, builder.load(builder.struct_gep(arg, 1))
             }))]
-            @functions["puts"] = [Function.new(nil, "puts", mod["Int"], [FunctionArg.new("x", mod["String"])], NativeBody.new(lambda { |arg|
+            @functions["puts"] = [Function.new(nil, "puts", nil, [FunctionArg.new("x", mod["String"])], NativeBody.new(lambda { |arg|
                 puts_func = llvm_mod.functions["puts"] || llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
-                builder.ret builder.call puts_func, arg
+                builder.call puts_func, builder.load(builder.struct_gep(arg, 1))
             }))]
         end
 
@@ -67,25 +67,25 @@ module Molen
         # Tries to find the specified identifier in the current scope,
         # and assigns the type of the identifier if found. Errors otherwise
         def visit_identifier(node)
-            raise "Undefined variable '#{node.value}'" unless @scope[node.value]
+            node.raise "Undefined variable '#{node.value}'" unless @scope[node.value]
             node.type = @scope[node.value]
         end
 
         # Tries to find the specified constant in the current scope,
         # and assigns the type of the constant if found. Errors otherwise
         def visit_constant(node)
-            raise "Undefined constant '#{node.value}'" unless @scope[node.value]
+            node.raise "Undefined constant '#{node.value}'" unless @scope[node.value]
             node.type = @scope[node.value]
         end
 
         # Tries to find the specified instance variable and errors
         # if the variable was not found.
         def visit_instance_variable(node)
-            raise "Cannot access instance variables if not in a function" unless @current_function
-            raise "Cannot access instance variables if not in a class function" unless @current_function.owner
+            node.raise "Cannot access instance variables if not in a function" unless @current_function
+            node.raise "Cannot access instance variables if not in a class function" unless @current_function.owner
             obj_type = @current_function.owner.type
-            raise "Cannot access instance variable of primitive type" if obj_type.is_a? PrimitiveType
-            raise "Unknown instance variable #{node.value} on object of type #{obj_type.name}" unless obj_type.instance_variables[node.value]
+            node.raise "Cannot access instance variable of primitive type" if obj_type.is_a? PrimitiveType
+            node.raise "Unknown instance variable #{node.value} on object of type #{obj_type.name}" unless obj_type.instance_variables[node.value]
             node.type = obj_type.instance_variables[node.value]
             node.owner = obj_type
         end
@@ -97,7 +97,7 @@ module Molen
             node.condition.accept self
             with_new_scope { node.then.accept self }
             with_new_scope { node.else.accept self } if node.else
-            raise "Expected condition in if to be a boolean" if node.condition.type != mod["Bool"]
+            node.raise "Expected condition in if to be a boolean" if node.condition.type != mod["Bool"]
         end
 
         # Makes sure that every child of the for loop is typed. Also
@@ -107,7 +107,7 @@ module Molen
             node.cond.accept self
             node.step.accept self if node.step
             with_new_scope { node.body.accept self }
-            raise "Expected condition in loop to be a boolean" if node.cond.type != mod["Bool"]
+            node.raise "Expected condition in loop to be a boolean" if node.cond.type != mod["Bool"]
         end
 
         # We just assume that the native body returns the same value as the function its in.
@@ -118,15 +118,15 @@ module Molen
         # Types a return node and makes sure that the value can
         # be returned from that function.
         def visit_return(node)
-            raise "Cannot return if not in a function!" unless @current_function
+            node.raise "Cannot return if not in a function!" unless @current_function
             node.value.accept self if node.value
             node.type = node.value.nil? ? nil : node.value.type
 
             # Both are void
             return if node.value.nil? and @current_function.return_type.nil?
 
-            raise "Cannot return void from non-void function" unless node.value and @current_function.return_type
-            raise "Cannot return value of type #{node.type.name} from function returning type #{@current_function.return_type.name}" unless node.type.castable_to?(@current_function.return_type).first
+            node.raise "Cannot return void from non-void function" unless node.value and @current_function.return_type
+            node.raise "Cannot return value of type #{node.type.name} from function returning type #{@current_function.return_type.name}" unless node.type.castable_to?(@current_function.return_type).first
         end
 
         # Evaluates the object expression and makes sure that the type
@@ -135,8 +135,8 @@ module Molen
         def visit_member_access(node)
             node.object.accept self
             obj_type = node.object.type
-            raise "Cannot access member of primitive type" if obj_type.is_a? PrimitiveType
-            raise "Unknown member #{node.field.value} on object of type #{obj_type.name}" unless obj_type.instance_variables[node.field.value]
+            node.raise "Cannot access member of primitive type" if obj_type.is_a? PrimitiveType
+            node.raise "Unknown member #{node.field.value} on object of type #{obj_type.name}" unless obj_type.instance_variables[node.field.value]
             node.type = obj_type.instance_variables[node.field.value]
         end
 
@@ -145,10 +145,10 @@ module Molen
         def visit_new(node)
             node.args.each {|arg| arg.accept self}
             type = resolve_type node.type.value
-            raise "Cannot instantiate primitive" if type.is_a? PrimitiveType
+            node.raise "Cannot instantiate primitive" if type.is_a? PrimitiveType
             node.type = type
 
-            if (fn = find_overloaded_method(node.type.functions, "create", node.args)) then
+            if (fn = find_overloaded_method(node, node.type.functions, "create", node.args)) then
                 node.target_constructor = fn
             end
         end
@@ -157,14 +157,14 @@ module Molen
             if node.type then
                 node.type = resolve_type node.type
             else
-                raise "Cannot deduce type of array: No initial elements or type given." if node.elements.size == 0
+                node.raise "Cannot deduce type of array: No initial elements or type given." if node.elements.size == 0
                 node.elements.each { |el| el.accept self }
                 available_types = node.elements.first.type.inheritance_chain
                 node.elements.drop(1).each do |el|
                     types = el.type.inheritance_chain
                     available_types.each { |t| available_types.delete(t) unless types.include? t }
                 end
-                raise "Cannot deduce type of array: No common superclass found." if available_types.size == 0
+                node.raise "Cannot deduce type of array: No common superclass found." if available_types.size == 0
                 node.type = resolve_type available_types.first.name + "[]" # Pretty dirty hack.
             end
         end
@@ -174,7 +174,7 @@ module Molen
         def visit_body(node)
             node.contents.each_with_index do |n, index|
                 n.accept self
-                raise "Unreachable code." if n.is_a?(If) && n.definitely_returns? && index != node.contents.size - 1
+                node.raise "Unreachable code." if n.is_a?(If) && n.definitely_returns? && index != node.contents.size - 1
             end
             last = node.contents.last
             node.type = (last and last.is_a?(Return)) ? last.type : nil
@@ -188,14 +188,14 @@ module Molen
 
             if node.object then
                 node.object.accept self
-                function = find_overloaded_method node.object.type.functions, node.name, node.args
+                function = find_overloaded_method node, node.object.type.functions, node.name, node.args
             else
-                function = find_overloaded_method @functions, node.name, node.args
+                function = find_overloaded_method node, @functions, node.name, node.args
             end
 
             node_arg_types = node.args.map(&:type)
             extra_str = node.object ? " (on object of type #{node.object.type.name}) " : " "
-            raise "No function with name '#{node.name}'#{extra_str}and matching parameters found (given #{node_arg_types.map(&:name).join ", "})." unless function
+            node.raise "No function with name '#{node.name}'#{extra_str}and matching parameters found (given #{node_arg_types.map(&:name).join ", "})." unless function
 
             node.type = function.return_type
             node.target_function = function
@@ -204,7 +204,7 @@ module Molen
         # Resolves the type of a function argument, or errors if
         # not found.
         def visit_function_arg(node)
-            raise "Unknown type #{node.type} for argument #{name}." unless resolve_type(node.type)
+            node.raise "Unknown type #{node.type} for argument #{name}." unless resolve_type(node.type)
             node.type = resolve_type node.type
         end
 
@@ -217,10 +217,10 @@ module Molen
             if node.owner then
                 node.owner.accept(self) unless node.owner.type
                 func_scope = node.owner.type.functions
-                raise "Redefinition of #{node.owner.type.name}##{node.name} with same argument types" unless assure_unique func_scope.this, node.name, node.args.map(&:type)
+                node.raise "Redefinition of #{node.owner.type.name}##{node.name} with same argument types" unless assure_unique func_scope.this, node.name, node.args.map(&:type)
                 func_scope.has_local_key?(node.name) ? func_scope[node.name] << node : func_scope.define(node.name, [node])
             else
-                raise "Redefinition of #{node.name} with same argument types" unless assure_unique @functions, node.name, node.args.map(&:type)
+                node.raise "Redefinition of #{node.name} with same argument types" unless assure_unique @functions, node.name, node.args.map(&:type)
                 @functions.has_local_key?(node.name) ? @functions[node.name] << node : @functions.define(node.name, [node])
             end
 
@@ -234,14 +234,14 @@ module Molen
             end
             @current_function = nil
 
-            raise "Function #{node.name} has a path that does not return!" if !node.body.definitely_returns? && node.return_type != nil
+            node.raise "Function #{node.name} has a path that does not return!" if !node.body.definitely_returns? && node.return_type != nil
         end
 
         def visit_array_access(node)
             node.array.accept(self)
             node.index.accept(self)
-            raise "Cannot index array: Target is not an array" unless node.array.type.is_a? ArrayType
-            raise "Cannot index array with type #{node.index.type.name}, Int expected" unless node.index.type == mod["Int"]
+            node.raise "Cannot index array: Target is not an array" unless node.array.type.is_a? ArrayType
+            node.raise "Cannot index array with type #{node.index.type.name}, Int expected" unless node.index.type == mod["Int"]
             node.type = node.array.type.element_type
         end
 
@@ -258,10 +258,10 @@ module Molen
                 end
 
                 node.type = node.name.type = old_type
-                raise "Cannot assign #{node.value.type.name} to '#{node.name.value}' (a #{old_type.name})" unless node.value.type.castable_to?(old_type).first
+                node.raise "Cannot assign #{node.value.type.name} to '#{node.name.value}' (a #{old_type.name})" unless node.value.type.castable_to?(old_type).first
             else
                 node.name.accept self
-                raise "Cannot assign #{node.value.type.name} to '#{node.name.to_s}' (a #{node.name.type.name})" unless node.value.type.castable_to?(node.name.type).first
+                node.raise "Cannot assign #{node.value.type.name} to '#{node.name.to_s}' (a #{node.name.type.name})" unless node.value.type.castable_to?(node.name.type).first
                 node.type = node.name.type
             end
         end
@@ -271,19 +271,19 @@ module Molen
         # superclasses.
         def visit_class_def(node)
             superclass = mod[node.superclass]
-            raise "Class #{node.superclass} (superclass of #{node.name}) not found!" unless superclass
+            node.raise "Class #{node.superclass} (superclass of #{node.name}) not found!" unless superclass
             node.type = mod.types[node.name] ||= ObjectType.new(node.name, superclass)
 
             node.instance_vars.each do |var|
                 type = resolve_type var.type
-                raise "Unknown type #{var.type} (used in #{node.name}##{var.name})" unless type
+                node.raise "Unknown type #{var.type} (used in #{node.name}##{var.name})" unless type
                 node.type.instance_variables.define var.name, type
             end
             node.functions.each { |func| func.accept self }
         end
 
         private
-        def find_overloaded_method(in_scope, name, args)
+        def find_overloaded_method(func, in_scope, name, args)
             return nil if in_scope[name].nil? || !in_scope[name].is_a?(::Array) || in_scope[name].size == 0
 
             matches = {}
@@ -296,13 +296,14 @@ module Molen
             return nil if matches.size == 0
 
             dist, functions = matches.min_by {|k, v| k}
-            raise "Multiple functions named #{name} found matching argument set '#{args.map(&:type).map(&:name).join ", "}'. Be more specific!" if functions and functions.size > 1
+            func.raise "Multiple functions named #{name} found matching argument set '#{args.map(&:type).map(&:name).join ", "}'. Be more specific!" if functions and functions.size > 1
             functions.first
         end
 
         def assure_unique(in_scope, name, arg_types)
             return true if not in_scope[name] or not in_scope[name].is_a?(Array) or in_scope[name].size == 0
             in_scope[name].each do |func|
+                puts "Already defined in #{func.filename}" if func.args.map(&:type) == arg_types
                 return false if func.args.map(&:type) == arg_types
             end
             return true
@@ -321,7 +322,7 @@ module Molen
 
             unless name.include? "["
                 # It is not an array and it wasn't in mod, which means it is undefined
-                raise "Undefined type '#{name}'"
+                node.raise "Undefined type '#{name}'"
             end
 
             mod[name] = ArrayType.new mod, resolve_type(name[0...-2])

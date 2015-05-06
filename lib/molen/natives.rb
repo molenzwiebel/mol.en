@@ -1,6 +1,8 @@
 
 module Molen
     class Module
+        TYPE_FORMATS = { cint1: "c", cuint8: "c", cint8: "c", cint16: "hi", cuint16: "hu", cint32: "i", cuint32: "u", cint64: "li", cuint64: "lu", cfloat: "f", cdouble: "f" }
+
         def add_natives(std = true)
             add_primitive_builtins
             add_object_builtins
@@ -44,45 +46,36 @@ module Molen
                     end
                 end
 
-                ["__eq", "__lt", "__lte", "__gt", "__gte", "__eq", "__neq"].each do |op|
+                ["__lt", "__lte", "__gt", "__gte", "__eq", "__neq"].each do |op|
                     type1.define_native_function(op, self["cint1"], type2) do |this, other|
                         converted_this = convert_type(builder, ret_type, type1, this)
                         converted_other = convert_type(builder, ret_type, type2, other)
-                        builder.ret build_comp_op(builder, ret_type, converted_this, converted_other)
+                        builder.ret generate_comp_op(builder, op, ret_type, converted_this, converted_other)
                     end
                 end
 
                 type1.define_native_function("to_#{type2.name}", type2) do |this|
                     builder.ret convert_type(builder, type2, type1, this)
                 end
-
-                int_type = self["Int"]
-                type1.define_native_function("to_i", int_type) do |this|
-                    val = builder.malloc int_type.llvm_struct
-                    builder.store convert_type(builder, int_type, type1, this), builder.struct_gep(val, 1)
-                    builder.ret val
-                end
-
-                double_type = self["cdouble"]
-                type1.define_native_function("to_d", int_type) do |this|
-                    val = builder.malloc double_type.llvm_struct
-                    builder.store convert_type(builder, int_type, type1, this), builder.struct_gep(val, 1)
-                    builder.ret val
-                end
             end
 
-            [self["cuint8"], self["cuint16"], self["cuint32"], self["cuint64"], self["cint8"], self["cint16"], self["cint32"], self["cint64"], self["cfloat"], self["cdouble"]].each do |prim_type|
+            self["Bool"].define_native_function("create", nil, self["cint1"]) do |this, arg|
+                builder.store arg, builder.struct_gep(this, 1)
+                builder.ret nil
+            end
+
+            [self["cint1"], self["cuint8"], self["cuint16"], self["cuint32"], self["cuint64"], self["cint8"], self["cint16"], self["cint32"], self["cint64"], self["cfloat"], self["cdouble"]].each do |prim_type|
                 prim_type.define_native_function("to_s", self["String"]) do |this|
                     builder.ret perform_sprintf(builder, "%#{TYPE_FORMATS[prim_type.name.to_sym]}", this)
                 end
 
-                self["String"].define_native_function("__add", self["String"], prim_type) do |this, other|
-                    builder.ret perform_sprintf(builder, "%s%#{TYPE_FORMATS[prim_type.name.to_sym]}", this, other)
+                self["cstr"].define_native_function("__add", self["cstr"], prim_type) do |this, other|
+                    builder.ret builder.load builder.struct_gep(perform_sprintf(builder, "%s%#{TYPE_FORMATS[prim_type.name.to_sym]}", this, other), 1)
                 end
 
-                int_type = self["cint32"]
+                cint_type = self["cint32"]
                 self["Int"].define_native_function("create", nil, prim_type) do |this, arg|
-                    builder.store convert_type(builder, int_type, prim_type, arg), builder.struct_gep(this, 1)
+                    builder.store convert_type(builder, cint_type, prim_type, arg), builder.struct_gep(this, 1)
                     builder.ret nil
                 end
 
@@ -90,15 +83,54 @@ module Molen
                     builder.ret convert_type(builder, prim_type, int_type, builder.load(builder.struct_gep(this, 1)))
                 end
 
-                double_type = self["cdouble"]
+                cdouble_type = self["cdouble"]
                 self["Double"].define_native_function("create", nil, prim_type) do |this, arg|
-                    builder.store convert_type(builder, double_type, prim_type, arg), builder.struct_gep(this, 1)
+                    builder.store convert_type(builder, cdouble_type, prim_type, arg), builder.struct_gep(this, 1)
                     builder.ret nil
                 end
 
                 self["Double"].define_native_function("to_#{prim_type.name}", prim_type) do |this|
-                    builder.ret convert_type(builder, prim_type, double_type, builder.load(builder.struct_gep(this, 1)))
+                    builder.ret convert_type(builder, prim_type, cdouble_type, builder.load(builder.struct_gep(this, 1)))
                 end
+            end
+
+            [self["Double"], self["Int"]].repeated_permutation 2 do |type1, type2|
+                bigger_type = greatest_type type1, type2
+                ["__add", "__sub", "__mul", "__div"].each do |op|
+                    Molen.type(self, Molen.parse(%Q[
+                    class #{type1.name} {
+                        def #{op}(other: #{type2.name}) -> #{bigger_type.name} {
+                            new #{bigger_type.name}(this.value.#{op}(other.value))
+                        }
+                    }], "<native_function: #{type1.name}##{op}(#{type2.name})>"))
+                end
+
+                ["__lt", "__lte", "__gt", "__gte", "__eq", "__neq"].each do |op|
+                    Molen.type(self, Molen.parse(%Q[
+                    class #{type1.name} {
+                        def #{op}(other: #{type2.name}) -> Bool {
+                            new Bool(this.value.#{op}(other.value))
+                        }
+                    }], "<native_function: #{type1.name}##{op}(#{type2.name})>"))
+                end
+            end
+
+            [self["Double"], self["Int"]].each do |type|
+                Molen.type(self, Molen.parse(%Q[
+                class #{type.name} {
+                    def to_s() -> String {
+                        @value.to_s()
+                    }
+                }], "<native_function: #{type.name}#to_s>"))
+            end
+
+            self["String"].define_native_function("create", nil, self["cstr"]) do |this, cstr|
+                builder.store cstr, builder.struct_gep(this, 1)
+                builder.ret nil
+            end
+
+            self["cstr"].define_native_function("__add", self["cstr"], self["cstr"]) do |this, other|
+                builder.ret builder.load builder.struct_gep(perform_sprintf(builder, "%s%s", this, other), 1)
             end
         end
 
@@ -123,7 +155,8 @@ module Molen
 
             strbuf = builder.array_malloc(LLVM::Int8, builder.add(size_needed, LLVM::Int(1))) # Add 1 for null terminator
             builder.call sprintf_func, strbuf, form_ptr, *args
-            strbuf
+
+            allocate_new_struct mod["String"], strbuf
         end
 
         def convert_back(builder, ret_type, old_type, obj)
@@ -171,8 +204,6 @@ module Molen
 
             builder.send ret_type.fp? ? :fcmp : :icmp, ops[op], this, other
         end
-
-        TYPE_FORMATS = { cuint8: "c", cint8: "c", cint16: "hi", cuint16: "hu", cint32: "i", cuint32: "u", cint64: "li", cuint64: "lu", cfloat: "f", cdouble: "f" }
 
         INT_FUNCS = { "__add" => :add, "__sub" => :sub, "__mul" => :mul, "__div" => :sdiv }
         UINT_FUNCS = { "__add" => :add, "__sub" => :sub, "__mul" => :mul, "__div" => :udiv }
