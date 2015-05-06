@@ -195,16 +195,24 @@ module Molen
         # This is not a normal visit_### function because we only
         # generate functions that are actually called. Performance :)
         def generate_function(node)
-            # Save the old position of the builder to return to it at the end
-            old_pos = builder.insert_block
-
             # Add a 'this' argument at the start if this is an instance method
             args = node.args
-            args = [FunctionArg.new("this", node.owner.type)] + args if node.owner
+            args = [FunctionArg.new("this", node.owner.type)] + args if node.owner.is_a?(ClassDef)
 
             # Compute types and create the actual LLVM function
             ret_type = node.return_type ? node.return_type.llvm_type : LLVM.Void
             llvm_arg_types = args.map(&:type).map(&:llvm_type)
+
+            if node.is_a?(ExternalFunc) then
+                func = llvm_mod.functions.add(node.name, llvm_arg_types, ret_type)
+                func.linkage = :internal # Allow llvm to optimize this function away
+                @function_pointers[node] = func
+
+                return func
+            end
+
+            # Save the old position of the builder to return to it at the end
+            old_pos = builder.insert_block
 
             func = llvm_mod.functions.add(node.ir_name, llvm_arg_types, ret_type)
             func.linkage = :internal # Allow llvm to optimize this function away

@@ -248,5 +248,16 @@ module Molen
         def initialize(owner, name, return_type, args)
             @owner, @name, @return_type, @args = owner, name, return_type, args
         end
+
+        def callable?(types)
+            return false, -1 if args.size != types.size
+            total_dist = 0
+            types.each_with_index do |arg_type, i|
+                can, dist = arg_type.castable_to? args[i].type
+                return false, -1 unless can
+                total_dist += dist
+            end
+            return true, total_dist
+        end
     end
 end

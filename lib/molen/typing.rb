@@ -287,6 +287,22 @@ module Molen
             end
         end
 
+        def visit_external_def(node)
+            node.type = mod[node.name] = ExternalType.new node.name, node.location
+
+            @scope.define node.name, node.type unless @scope.has_local_key? node.name
+            
+            node.functions.each do |func|
+                func.accept self
+                node.type.class_functions[func.name] = (node.type.class_functions[func.name] || []) << func
+            end
+        end
+
+        def visit_external_func(node)
+            node.return_type = node.return_type ? resolve_type(node.return_type) : nil
+            node.args.each {|arg| arg.accept self}
+        end
+
         private
         def find_overloaded_method(node, in_scope, name, args)
             return nil if in_scope[name].nil? || !in_scope[name].is_a?(::Array) || in_scope[name].size == 0

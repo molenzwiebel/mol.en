@@ -105,8 +105,8 @@ module Molen
     class PrimitiveType < Type
         attr_accessor :type
 
-        def initialize(name, supert, llvm_type, llvm_size)
-            super name, supert
+        def initialize(name, llvm_type, llvm_size)
+            super name, nil
             @type = llvm_type
             @size = llvm_size
         end
@@ -127,9 +127,22 @@ module Molen
         def castable_to?(other)
             return other == self, 0
         end
+    end
 
-        def inheritance_chain
-            [self]
+    class ExternalType < Type
+        attr_accessor :location
+
+        def initialize(name, loc = nil)
+            super name, nil
+            @location = loc
+        end
+
+        def ==(other)
+            other.class == self.class and other.name == name and other.location == location
+        end
+
+        def castable_to?(other)
+            return other == self, 0
         end
     end
 
@@ -212,10 +225,6 @@ module Molen
 
         def castable_to?(other)
             return other == self, 0
-        end
-
-        def inheritance_chain
-            [self]
         end
     end
 end

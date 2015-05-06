@@ -96,4 +96,11 @@ describe TypingVisitor do
     it_types "class Test { static def get_int() -> Int 10 } Test.get_int()", "Int"
     it_types "class Test { static def func1() {} } class Test { static def func2() {} } Test.func1() Test.func2()", nil
     it_types "class Test { static def func1() {} static def func1(a: Int) {} } class Test { static def func2() {} } Test.func1() Test.func1(10) Test.func2()", nil
+
+    it_types "extern C {}", "C"
+    it_types "extern C('test') {}", "C"
+    it_types "extern C { fn test() } C.test()", nil
+    it_types "extern C { fn test(a: Int) } C.test(10)", nil
+    it_types "extern C { fn test(a: Int) -> Int } C.test(10)", "Int"
+    it_fails_on "extern C { fn test(a: Int) } C.test('hai')", /No function with name 'test'/
 end
