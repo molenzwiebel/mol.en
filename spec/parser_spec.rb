@@ -101,4 +101,10 @@ describe Parser do
     it_parses "class Test :: Super { var foo: Int }", ClassDef.new("Test", "Super", [InstanceVar.new("foo", "Int")], [], [])
     it_parses "class Test :: Super { def test() 10 }", ClassDef.new("Test", "Super", [], [Function.new(nil, "test", nil, [], 10.literal)], [])
     it_parses "class Test :: Super { static def test() 10 }", ClassDef.new("Test", "Super", [], [], [Function.new(nil, "test", nil, [], 10.literal)])
+
+    it_parses "extern C {}", ExternalDef.new("C", nil, [])
+    it_parses "extern C('test') {}", ExternalDef.new("C", "test", [])
+    it_parses "extern C { fn test() }", ExternalDef.new("C", nil, [ExternalFunc.new(nil, "test", nil, [])])
+    it_parses "extern C { fn test(a: Int) }", ExternalDef.new("C", nil, [ExternalFunc.new(nil, "test", nil, [FunctionArg.new("a", "Int")])])
+    it_parses "extern C { fn test(a: Int) -> Int }", ExternalDef.new("C", nil, [ExternalFunc.new(nil, "test", "Int", [FunctionArg.new("a", "Int")])])
 end

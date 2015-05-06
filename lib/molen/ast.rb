@@ -231,4 +231,22 @@ module Molen
             @name, @superclass, @instance_vars, @functions, @class_functions = name, superclass, vars, funcs, class_funcs
         end
     end
+
+    class ExternalDef < Statement
+        attr_accessor :name, :location, :functions
+        attr_eq :name, :location, :functions
+
+        def initialize(name, loc = nil, funcs = [])
+            @name, @location, @functions = name, loc, funcs
+        end
+    end
+
+    class ExternalFunc < Statement
+        attr_accessor :owner, :name, :return_type, :args
+        attr_eq :name, :return_type, :args
+
+        def initialize(owner, name, return_type, args)
+            @owner, @name, @return_type, @args = owner, name, return_type, args
+        end
+    end
 end

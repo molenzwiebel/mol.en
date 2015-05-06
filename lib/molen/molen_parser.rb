@@ -256,6 +256,41 @@ module Molen
 
                 clazz
             end
+
+            stmt -> x { x.is_keyword? "extern" } do
+                name = expect_next_and_consume(:constant).value
+                loc = nil
+                if token.is? "(" then
+                    loc = expect_next_and_consume(:string).value.gsub(/\\"/, "\"").gsub(/\\'/, "'").gsub(/^"|"$/, "").gsub(/^'|'$/, '')
+                    expect_and_consume(")")
+                end
+
+                extern = ExternalDef.new(name, loc, [])
+
+                expect_and_consume(:begin_block)
+                until token.is_end_block?
+                    raise_error "Expected 'fn' in extern body", token unless token.is_keyword? "fn"
+
+                    func_name = expect_next_and_consume(:identifier).value
+                    args = parse_delimited do |parser|
+                        n = parser.expect(:identifier).value
+                        parser.expect_next_and_consume(":")
+                        type = parser.parse_type
+                        FunctionArg.new n, type
+                    end
+                    ret_type = nil
+
+                    if token.is? "->" then
+                        next_token # Consume ->
+                        ret_type = parse_type
+                    end
+
+                    extern.functions << ExternalFunc.new(extern, func_name, ret_type, args)
+                end
+                expect_and_consume(:end_block)
+
+                extern
+            end
         end
     end
 

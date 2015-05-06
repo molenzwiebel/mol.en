@@ -322,7 +322,7 @@ module Molen
     class Function
         def ir_name
             if owner then
-                "#{owner.type.name}__#{name}<#{args.map(&:type).map(&:name).join ","}>"
+                "#{owner.type.name}##{name}<#{args.map(&:type).map(&:name).join ","}>"
             else
                 "#{name}<#{args.map(&:type).map(&:name).join ","}>"
             end
