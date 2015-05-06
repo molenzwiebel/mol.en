@@ -1,20 +1,20 @@
 require 'spec_helper'
 
 describe TypingVisitor do
-    def self.it_types(str, std = false, name)
+    def self.it_types(str, name)
         it "types '#{str}'" do
             body = Molen.parse(str, "typing_spec")
-            vis = TypingVisitor.new Molen::Module.new(std)
+            vis = TypingVisitor.new Molen::Module.new
             body.accept vis
             expect(body.contents.last.type).to be_nil unless name
             expect(body.contents.last.type.name).to eq name if name
         end
     end
 
-    def self.it_fails_on(str, std = false, err)
+    def self.it_fails_on(str, err)
         it "successfully deduces that '#{str}' is invalid" do
             body = Molen.parse(str, "typing_spec")
-            vis = TypingVisitor.new Molen::Module.new(std)
+            vis = TypingVisitor.new Molen::Module.new
             expect {
                 body.accept vis
             }.to raise_error err
@@ -47,14 +47,14 @@ describe TypingVisitor do
 
     it_types "class X {} new X", "X"
     it_fails_on "new X", /Undefined type 'X'/
-    #it_fails_on "new Int", /Cannot instantiate primitive/ We can now!
+    it_fails_on "new Int", /Cannot instantiate primitive/
 
     it_types "new String[](10)", "String[]"
     it_types "new String[][](10)", "String[][]"
     it_fails_on "new Bla[](10)", /Undefined type 'Bla'/
 
     it_fails_on "[]", /Cannot deduce type of array: No initial elements or type given\./
-    #it_fails_on "[1, 3.3]", /Cannot deduce type of array: No common superclass found\./ Now fixed with new types :D
+    it_fails_on "[1, 3.3]", /Cannot deduce type of array: No common superclass found\./
     it_types "[10]", "Int[]"
     it_types "[10, 3, 4]", "Int[]"
     it_types "[[1,3], [3, 2]]", "Int[][]"

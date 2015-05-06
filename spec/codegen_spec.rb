@@ -1,9 +1,9 @@
 require 'spec_helper'
 
 describe GeneratingVisitor do
-    def self.try_run(src, std = false)
+    def self.try_run(src)
         it "parses '#{src}' and generates without errors" do
-            Molen.run src, "codegen_spec", std
+            Molen.run src, "codegen_spec"
         end
     end
 
@@ -17,7 +17,7 @@ describe GeneratingVisitor do
     try_run "def test() -> Int 10 test()"
     try_run "def test(x: Int) -> Int x test(10)"
     try_run "def test() 10 test()"
-    try_run "def test(arg0: Int, arg1: Int) -> Int arg0 + arg1 test(1, 2)", true
+    try_run "def test(arg0: Int, arg1: Int) -> Int arg0 + arg1 test(1, 2)"
 
     try_run "class X {} y = new X"
     try_run "class X { var foo: Int } y = new X"

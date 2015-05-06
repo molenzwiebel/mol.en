@@ -10,11 +10,11 @@ class MyInt {
     var value: Int
 
     def create(x: Int) {
-        @value = x
+        this.value = x
     }
 
     def to_i() -> Int {
-        @value
+        this.value
     }
 
     def __mul(other: MyInt) -> MyInt {

@@ -19,7 +19,7 @@ module Molen
     }
 
     def parse(src, name = "unknown_file")
-        Molen.parse src, name
+        Molen.parse src
     end
 
     def self.parse(src, name = "unknown_file")
@@ -28,7 +28,7 @@ module Molen
         until (n = parser.parse_node).nil?
             contents << n
         end
-        ret = Body.from contents
+        Body.from contents
     end
 
     # Alias for create_parser that allows you to call
@@ -282,9 +282,7 @@ module Molen
         end
 
         def parse_type
-            raise_error "Expected type name, received #{token.kind.upcase}" unless token.is_identifier? or token.is_constant?
-            type = consume.value
-            raise_error "Illegal type (needs to be a c type or a constant)", token if type[0] == type[0].downcase && type[0] != "c"
+            type = expect_and_consume(:constant).value
             while token.is?("[")
                 expect_next_and_consume "]"
                 type += "[]"
