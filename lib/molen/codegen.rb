@@ -181,7 +181,7 @@ module Molen
                 args << val
             end
 
-            if node.object then
+            if node.object && !node.object.is_a?(Constant) then
                 obj = node.object.accept(self)
                 casted_this = builder.bit_cast obj, node.target_function.owner.type.llvm_type
                 args = [casted_this] + args

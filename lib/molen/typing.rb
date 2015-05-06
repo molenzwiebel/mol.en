@@ -186,7 +186,10 @@ module Molen
         def visit_call(node)
             node.args.each {|arg| arg.accept self}
 
-            if node.object then
+            if node.object.is_a? Constant then
+                node.object.accept self
+                function = find_overloaded_method node, node.object.type.class_functions, node.name, node.args
+            elsif node.object then
                 node.object.accept self
                 function = find_overloaded_method node, node.object.type.functions, node.name, node.args
             else
@@ -214,14 +217,11 @@ module Molen
             node.return_type = node.return_type ? resolve_type(node.return_type) : nil
             node.args.each {|arg| arg.accept self}
 
-            if node.owner then
-                func_scope = node.owner.type.functions
-                node.raise "Redefinition of #{node.owner.type.name}##{node.name} with same argument types" unless assure_unique func_scope.this, node.name, node.args.map(&:type)
-                func_scope.has_local_key?(node.name) ? func_scope[node.name] << node : func_scope.define(node.name, [node])
-            else
-                node.raise "Redefinition of #{node.name} with same argument types" unless assure_unique @functions, node.name, node.args.map(&:type)
-                @functions.has_local_key?(node.name) ? @functions[node.name] << node : @functions.define(node.name, [node])
-            end
+            func_scope = @functions
+            func_scope = node.owner.type.functions if node.owner
+
+            node.raise "Redefinition of #{node.owner.type.name rescue "<top level>"}##{node.name} with same argument types" unless assure_unique func_scope.this, node.name, node.args.map(&:type)
+            func_scope.has_local_key?(node.name) ? func_scope[node.name] << node : func_scope.define(node.name, [node])
 
             @current_function = node
             with_new_scope(false) do
@@ -273,12 +273,18 @@ module Molen
             node.raise "Class #{node.superclass} (superclass of #{node.name}) not found!" unless superclass
             node.type = mod.types[node.name] ||= ObjectType.new(node.name, superclass)
 
+            @scope.define node.name, node.type unless @scope.has_local_key? node.name
+
             node.instance_vars.each do |var|
                 type = resolve_type var.type
                 node.raise "Unknown type #{var.type} (used in #{node.name}##{var.name})" unless type
                 node.type.instance_variables.define var.name, type
             end
             node.functions.each { |func| func.accept self }
+            node.class_functions.each do |func|
+                func.accept self
+                node.type.class_functions[func.name] = (node.type.class_functions[func.name] || []) << func
+            end
         end
 
         private

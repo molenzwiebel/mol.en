@@ -92,4 +92,7 @@ describe TypingVisitor do
     it_types "def test() -> Int 10 def test(a: Int) -> Double 10.1 test(1)", "Double"
     it_types "def test() -> Int[] new Int[]() test()", "Int[]"
     it_types "class Int { def test() -> Int this } 10.test()", "Int"
+
+    it_types "class Test { static def get_int() -> Int 10 } Test.get_int()", "Int"
+    it_types "class Test { static def func1() {} } class Test { static def func2() {} } Test.func1() Test.func2()", nil
 end

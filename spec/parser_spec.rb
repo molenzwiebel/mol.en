@@ -64,6 +64,8 @@ describe Parser do
     it_parses "a.b", MemberAccess.new("a".ident, "b".ident)
     it_parses "a.b.c", MemberAccess.new(MemberAccess.new("a".ident, "b".ident), "c".ident)
     it_parses "a.b()", Call.new("a".ident, "b", [])
+    it_parses "A.b()", Call.new("A".const, "b", [])
+    it_parses "A.b().c", MemberAccess.new(Call.new("A".const, "b", []), "c".ident)
     it_parses "a.b().c()", Call.new(Call.new("a".ident, "b", []), "c", [])
     it_errors_on "a.", /Expected identifier or call after/
     it_errors_on "a.new Bla()", /Expected identifier or call after/
