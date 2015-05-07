@@ -109,8 +109,8 @@ describe TypingVisitor do
     it_types "struct X {} new X", "X"
     it_types "struct X { var y: Int } new X.y", "Int"
 
-    it_types "&10", "*Int"
-    it_types "def do_something(arg: *Int) true do_something(&1)", nil
-    it_types "def do_something(arg: **Int) true do_something(&(&1))", nil
-    it_fails_on "def do_something(arg: **Int) true do_something(&1)", /No function with name 'do_something' and matching parameters found \(given \*Int\)/
+    it_types "x = 10 &x", "*Int"
+    it_types "def do_something(arg: *Int) true x = 10 do_something(&x)", nil
+    it_types "def do_something(arg: **Int) true x = 10 y = &x do_something(&y)", nil
+    it_fails_on "def do_something(arg: **Int) true x = 10 do_something(&x)", /No function with name 'do_something' and matching parameters found \(given \*Int\)/
 end

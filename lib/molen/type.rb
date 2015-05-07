@@ -170,6 +170,15 @@ module Molen
         def initialize(mod, ptr_type)
             super "*" + ptr_type.name, nil
             @ptr_type = ptr_type
+
+            define_native_function "value", ptr_type do |this|
+                builder.ret builder.load this
+            end
+
+            define_native_function "set_value", nil, ptr_type do |this, val|
+                builder.store val, this
+                builder.ret nil
+            end
         end
 
         def llvm_type

@@ -45,9 +45,10 @@ describe Parser do
     it_parses "var x: **Int", InstanceVar.new("x", "**Int")
     it_parses "var x: **Int[][]", InstanceVar.new("x", "**Int[][]")
 
-    it_parses "&10", PointerOf.new(10.literal)
-    it_parses "&(&10)", PointerOf.new(PointerOf.new(10.literal))
-    it_errors_on "&", /Expected expression after &/
+    it_parses "&x", PointerOf.new("x".ident)
+    it_parses "&@test", PointerOf.new(InstanceVariable.new("test"))
+    it_errors_on "&", /Expected identifier or instance variable after &/
+    it_errors_on "&10", /Expected identifier or instance variable after &/
 
     it_parses "(10)", 10.literal
     it_errors_on "()", /Expected node in parenthesized expression/

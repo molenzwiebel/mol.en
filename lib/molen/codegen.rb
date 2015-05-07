@@ -90,6 +90,16 @@ module Molen
             builder.load builder.gep(obj_ptr, [LLVM::Int(0), LLVM::Int(index)], node.value + "_ptr"), node.value
         end
 
+        def visit_pointer_of(node)
+            if node.expr.is_a? InstanceVariable then
+                obj_ptr = builder.load @variable_pointers["this"]
+                index = node.expr.owner.instance_var_index node.expr.value
+                return builder.struct_gep(obj_ptr, index)
+            else
+                return @variable_pointers[node.expr.value]
+            end
+        end
+
         def visit_assign(node)
             if node.name.is_a?(Identifier) then
                 val = node.value.accept(self)
