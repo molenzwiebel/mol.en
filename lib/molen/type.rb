@@ -203,11 +203,11 @@ module Molen
     end
 
     class ExternalType < Type
-        attr_accessor :location
+        attr_accessor :locations
 
-        def initialize(name, loc = nil)
+        def initialize(name)
             super name, nil
-            @location = loc
+            @locations = []
         end
 
         def ==(other)

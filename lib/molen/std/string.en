@@ -1,3 +1,7 @@
+extern C {
+    fn strlen(str: String) -> Int
+}
+
 class String {
     def __add(other: Object) -> String {
         this + other.to_s()
@@ -13,5 +17,9 @@ class String {
 
     def __add(other: Double) -> String {
         this + other.to_s()
+    }
+
+    def length() -> Int {
+        C.strlen(this)
     }
 }

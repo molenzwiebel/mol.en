@@ -64,8 +64,8 @@ module Molen
         # Tries to find the specified constant in the current scope,
         # and assigns the type of the constant if found. Errors otherwise
         def visit_constant(node)
-            node.raise "Undefined constant '#{node.value}'" unless @scope[node.value]
-            node.type = @scope[node.value]
+            node.raise "Undefined constant '#{node.value}'" unless resolve_type node.value
+            node.type = resolve_type node.value
         end
 
         def visit_pointer_of(node)
@@ -187,6 +187,7 @@ module Molen
                 function = find_overloaded_method node, node.object.type.class_functions, node.name, node.args
             elsif node.object then
                 node.object.accept self
+                node.raise "Cannot call function on void (tried to call #{node.name})." unless node.object.type
                 function = find_overloaded_method node, node.object.type.functions, node.name, node.args
             else
                 function = find_overloaded_method node, @functions, node.name, node.args
@@ -301,9 +302,11 @@ module Molen
         end
 
         def visit_external_def(node)
-            node.type = mod[node.name] = ExternalType.new node.name, node.location
+            existing_type = mod[node.name]
+            node.raise "Cannot define external with name #{node.name}: #{node.name} was already defined elsewhere" unless existing_type.nil? or existing_type.is_a? ExternalType
 
-            @scope.define node.name, node.type unless @scope.has_local_key? node.name
+            node.type = existing_type || (mod[node.name] = ExternalType.new(node.name))
+            node.type.locations << node.location if node.location
 
             node.functions.each do |func|
                 func.accept self
