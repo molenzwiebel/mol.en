@@ -1,20 +1,10 @@
 
 module Molen
-    class ASTNode
-        attr_accessor :type
-    end
-
-    class Call
-        attr_accessor :target_function
-    end
-
-    class New
-        attr_accessor :target_constructor
-    end
-
-    class InstanceVariable
-        attr_accessor :owner
-    end
+    class ASTNode; attr_accessor :type; end
+    class Call; attr_accessor :target_function; end
+    class New; attr_accessor :target_constructor; end
+    class InstanceVariable; attr_accessor :owner; end
+    class Function; attr_accessor :is_typed; end
 
     def type(mod, tree)
         Molen.type(mod, tree)
@@ -149,6 +139,7 @@ module Molen
             node.type = type
 
             if (fn = find_overloaded_method(node, node.type.functions, "create", node.args)) then
+                type_function(fn) unless fn.is_typed
                 node.target_constructor = fn
             end
         end
@@ -200,6 +191,8 @@ module Molen
             extra_str = node.object ? " (on object of type #{node.object.type.name}) " : " "
             node.raise "No function with name '#{node.name}'#{extra_str}and matching parameters found (given #{node_arg_types.map(&:name).join ", "})." unless function
 
+            type_function(function) unless function.is_a?(ExternalFunc) or function.is_typed
+
             node.type = function.return_type
             node.target_function = function
         end
@@ -222,6 +215,11 @@ module Molen
 
             node.raise "Redefinition of #{node.owner.type.name rescue "<top level>"}##{node.name} with same argument types" unless assure_unique func_scope.this, node.name, node.args.map(&:type)
             func_scope.has_local_key?(node.name) ? func_scope[node.name] << node : func_scope.define(node.name, [node])
+        end
+
+        def type_function(node)
+            old_func = @current_function
+            node.is_typed = true if node.is_a?(Function)
 
             @current_function = node
             with_new_scope(false) do
@@ -231,9 +229,9 @@ module Molen
                 end
                 node.body.accept self
             end
-            @current_function = nil
+            @current_function = old_func
 
-            node.raise "Function #{node.name} has a path that does not return!" if !node.body.definitely_returns? && node.return_type != nil
+            node.raise "Function #{node.name} has a path that does not return! #{node.body.definitely_returns?}, #{node.return_type.class.name}" if !node.body.definitely_returns? && node.return_type != nil
         end
 
         def visit_array_access(node)
@@ -291,7 +289,7 @@ module Molen
             node.type = mod[node.name] = ExternalType.new node.name, node.location
 
             @scope.define node.name, node.type unless @scope.has_local_key? node.name
-            
+
             node.functions.each do |func|
                 func.accept self
                 node.type.class_functions[func.name] = (node.type.class_functions[func.name] || []) << func

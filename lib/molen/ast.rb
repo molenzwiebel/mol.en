@@ -64,7 +64,7 @@ module Molen
         end
 
         def definitely_returns?
-            contents.count{ |node| node.is_a?(Return) || (node.is_a?(If) and node.definitely_returns?) } > 0
+            contents.count{ |node| node.is_a?(Return) || node.is_a?(NativeBody) || (node.is_a?(If) and node.definitely_returns?) } > 0
         end
     end
 

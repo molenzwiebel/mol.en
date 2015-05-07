@@ -39,8 +39,8 @@ describe TypingVisitor do
     it_fails_on "for (,10,) {}", /Expected condition in loop to be a boolean/
 
     it_fails_on "return 10", /Cannot return if not in a function!/
-    it_fails_on "def x() -> Int return 3.3", /Cannot return value of type Double/
-    it_fails_on "def x() -> Int return", /Cannot return void from/
+    it_fails_on "def x() -> Int return 3.3 x()", /Cannot return value of type Double/
+    it_fails_on "def x() -> Int { return } x()", /Cannot return void from/
 
     it_types "def test() -> Int 10 test()", "Int"
     it_types "def test() 10 test()", nil
@@ -77,15 +77,15 @@ describe TypingVisitor do
     it_fails_on "class Test { var foo: Int } x = new Test() x.foo = 4.4", /Cannot assign Double to/
 
     it_fails_on "@test", /Cannot access instance variables if not in a function/
-    it_fails_on "def test() @test", /Cannot access instance variables if not in a class function/
-    it_fails_on "class X { def test() @test }", /Unknown instance variable test/
+    it_fails_on "def test() @test test()", /Cannot access instance variables if not in a class function/
+    it_fails_on "class X { def test() @test } new X.test()", /Unknown instance variable test/
     it_types "class X { var foo: Int def get_foo() -> Int @foo } y = new X y.get_foo()", "Int"
 
     it_types "class X { var foo: Int def set_foo(x: Int) @foo = x } y = new X y.set_foo(12)", nil
     it_fails_on "class X { var foo: Int def set_foo(x: Double) @foo = x } y = new X y.set_foo(12.0)", /Cannot assign Double to/
 
-    it_fails_on "def test() { if (true) { return } 10 }", /Unreachable code/
-    it_fails_on "def test() { if (true) { return } else { return } 10 }", /Unreachable code/
+    it_fails_on "def test() { if (true) { return } 10 } test()", /Unreachable code/
+    it_fails_on "def test() { if (true) { return } else { return } 10 } test()", /Unreachable code/
     it_types "def test() { if (true) { return } else { } 10 }", nil
 
     it_types "def test() -> Int 10 def test(a: Int) -> Double 10.1 test()", "Int"
@@ -103,4 +103,7 @@ describe TypingVisitor do
     it_types "extern C { fn test(a: Int) } C.test(10)", nil
     it_types "extern C { fn test(a: Int) -> Int } C.test(10)", "Int"
     it_fails_on "extern C { fn test(a: Int) } C.test('hai')", /No function with name 'test'/
+
+    it_types "def print_x() puts(get_x()) def get_x() -> String 'x' print_x()", nil # Functions in any order
+    it_types "def call_x() X.test() class X {static def test() 10} call_x()", nil
 end
