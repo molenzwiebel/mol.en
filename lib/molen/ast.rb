@@ -116,6 +116,15 @@ module Molen
         end
     end
 
+    class PointerOf < Expression
+        attr_accessor :expr
+        attr_eq :expr
+
+        def initialize(ex)
+            @expr = ex
+        end
+    end
+
     class New < Expression
         attr_accessor :type, :args
         attr_eq :type, :args

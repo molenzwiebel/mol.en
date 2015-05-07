@@ -100,6 +100,13 @@ module Molen
                 node
             end
 
+            expr -> tok { tok.is? "&" } do
+                next_token # Consume &
+                expr = parse_expression
+                raise_error "Expected expression after &", token unless expr
+                PointerOf.new expr
+            end
+
             infix 11, -> x { x.is_operator? "+" }, &create_binary_parser(11)
             infix 11, -> x { x.is_operator? "-" }, &create_binary_parser(11)
             infix 12, -> x { x.is_operator? "*" }, &create_binary_parser(12)
@@ -341,6 +348,11 @@ module Molen
         end
 
         def parse_type
+            if token.is?("*") then
+                next_token # Consume *
+                return "*" + parse_type
+            end
+
             type = expect_and_consume(:constant).value
             while token.is?("[")
                 expect_next_and_consume "]"

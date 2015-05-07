@@ -68,6 +68,11 @@ module Molen
             node.type = @scope[node.value]
         end
 
+        def visit_pointer_of(node)
+            node.expr.accept self
+            node.type = PointerType.new mod, node.expr.type
+        end
+
         # Tries to find the specified instance variable and errors
         # if the variable was not found.
         def visit_instance_variable(node)
@@ -346,6 +351,10 @@ module Molen
 
         def resolve_type(name)
             return mod[name] if mod[name]
+
+            if name[0] == "*" then
+                return mod[name] = PointerType.new(mod, resolve_type(name[1..-1]))
+            end
 
             unless name.include? "["
                 # It is not an array and it wasn't in mod, which means it is undefined

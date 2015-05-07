@@ -164,6 +164,31 @@ module Molen
         end
     end
 
+    class PointerType < Type
+        attr_accessor :ptr_type
+
+        def initialize(mod, ptr_type)
+            super "*" + ptr_type.name, nil
+            @ptr_type = ptr_type
+        end
+
+        def llvm_type
+            LLVM::Pointer ptr_type.llvm_type
+        end
+
+        def llvm_size
+            8 # Size of pointer
+        end
+
+        def ==(other)
+            other.class == self.class and other.ptr_type == ptr_type
+        end
+
+        def castable_to?(other)
+            return other == self, 0
+        end
+    end
+
     class ExternalType < Type
         attr_accessor :location
 

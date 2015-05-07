@@ -41,6 +41,14 @@ describe Parser do
     it_parses "var x: Int[]", InstanceVar.new("x", "Int[]")
     it_parses "var x: Int[][]", InstanceVar.new("x", "Int[][]")
 
+    it_parses "var x: *Int", InstanceVar.new("x", "*Int")
+    it_parses "var x: **Int", InstanceVar.new("x", "**Int")
+    it_parses "var x: **Int[][]", InstanceVar.new("x", "**Int[][]")
+
+    it_parses "&10", PointerOf.new(10.literal)
+    it_parses "&(&10)", PointerOf.new(PointerOf.new(10.literal))
+    it_errors_on "&", /Expected expression after &/
+
     it_parses "(10)", 10.literal
     it_errors_on "()", /Expected node in parenthesized expression/
     it_errors_on "(test", /Expected token of type RPAREN/
