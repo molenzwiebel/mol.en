@@ -179,6 +179,10 @@ module Molen
                 builder.store val, this
                 builder.ret nil
             end
+
+            define_native_function "__add", self, mod["Int"] do |this, offset|
+                builder.ret builder.gep(this, [offset])
+            end
         end
 
         def llvm_type

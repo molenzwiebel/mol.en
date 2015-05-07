@@ -1,7 +1,7 @@
 extern CFile {
-    fn fopen(filename: String, mode: String) -> Pointer
-    fn fputs(contents: String, file: Pointer) -> Int
-    fn fclose(file: Pointer) -> Int
+    fn fopen(filename: String, mode: String) -> *Void
+    fn fputs(contents: String, file: *Void) -> Int
+    fn fclose(file: *Void) -> Int
 }
 
 file_ptr = CFile.fopen("my_file.txt", "ab+")
