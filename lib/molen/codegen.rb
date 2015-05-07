@@ -205,7 +205,6 @@ module Molen
 
             if node.is_a?(ExternalFunc) then
                 func = llvm_mod.functions.add(node.name, llvm_arg_types, ret_type)
-                func.linkage = :internal # Allow llvm to optimize this function away
                 @function_pointers[node] = func
 
                 return func
