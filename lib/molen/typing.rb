@@ -285,6 +285,16 @@ module Molen
             end
         end
 
+        def visit_struct_def(node)
+            node.type = mod[node.name] = StructType.new(node.name, {})
+
+            node.vars.each do |v|
+                type = resolve_type v.type
+                node.raise "Unknown type #{var.type} (used in #{node.name}##{var.name})" unless type
+                node.type.instance_variables[v.name] = type
+            end
+        end
+
         def visit_external_def(node)
             node.type = mod[node.name] = ExternalType.new node.name, node.location
 

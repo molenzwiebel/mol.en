@@ -107,6 +107,36 @@ module Molen
         end
     end
 
+    class StructType < Type
+        attr_accessor :instance_variables
+
+        def initialize(name, vars)
+            super name, nil
+
+            @instance_variables = vars
+        end
+
+        def llvm_type
+            LLVM::Pointer llvm_struct
+        end
+
+        def llvm_struct
+            LLVM::Struct *(instance_variables.values.map(&:llvm_type))
+        end
+
+        def ==(other)
+            other.class == self.class and other.name == name and other.instance_variables == instance_variables
+        end
+
+        def instance_var_index(name)
+            instance_variables.keys.index(name)
+        end
+
+        def castable_to?(other)
+            return other == self, 0
+        end
+    end
+
     class PrimitiveType < Type
         attr_accessor :type
 

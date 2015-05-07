@@ -260,4 +260,13 @@ module Molen
             return true, total_dist
         end
     end
+
+    class StructDef < Statement
+        attr_accessor :name, :vars
+        attr_eq :name, :vars
+
+        def initialize(name, vars)
+            @name, @vars = name, vars
+        end
+    end
 end

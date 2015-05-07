@@ -107,4 +107,8 @@ describe Parser do
     it_parses "extern C { fn test() }", ExternalDef.new("C", nil, [ExternalFunc.new(nil, "test", nil, [])])
     it_parses "extern C { fn test(a: Int) }", ExternalDef.new("C", nil, [ExternalFunc.new(nil, "test", nil, [FunctionArg.new("a", "Int")])])
     it_parses "extern C { fn test(a: Int) -> Int }", ExternalDef.new("C", nil, [ExternalFunc.new(nil, "test", "Int", [FunctionArg.new("a", "Int")])])
+
+    it_parses "struct Foo {}", StructDef.new("Foo", [])
+    it_parses "struct Foo { var x: Int }", StructDef.new("Foo", [InstanceVar.new("x", "Int")])
+    it_parses "struct Foo { var x: Int var y: Double }", StructDef.new("Foo", [InstanceVar.new("x", "Int"), InstanceVar.new("y", "Double")])
 end

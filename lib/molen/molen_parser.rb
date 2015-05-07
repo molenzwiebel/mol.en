@@ -291,6 +291,21 @@ module Molen
 
                 extern
             end
+
+            stmt -> x { x.is_keyword? "struct" } do
+                name = expect_next_and_consume(:constant).value
+                expect_and_consume(:begin_block)
+                vars = []
+
+                until token.is_end_block?
+                    raise_error "Expected var in struct body", token unless token.is_keyword? "var"
+
+                    vars << parse_statement
+                end
+                next_token # Consume }
+
+                StructDef.new name, vars
+            end
         end
     end
 

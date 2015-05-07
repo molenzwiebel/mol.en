@@ -105,5 +105,7 @@ describe TypingVisitor do
     it_fails_on "extern C { fn test(a: Int) } C.test('hai')", /No function with name 'test'/
 
     it_types "def print_x() puts(get_x()) def get_x() -> String 'x' print_x()", nil # Functions in any order
-    it_types "def call_x() X.test() class X {static def test() 10} call_x()", nil
+
+    it_types "struct X {} new X", "X"
+    it_types "struct X { var y: Int } new X.y", "Int"
 end

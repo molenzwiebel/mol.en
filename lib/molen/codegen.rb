@@ -123,7 +123,7 @@ module Molen
         def visit_new(node)
             allocated_struct = builder.malloc node.type.llvm_struct, node.type.name
             memset allocated_struct, LLVM::Int(0), node.type.llvm_struct.size
-            populate_vtable allocated_struct, node.type
+            populate_vtable allocated_struct, node.type if node.type.is_a?(ObjectType)
 
             if node.target_constructor then
                 create_func = @function_pointers[node.target_constructor]
