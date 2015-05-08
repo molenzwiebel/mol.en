@@ -4,6 +4,10 @@ extern C {
 }
 
 class String {
+    def create(ptr: *Char) {
+        @value = ptr
+    }
+
     def length() -> Int {
         C.strlen(@value)
     }

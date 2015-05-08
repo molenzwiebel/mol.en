@@ -1,0 +1,55 @@
+extern C {
+    fn fopen(filename: *Char, mode: *Char) -> *Void
+    fn fputs(str: *Char, file: *Void) -> Int
+    fn fclose(file: *Void) -> Int
+    fn feof(file: *Void) -> Int
+    fn getline(linep: **Char, linecap: *Long, file: *Void) -> Long
+}
+
+class File {
+    var file_ptr: *Void
+    var location: String
+    var is_closed: Bool
+
+    def create(file: String, mode: String) {
+        @location = file
+        @file_ptr = C.fopen(file.cstr(), mode.cstr())
+        @is_closed = false
+    }
+
+    def print(str: String) {
+        this.ensure_open()
+        C.fputs(str.cstr(), @file_ptr)
+    }
+
+    def puts(str: String) {
+        this.print(str + "\n")
+    }
+
+    def is_eof() -> Bool {
+        this.ensure_open()
+        C.feof(@file_ptr) != 0
+    }
+
+    def get_line() -> String {
+        this.ensure_open()
+
+        buffer = Pointer.malloc(Char, 0)
+        cap = 0L
+        len = C.getline(&buffer, &cap, @file_ptr)
+        new String(buffer)
+    }
+
+    def close() {
+        this.ensure_open()
+        C.fclose(@file_ptr)
+        @is_closed = true
+    }
+
+    def ensure_open() {
+        if (@is_closed) {
+            CUtil.err("Tried to manipulate closed file!")
+            C.exit(-1)
+        }
+    }
+}

@@ -2,6 +2,9 @@ extern C {
     fn exit(code: Int)
     fn fdopen(filedes: Int, mode: *Char) -> *Void
     fn fprintf(file: *Void, content: *Char)
+
+    fn puts(ptr: *Char) -> Int
+    fn printf(ptr: *Char) -> Int
 }
 
 class CUtil {
