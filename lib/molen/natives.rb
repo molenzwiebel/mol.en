@@ -87,7 +87,7 @@ module Molen
             end
 
             bool.define_native_function("to_s", string) do |this|
-                builder.ret builder.select this, builder.global_string_pointer("true"), builder.global_string_pointer("false")
+                builder.ret builder.select this, allocate_string(builder.global_string_pointer("true")), allocate_string(builder.global_string_pointer("false"))
             end
 
             string.define_native_function("to_s", string) do |this|

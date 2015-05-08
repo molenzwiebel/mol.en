@@ -285,7 +285,7 @@ module Molen
                 end
 
                 node.type = node.name.type = old_type
-                node.raise "Cannot assign void to #{node.name.value}" unless node.value.type
+                node.raise "Cannot assign void to #{node.name.value}" unless old_type.is_a?(ObjectType) or old_type.is_a?(PointerType) or old_type.is_a?(ArrayType)
                 node.raise "Cannot assign #{node.value.type.name} to '#{node.name.value}' (a #{old_type.name})" unless node.value.type.castable_to?(old_type).first
             else
                 node.name.accept self
@@ -391,5 +391,11 @@ module Molen
 
             mod[name] = ArrayType.new mod, resolve_type(name[0...-2])
         end
+    end
+end
+
+class NilClass
+    def castable_to?(other)
+        return other.is_a?(ObjectType) || other.is_a?(PointerType) || other.is_a?(ArrayType), 0
     end
 end

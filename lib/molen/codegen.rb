@@ -92,6 +92,10 @@ module Molen
             builder.bit_cast node.expr.accept(self), node.type.llvm_type
         end
 
+        def visit_null(node)
+            builder.int2ptr LLVM::Int(0), LLVM::Pointer(LLVM::Int8)
+        end
+
         def visit_instance_variable(node)
             obj_ptr = builder.load @variable_pointers["this"]
             index = node.owner.instance_var_index node.value
