@@ -58,7 +58,7 @@ module Molen
             end
 
             expr -> tok { tok.is_string? } do
-                Str.new consume.value.gsub(/\\"/, "\"").gsub(/\\'/, "'").gsub(/^"|"$/, "").gsub(/^'|'$/, '')
+                Str.new consume.value.gsub(/\\"/, "\"").gsub(/\\'/, "'").gsub(/^"|"$/, "").gsub(/^'|'$/, '').gsub(/\\n/, "\n")
             end
 
             expr -> tok { tok.is_identifier? } do

@@ -1,3 +1,15 @@
 extern C {
     fn exit(code: Int)
+    fn fdopen(filedes: Int, mode: *Char) -> *Void
+    fn fprintf(file: *Void, content: *Char)
+}
+
+class CUtil {
+    static def stderr() -> *Void {
+        C.fdopen(2, "w".cstr())
+    }
+
+    static def err(str: String) {
+        C.fprintf(CUtil.stderr(), (str + "\n").cstr())
+    }
 }

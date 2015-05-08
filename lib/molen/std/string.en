@@ -24,7 +24,7 @@ class String {
 
     def check_index(ind: Int) {
         if (ind >= this.length()) {
-            puts("String[] out of index!")
+            CUtil.err("String[] out of index!")
             C.exit(-1)
         }
     }
@@ -34,5 +34,9 @@ class String {
         for (i = 0, i < this.length(), i = i + 1)
             ret.add(this[i])
         ret
+    }
+
+    def cstr() -> *Char {
+        @value
     }
 }
