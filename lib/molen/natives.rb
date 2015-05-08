@@ -2,7 +2,7 @@
 module Molen
     class Module
         def add_natives
-            int, double, bool, object, string = self["Int"], self["Double"], self["Bool"], self["Object"], self["String"]
+            int, double, bool, object, string, char, long = self["Int"], self["Double"], self["Bool"], self["Object"], self["String"], self["Char"], self["Long"]
 
             object.define_native_function("is_null", bool) { |this| builder.ret builder.icmp :eq, builder.ptr2int(this, LLVM::Int), LLVM::Int(0) }
 
@@ -29,6 +29,10 @@ module Molen
             int.define_native_function("__lte", bool, double) { |this, other| builder.ret builder.fcmp :ule, builder.si2fp(this, double.llvm_type), other }
             int.define_native_function("__gt", bool, double) { |this, other| builder.ret builder.fcmp :ugt, builder.si2fp(this, double.llvm_type), other }
             int.define_native_function("__lte", bool, double) { |this, other| builder.ret builder.fcmp :uge, builder.si2fp(this, double.llvm_type), other }
+
+            int.define_native_function("to_char", char) { |this| builder.ret builder.trunc this, LLVM::Int8 }
+            int.define_native_function("to_long", long) { |this| builder.ret builder.sext this, LLVM::Int64 }
+            long.define_native_function("to_i", int) { |this| builder.ret builder.trunc this, LLVM::Int32 }
 
             double.define_native_function("__add", double, double) { |this, other| builder.ret builder.fadd this, other }
             double.define_native_function("__sub", double, double) { |this, other| builder.ret builder.fsub this, other }

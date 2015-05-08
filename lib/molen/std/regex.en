@@ -1,0 +1,72 @@
+struct C_Regex {
+    var magic: Int
+    var nsub: Long
+    var endp: *Char
+    var guts: *Void
+}
+
+struct C_RegexMatch {
+    var start: Long
+    var end: Long
+}
+
+extern C {
+    fn regcomp(re: *C_Regex, str: *Char, flags: Int) -> Int
+    fn regexec(re: *C_Regex, str: *Char, nmatch: Long, match: *C_RegexMatch, flags: Int) -> Int
+}
+
+class RegexMatch {
+    var string: String
+    var matches: *C_RegexMatch
+
+    def create(string: String, matches: *C_RegexMatch) {
+        @string = string
+        @matches = matches
+    }
+
+    def match_at(index: Int) -> C_RegexMatch {
+        (@matches + index).value()
+    }
+
+    def match_begin(match_num: Int) -> Long {
+        this.match_at(match_num).begin
+    }
+
+    def match_end(match_num: Int) -> Long {
+        this.match_at(match_num).end
+    }
+
+    def __index_get(index: Int) -> String {
+        match = this.match_at(index)
+        @string.substring(match.start.to_i(), match.end.to_i() - match.start.to_i())
+    }
+}
+
+class Regex {
+    var regex: C_Regex
+    var source: String
+
+    def create(src: String) {
+        @source = src
+
+        @regex = new C_Regex
+        CUtil.assert(C.regcomp(&@regex, src.cstr(), 1) == 0, "Error compiling regex '" + src + "'")
+    }
+
+    def match(target: String) -> RegexMatch {
+        num_captures = @regex.nsub.to_i() + 1
+
+        matches = Pointer.malloc(C_RegexMatch, 16 * num_captures)
+        res = C.regexec(&@regex, target.cstr(), num_captures.to_long(), matches, 0)
+
+        if (res == 0) {
+            return new RegexMatch(target, matches)
+        } elseif (res == 1) {
+            puts("No matches :)")
+        } else {
+            puts("Error?")
+        }
+
+        return new RegexMatch(target, matches)
+    }
+}
