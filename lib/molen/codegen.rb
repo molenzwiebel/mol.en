@@ -147,7 +147,11 @@ module Molen
         end
 
         def visit_return(node)
-            builder.ret node.value ? node.value.accept(self) : nil
+            if node.value && node.value.type.nil? then
+                builder.ret builder.int2ptr LLVM::Int(0), node.func_ret_type.llvm_type
+            else
+                builder.ret node.value ? node.value.accept(self) : nil
+            end
         end
 
         def visit_new(node)

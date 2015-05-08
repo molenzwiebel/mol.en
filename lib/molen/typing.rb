@@ -5,6 +5,7 @@ module Molen
     class New; attr_accessor :target_constructor; end
     class InstanceVariable; attr_accessor :owner; end
     class Function; attr_accessor :is_typed; end
+    class Return; attr_accessor :func_ret_type; end
 
     def type(mod, tree)
         Molen.type(mod, tree)
@@ -140,6 +141,7 @@ module Molen
             node.raise "Cannot return if not in a function!" unless @current_function
             node.value.accept self if node.value
             node.type = node.value.nil? ? nil : node.value.type
+            node.func_ret_type = @current_function.return_type
 
             # Both are void
             return if node.value.nil? and @current_function.return_type.nil?
