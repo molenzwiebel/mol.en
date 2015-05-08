@@ -1,9 +1,9 @@
 extern CFile {
-    fn fopen(filename: String, mode: String) -> *Void
-    fn fputs(contents: String, file: *Void) -> Int
+    fn fopen(filename: *Char, mode: *Char) -> *Void
+    fn fputs(contents: *Char, file: *Void) -> Int
     fn fclose(file: *Void) -> Int
 }
 
-file_ptr = CFile.fopen("my_file.txt", "ab+")
-CFile.fputs("Hello, world!", file_ptr)
+file_ptr = CFile.fopen("my_file.txt".cstr(), "ab+".cstr())
+CFile.fputs("Hello, world!".cstr(), file_ptr)
 CFile.fclose(file_ptr)
