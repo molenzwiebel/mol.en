@@ -18,7 +18,7 @@ module Molen
             int.define_native_function("__gte", bool, int) { |this, other| builder.ret builder.icmp :uge, this, other }
 
             int.define_native_function("__eq", bool, int) { |this, other| builder.ret builder.icmp :eq, this, other }
-            int.define_native_function("__neq", bool, int) { |this, other| builder.ret builder.icmp :neq, this, other }
+            int.define_native_function("__neq", bool, int) { |this, other| builder.ret builder.icmp :ne, this, other }
 
             int.define_native_function("__add", double, double) { |this, other| builder.ret builder.fadd builder.si2fp(this, double.llvm_type), other }
             int.define_native_function("__sub", double, double) { |this, other| builder.ret builder.fsub builder.si2fp(this, double.llvm_type), other }
@@ -41,7 +41,7 @@ module Molen
             double.define_native_function("__gte", bool, double) { |this, other| builder.ret builder.fcmp :uge, this, other }
 
             double.define_native_function("__eq", bool, double) { |this, other| builder.ret builder.fcmp :eq, this, other }
-            double.define_native_function("__neq", bool, double) { |this, other| builder.ret builder.fcmp :neq, this, other }
+            double.define_native_function("__neq", bool, double) { |this, other| builder.ret builder.fcmp :ne, this, other }
 
             double.define_native_function("__add", double, int) { |this, other| builder.ret builder.fadd this, builder.si2fp(other, double.llvm_type) }
             double.define_native_function("__sub", double, int) { |this, other| builder.ret builder.fsub this, builder.si2fp(other, double.llvm_type) }
@@ -56,7 +56,7 @@ module Molen
             bool.define_native_function("__or", bool, bool) { |this, other| builder.ret builder.or this, other }
             bool.define_native_function("__and", bool, bool) { |this, other| builder.ret builder.and this, other }
             bool.define_native_function("__eq", bool, bool) { |this, other| builder.ret builder.icmp :eq, this, other }
-            bool.define_native_function("__neq", bool, bool) { |this, other| builder.ret builder.icmp, :neq, this, other }
+            bool.define_native_function("__neq", bool, bool) { |this, other| builder.ret builder.icmp, :ne, this, other }
 
             string.define_native_function("__add", string, string) do |this, other|
                 this = builder.load builder.struct_gep(this, 1)
