@@ -26,14 +26,7 @@ class String {
         CUtil.assert(index < this.length(), "Cannot set char at index " + index + ", String is only " + this.length() + " characters (ranging from 0 to " + (this.length() - 1) + ")")
         (@value + index).set_value(val[0])
     }
-
-    def check_index(ind: Int) {
-        if (ind >= this.length()) {
-            CUtil.err("String[] out of index!")
-            C.exit(-1)
-        }
-    }
-
+    
     def chars() -> Char[] {
         ret = new Char[]
         for (i = 0, i < this.length(), i = i + 1)
