@@ -110,7 +110,7 @@ module Molen
 
             strbuf = builder.array_malloc(LLVM::Int8, builder.add(size_needed, LLVM::Int(1))) # Add 1 for null term
             builder.call sprintf_func, strbuf, form_ptr, *args
-            strbuf
+            allocate_string strbuf
         end
     end
 end

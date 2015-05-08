@@ -65,7 +65,7 @@ module Molen
         end
 
         def visit_str(node)
-            builder.global_string_pointer node.value
+            allocate_string builder.global_string_pointer(node.value)
         end
 
         def visit_identifier(node)
@@ -341,6 +341,13 @@ module Molen
             str = builder.struct_gep allocated_struct, 0
             vtable = get_or_create_vtable(type).bitcast_to LLVM::Pointer(type.vtable_type)
             builder.store vtable, str
+        end
+
+        def allocate_string(val_ptr)
+            allocated_struct = builder.malloc mod["String"].llvm_struct, "String"
+            populate_vtable allocated_struct, mod["String"]
+            builder.store val_ptr, builder.struct_gep(allocated_struct, 1)
+            allocated_struct
         end
     end
 

@@ -212,7 +212,7 @@ module Molen
 
         def castable_to?(other)
             return true, 0 if other.is_a?(PointerType) && ptr_type.castable_to?(other.ptr_type).first
-            return true, 0 if other.is_a?(ObjectType) || other.name == "String" # We make an exception for string :)
+            return true, 0 if other.is_a?(ObjectType)
             return true, 0 if other.is_a?(ArrayType) && other.element_type == ptr_type
             return false, -1
         end

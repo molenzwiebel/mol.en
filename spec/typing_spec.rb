@@ -132,7 +132,7 @@ describe TypingVisitor do
     it_types "Pointer.malloc(String, 10)", "*String"
     it_fails_on "Pointer.malloc()", /Expected 2 arguments to Pointer\.malloc/
     it_fails_on "Pointer.malloc(10, 10)", /Expected first argument to Pointer.malloc to be a type/
-    it_fails_on "Pointer.malloc(Int, Int)", /Expected second argument to Pointer.malloc to be an int/
+    it_fails_on "Pointer.malloc(Int, true)", /Expected second argument to Pointer.malloc to be an int/
 
     # Casting
     it_types "class X {} new X as Object", "Object"
