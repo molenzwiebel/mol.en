@@ -1,6 +1,7 @@
 extern C {
     fn strlen(str: *Char) -> Int
     fn atoi(str: *Char) -> Int
+    fn strncpy(s1: *Char, s2: *Char, n: Int) -> *Char
 }
 
 class String {
@@ -17,12 +18,12 @@ class String {
     }
 
     def __index_get(index: Int) -> Char {
-        this.check_index(index)
+        CUtil.assert(index < this.length(), "Cannot get char at index " + index + ", String is only " + this.length() + " characters (ranging from 0 to " + (this.length() - 1) + ")")
         (@value + index).value()
     }
 
     def __index_set(index: Int, val: String) {
-        this.check_index(index)
+        CUtil.assert(index < this.length(), "Cannot set char at index " + index + ", String is only " + this.length() + " characters (ranging from 0 to " + (this.length() - 1) + ")")
         (@value + index).set_value(val[0])
     }
 
@@ -42,5 +43,20 @@ class String {
 
     def cstr() -> *Char {
         @value
+    }
+
+    def __add(other: Int) -> String {
+        this + other.to_s()
+    }
+
+    def substring(start: Int, count: Int) -> String {
+        CUtil.assert(start >= 0, "Negative argument to String.substring")
+        CUtil.assert(start + count <= this.length(), "String.substring out of index")
+
+        buffer = Pointer.malloc(Char, count + 1)
+        C.strncpy(buffer, @value + start, count)
+        (buffer + count).set_value(0.to_char())
+
+        new String(buffer)
     }
 }

@@ -15,4 +15,11 @@ class CUtil {
     static def err(str: String) {
         C.fprintf(CUtil.stderr(), (str + "\n").cstr())
     }
+
+    static def assert(val: Bool, msg: String) {
+        if (val == false) {
+            CUtil.err(msg)
+            C.exit(1)
+        }
+    }
 }
