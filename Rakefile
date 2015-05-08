@@ -5,7 +5,7 @@ task :console do
   require_relative 'lib/molen'
   include Molen
   ARGV.clear
-  Pry::CLI.start(Pry::CLI.parse_options)
+  Pry::CLI.parse_options
 end
 
 task :run do
