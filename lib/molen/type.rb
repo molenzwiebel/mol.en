@@ -185,7 +185,11 @@ module Molen
             @ptr_type = ptr_type
 
             define_native_function "value", ptr_type do |this|
-                builder.ret builder.load this
+                if ptr_type.is_a?(StructType) then
+                    builder.ret this
+                else
+                    builder.ret builder.load this
+                end
             end
 
             define_native_function "set_value", nil, ptr_type do |this, val|
@@ -199,7 +203,7 @@ module Molen
         end
 
         def llvm_type
-            LLVM::Pointer ptr_type.llvm_type
+            ptr_type.is_a?(StructType) ? ptr_type.llvm_type : LLVM::Pointer(ptr_type.llvm_type)
         end
 
         def llvm_size
@@ -211,8 +215,7 @@ module Molen
         end
 
         def castable_to?(other)
-            return true, 0 if other.is_a?(PointerType) && ptr_type.castable_to?(other.ptr_type).first
-            return true, 0 if other.is_a?(ObjectType)
+            return true, 0 if other.is_a?(PointerType)
             return true, 0 if other.is_a?(ArrayType) && other.element_type == ptr_type
             return false, -1
         end

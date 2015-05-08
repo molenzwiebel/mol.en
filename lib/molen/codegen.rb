@@ -102,14 +102,17 @@ module Molen
             if node.expr.is_a? InstanceVariable then
                 obj_ptr = builder.load @variable_pointers["this"]
                 index = node.expr.owner.instance_var_index node.expr.value
-                return builder.struct_gep(obj_ptr, index)
+                ptr = builder.struct_gep(obj_ptr, index)
             else
-                return @variable_pointers[node.expr.value]
+                ptr = @variable_pointers[node.expr.value]
             end
+            ptr = builder.load(ptr) if node.expr.type.is_a? StructType
+            ptr
         end
 
         def visit_pointer_malloc(node)
-            builder.array_malloc node.args[0].type.llvm_type, node.args[1].accept(self)
+            type = node.args[0].type.is_a?(StructType) ? node.args[0].type.llvm_struct : node.args[0].type.llvm_type
+            builder.array_malloc type, node.args[1].accept(self)
         end
 
         def visit_assign(node)
@@ -135,6 +138,7 @@ module Molen
                 obj_ptr = builder.load @variable_pointers["this"]
                 index = node.name.owner.instance_var_index node.name.value
                 builder.store val, builder.gep(obj_ptr, [LLVM::Int(0), LLVM::Int(index)], node.name.value + "_ptr")
+                return val
             end
         end
 

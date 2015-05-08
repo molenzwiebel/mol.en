@@ -19,7 +19,7 @@ module Molen
     }
 
     def parse(src, name = "unknown_file")
-        Molen.parse src
+        Molen.parse src, name
     end
 
     def self.parse(src, name = "unknown_file")

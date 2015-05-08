@@ -285,6 +285,7 @@ module Molen
                 end
 
                 node.type = node.name.type = old_type
+                node.raise "Cannot assign void to #{node.name.value}" unless node.value.type
                 node.raise "Cannot assign #{node.value.type.name} to '#{node.name.value}' (a #{old_type.name})" unless node.value.type.castable_to?(old_type).first
             else
                 node.name.accept self

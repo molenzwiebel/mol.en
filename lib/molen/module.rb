@@ -11,7 +11,7 @@ module Molen
             self["Bool"] = PrimitiveType.new "Bool", LLVM::Int1, 1
             self["Char"] = PrimitiveType.new "Char", LLVM::Int8, 2
             self["Int"] = PrimitiveType.new "Int", LLVM::Int32, 4
-            self["Long"] = PrimitiveType.new "Int", LLVM::Int64, 8
+            self["Long"] = PrimitiveType.new "Long", LLVM::Int64, 8
             self["Double"] = PrimitiveType.new "Double", LLVM::Double, 8
 
             self["String"] = ObjectType.new "String", object
