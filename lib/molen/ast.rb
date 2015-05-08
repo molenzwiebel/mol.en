@@ -116,6 +116,15 @@ module Molen
         end
     end
 
+    class PointerMalloc < Expression
+        attr_accessor :args
+        attr_eq :args
+
+        def initialize(args)
+            @args = args
+        end
+    end
+
     class PointerOf < Expression
         attr_accessor :expr
         attr_eq :expr

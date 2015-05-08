@@ -39,3 +39,7 @@ module Molen
         end
     end
 end
+
+class Hash
+    alias :has_local_key? :has_key?
+end

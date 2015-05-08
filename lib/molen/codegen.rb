@@ -100,6 +100,10 @@ module Molen
             end
         end
 
+        def visit_pointer_malloc(node)
+            builder.array_malloc node.args[0].type.llvm_type, node.args[1].accept(self)
+        end
+
         def visit_assign(node)
             if node.name.is_a?(Identifier) then
                 val = node.value.accept(self)

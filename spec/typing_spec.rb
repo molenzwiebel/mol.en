@@ -113,4 +113,10 @@ describe TypingVisitor do
     it_types "def do_something(arg: *Int) true x = 10 do_something(&x)", nil
     it_types "def do_something(arg: **Int) true x = 10 y = &x do_something(&y)", nil
     it_fails_on "def do_something(arg: **Int) true x = 10 do_something(&x)", /No function with name 'do_something' and matching parameters found \(given \*Int\)/
+
+    it_types "Pointer.malloc(Int, 10)", "*Int"
+    it_types "Pointer.malloc(String, 10)", "*String"
+    it_fails_on "Pointer.malloc()", /Expected 2 arguments to Pointer\.malloc/
+    it_fails_on "Pointer.malloc(10, 10)", /Expected first argument to Pointer.malloc to be a type/
+    it_fails_on "Pointer.malloc(Int, Int)", /Expected second argument to Pointer.malloc to be an int/
 end

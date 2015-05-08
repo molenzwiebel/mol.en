@@ -73,6 +73,17 @@ module Molen
             node.type = PointerType.new mod, node.expr.type
         end
 
+        def visit_pointer_malloc(node)
+            node.raise "Expected 2 arguments to Pointer.malloc" if node.args.size != 2
+            node.raise "Expected first argument to Pointer.malloc to be a type" unless node.args[0].is_a?(Constant)
+            node.raise "Expected second argument to Pointer.malloc to be an int" unless node.args[1].is_a?(Int)
+
+            node.args[0].accept self
+            node.args[1].accept self
+
+            node.type = PointerType.new mod, node.args[0].type
+        end
+
         # Tries to find the specified instance variable and errors
         # if the variable was not found.
         def visit_instance_variable(node)

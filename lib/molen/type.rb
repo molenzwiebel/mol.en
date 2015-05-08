@@ -33,13 +33,22 @@ module Molen
             ret
         end
 
-        def define_native_function(name, return_type, *args, &block)
+        def create_func(name, return_type, *args, &block)
             body = NativeBody.new block
             func_def = Function.new ClassDef.new(nil, nil, [], []), name, return_type, args.each_with_index.map{|type, id| FunctionArg.new "arg#{id.to_s}", type}, nil
             func_def.body = body
             func_def.owner.type = self
             func_def.is_typed = true
-            functions.has_local_key?(name) ? functions[name] << func_def : functions.define(name, [func_def])
+            return func_def
+        end
+
+        def define_native_function(name, return_type, *args, &block)
+            f = create_func name, return_type, *args, &block
+            functions.has_local_key?(name) ? functions[name] << f : functions.define(name, [f])
+        end
+
+        def define_static_native_function(name, return_type, *args, &block)
+            class_functions[name] = (class_functions[name] || []) << create_func(name, return_type, *args, &block)
         end
     end
 
@@ -198,7 +207,8 @@ module Molen
         end
 
         def castable_to?(other)
-            return other == self, 0
+            return false, -1 unless other.is_a? PointerType
+            return ptr_type.castable_to? other.ptr_type
         end
     end
 

@@ -136,6 +136,7 @@ module Molen
                 right = parse_expression 50
                 raise_error "Expected identifier or call after '.'", token unless right.is_a?(Call) or right.is_a?(Identifier)
 
+                next PointerMalloc.new right.args if (left.is_a?(Constant) and left.value == "Pointer") and (right.is_a?(Call) and right.name == "malloc")
                 next Call.new left, right.name, right.args if right.is_a? Call
                 next MemberAccess.new left, right
             end

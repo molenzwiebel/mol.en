@@ -50,6 +50,10 @@ describe Parser do
     it_errors_on "&", /Expected identifier or instance variable after &/
     it_errors_on "&10", /Expected identifier or instance variable after &/
 
+    it_parses "Pointer.malloc(a, b)", PointerMalloc.new(["a".ident, "b".ident])
+    it_parses "Pointer.bla(a, b)", Call.new("Pointer".const, "bla", ["a".ident, "b".ident])
+    it_parses "Pointer.malloc(a, b).c()", Call.new(PointerMalloc.new(["a".ident, "b".ident]), "c", [])
+
     it_parses "(10)", 10.literal
     it_errors_on "()", /Expected node in parenthesized expression/
     it_errors_on "(test", /Expected token of type RPAREN/
