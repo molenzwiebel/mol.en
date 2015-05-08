@@ -150,7 +150,7 @@ module Molen
         def visit_member_access(node)
             node.object.accept self
             obj_type = node.object.type
-            node.raise "Cannot access member of primitive type" if obj_type.is_a? PrimitiveType
+            node.raise "Can only access members of objects and structs" unless obj_type.is_a?(ObjectType) or obj_type.is_a?(StructType)
             node.raise "Unknown member #{node.field.value} on object of type #{obj_type.name}" unless obj_type.instance_variables[node.field.value]
             node.type = obj_type.instance_variables[node.field.value]
         end

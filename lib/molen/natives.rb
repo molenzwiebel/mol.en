@@ -86,6 +86,10 @@ module Molen
                 builder.ret this
             end
 
+            self["Char"].define_native_function("to_s", string) do |this|
+                builder.ret perform_sprintf(builder, "%c", this)
+            end
+
             double.define_native_function("to_s", string) do |this|
                 builder.ret perform_sprintf(builder, "%f", this)
             end

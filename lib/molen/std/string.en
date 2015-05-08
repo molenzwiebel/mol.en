@@ -1,9 +1,38 @@
 extern C {
     fn strlen(str: *Char) -> Int
+    fn atoi(str: *Char) -> Int
 }
 
 class String {
     def length() -> Int {
         C.strlen(@value)
+    }
+
+    def to_i() -> Int {
+        C.atoi(@value)
+    }
+
+    def __index_get(index: Int) -> Char {
+        this.check_index(index)
+        (@value + index).value()
+    }
+
+    def __index_set(index: Int, val: String) {
+        this.check_index(index)
+        (@value + index).set_value(val[0])
+    }
+
+    def check_index(ind: Int) {
+        if (ind >= this.length()) {
+            puts("String[] out of index!")
+            C.exit(-1)
+        }
+    }
+
+    def chars() -> Char[] {
+        ret = new Char[]
+        for (i = 0, i < this.length(), i = i + 1)
+            ret.add(this[i])
+        ret
     }
 }
