@@ -25,13 +25,13 @@ describe Lexer do
 
     it_lexes "10 # This is a comment \n 12", [:integer, "10"], [:integer, "12"]
 
-    ["def", "if", "elseif", "else", "for", "return", "new", "var", "class", "static", "extern", "fn", "struct", "as"].each do |kw|
+    ["def", "if", "elseif", "else", "for", "return", "new", "var", "class", "static", "extern", "fn", "struct", "as", "and", "or"].each do |kw|
         it_lexes kw, [:keyword, kw]
     end
 
     it_lexes "(){}[]", [:lparen], [:rparen], [:begin_block], [:end_block], [:special, "["], [:special, "]"]
 
-    ["+", "-", "*", "/", "&&", "||", "and", "or", "==", "=", "!=", "<", "<=", ">", ">="].each do |op|
+    ["+", "-", "*", "/", "&&", "||", "==", "=", "!=", "<", "<=", ">", ">="].each do |op|
         it_lexes "10 #{op} 10", [:integer, "10"], [:operator, op], [:integer, "10"]
     end
 

@@ -16,22 +16,6 @@ module Molen
             /false/                             => :false,
             /null/                              => :null,
 
-            /def/                               => :keyword,
-            /if/                                => :keyword,
-            /elseif/                            => :keyword,
-            /else/                              => :keyword,
-            /for/                               => :keyword,
-            /return/                            => :keyword,
-            /new/                               => :keyword,
-            /var/                               => :keyword,
-            /class/                             => :keyword,
-            /static/                            => :keyword,
-
-            /extern/                            => :keyword,
-            /fn/                                => :keyword,
-            /struct/                            => :keyword,
-            /as/                                => :keyword,
-
             /\{/                                => :begin_block,
             /\}/                                => :end_block,
             /\(/                                => :lparen,
@@ -53,9 +37,7 @@ module Molen
 
             /&&/                                => :operator,
             /&/                                 => :operator,
-            /and/                               => :operator,
             /\|\|/                              => :operator,
-            /or/                                => :operator,
             />=?/                               => :operator,
             /<=?/                               => :operator,
 
@@ -69,6 +51,8 @@ module Molen
             /=/                                 => :operator,
             /!=/                                => :operator
         }
+
+        KEYWORDS = ["def", "if", "elseif", "else", "for", "return", "new", "var", "class", "static", "extern", "fn", "struct", "as", "and", "or"]
 
         def initialize(source, file_name = "src")
             @source = source
@@ -89,6 +73,9 @@ module Molen
 
             RULES.each do |matcher, kind|
                 if content = @scanner.scan(matcher) then
+                    if kind == :identifier && KEYWORDS.include?(content) then
+                        kind = :keyword
+                    end
                     pos = @scanner.pos
                     tok = Token.new kind, content, col_num(pos) - content.length + 1, content.length, line_num
 
