@@ -80,6 +80,7 @@ module Molen
     class Str < Literal; end
     class Bool < Literal; end
     class Int < Literal; end
+    class Long < Literal; end
     class Double < Literal; end
     class Identifier < Literal; end
     class Constant < Literal; end

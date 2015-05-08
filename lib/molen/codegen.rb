@@ -68,6 +68,10 @@ module Molen
             allocate_string builder.global_string_pointer(node.value)
         end
 
+        def visit_long(node)
+            LLVM::Int64.from_i node.value
+        end
+
         def visit_identifier(node)
             builder.load @variable_pointers[node.value], node.value
         end

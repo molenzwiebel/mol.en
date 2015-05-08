@@ -50,7 +50,9 @@ module Molen
             end
 
             expr -> tok { tok.is_integer? } do
-                Int.new consume.value.to_i
+                val = consume.value
+                next Long.new val[0..-2].to_i if val[-1, 1] == "L"
+                next Int.new val.to_i
             end
 
             expr -> tok { tok.is_double? } do

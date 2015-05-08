@@ -18,6 +18,7 @@ describe Parser do
     end
 
     it_parses "10", 10.literal
+    it_parses "10L", Long.new(10)
     it_parses "10.3", 10.3.literal
     it_parses "true", true.literal
     it_parses "false", false.literal

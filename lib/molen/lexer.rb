@@ -9,7 +9,7 @@ module Molen
         RULES = {
             # Regex for matching token  => token kind
             /[+-]?[0-9]*\.[0-9][0-9]*/          => :double,
-            /[+-]?[0-9]+/                       => :integer,
+            /[+-]?[0-9]+[L]?/                   => :integer,
             /(["'])(\\?.)*?\1/                  => :string,
 
             /true/                              => :true,

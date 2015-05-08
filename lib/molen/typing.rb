@@ -55,6 +55,10 @@ module Molen
             node.type = mod["String"]
         end
 
+        def visit_long(node)
+            node.type = mod["Long"]
+        end
+
         # Tries to find the specified identifier in the current scope,
         # and assigns the type of the identifier if found. Errors otherwise
         def visit_identifier(node)

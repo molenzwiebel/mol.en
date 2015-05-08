@@ -15,7 +15,7 @@ describe Lexer do
 
     it_lexes "true false", [:true], [:false]
     it_lexes "null", [:null]
-    it_lexes "10", [:integer, "10"]
+    it_lexes "10 10L", [:integer, "10"], [:integer, "10L"]
 
     it_lexes "0.3 .4 1.0", [:double, "0.3"], [:double, ".4"], [:double, "1.0"]
     it_lexes "0.3.4", [:double, "0.3"], [:double, ".4"]
