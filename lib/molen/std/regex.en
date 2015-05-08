@@ -13,6 +13,7 @@ struct C_RegexMatch {
 extern C {
     fn regcomp(re: *C_Regex, str: *Char, flags: Int) -> Int
     fn regexec(re: *C_Regex, str: *Char, nmatch: Long, match: *C_RegexMatch, flags: Int) -> Int
+    fn regerror(code: Int, re: *C_Regex, buffer: *Char, buffer_size: Int) -> Int
 }
 
 class RegexMatch {
@@ -50,7 +51,14 @@ class Regex {
         @source = src
 
         @regex = new C_Regex
-        CUtil.assert(C.regcomp(&@regex, src.cstr(), 1) == 0, "Error compiling regex '" + src + "'")
+
+        res = C.regcomp(&@regex, src.cstr(), 1)
+        if (res != 0) {
+            buf = Pointer.malloc(Char, 100)
+            C.regerror(res, &@regex, buf, 100)
+
+            CUtil.assert(false, "Error compiling regex '" + src + "': " + new String(buf))
+        }
     }
 
     def match(target: String) -> RegexMatch {
@@ -62,11 +70,13 @@ class Regex {
         if (res == 0) {
             return new RegexMatch(target, matches)
         } elseif (res == 1) {
-            puts("No matches :)")
+            return null
         } else {
-            puts("Error?")
-        }
+            buf = Pointer.malloc(Char, 100)
+            C.regerror(res, &@regex, buf, 100)
 
-        return new RegexMatch(target, matches)
+            CUtil.assert(false, "Error matching regex: " + new String(buf))
+            return null
+        }
     }
 }
