@@ -51,6 +51,7 @@ describe Parser do
     it_errors_on "&10", /Expected identifier or instance variable after &/
 
     it_parses "Pointer.malloc(a, b)", PointerMalloc.new(["a".ident, "b".ident])
+    it_parses "Pointer.malloc(a, 1 + 3)", PointerMalloc.new(["a".ident, Call.new(1.literal, "__add", [3.literal])])
     it_parses "Pointer.bla(a, b)", Call.new("Pointer".const, "bla", ["a".ident, "b".ident])
     it_parses "Pointer.malloc(a, b).c()", Call.new(PointerMalloc.new(["a".ident, "b".ident]), "c", [])
 

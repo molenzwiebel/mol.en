@@ -142,7 +142,12 @@ module Molen
         end
 
         def castable_to?(other)
-            return other == self, 0
+            return false, 0 unless other.is_a?(StructType)
+            return true, 0 if other == self
+            return false, 0 if other.instance_variables.size > instance_variables.size
+
+            slice = instance_variables.values.first(other.instance_variables.size)
+            return slice == other.instance_variables.values, 0
         end
     end
 
@@ -156,7 +161,6 @@ module Molen
         end
 
         def llvm_type
-            # TODO: Later maybe? (Primitives are pointers to their type so they can support actual null, instead of a workaround.)
             @type
         end
 
@@ -207,7 +211,10 @@ module Molen
         end
 
         def castable_to?(other)
-            return other.is_a?(PointerType) || other.is_a?(ObjectType), 0
+            return true, 0 if other.is_a?(PointerType) && ptr_type.castable_to?(other.ptr_type).first
+            return true, 0 if other.is_a?(ObjectType) || other.name == "String" # We make an exception for string :)
+            return true, 0 if other.is_a?(ArrayType) && other.element_type == ptr_type
+            return false, -1
         end
     end
 

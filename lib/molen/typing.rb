@@ -82,11 +82,12 @@ module Molen
 
         def visit_pointer_malloc(node)
             node.raise "Expected 2 arguments to Pointer.malloc" if node.args.size != 2
-            node.raise "Expected first argument to Pointer.malloc to be a type" unless node.args[0].is_a?(Constant)
-            node.raise "Expected second argument to Pointer.malloc to be an int" unless node.args[1].is_a?(Int)
 
             node.args[0].accept self
             node.args[1].accept self
+
+            node.raise "Expected first argument to Pointer.malloc to be a type, #{node.args[0].type.name rescue "void"} received" unless node.args[0].is_a?(Constant)
+            node.raise "Expected second argument to Pointer.malloc to be an int, #{node.args[1].type.name rescue "void"} received" unless node.args[1].type == mod["Int"]
 
             node.type = PointerType.new mod, node.args[0].type
         end
