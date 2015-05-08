@@ -25,7 +25,7 @@ describe Lexer do
 
     it_lexes "10 # This is a comment \n 12", [:integer, "10"], [:integer, "12"]
 
-    ["def", "if", "elseif", "else", "for", "return", "new", "var", "class", "static", "extern", "fn", "struct"].each do |kw|
+    ["def", "if", "elseif", "else", "for", "return", "new", "var", "class", "static", "extern", "fn", "struct", "as"].each do |kw|
         it_lexes kw, [:keyword, kw]
     end
 

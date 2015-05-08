@@ -84,6 +84,10 @@ module Molen
             builder.load member_to_ptr(node), node.field.value
         end
 
+        def visit_cast(node)
+            builder.bit_cast node.expr.accept(self), node.type.llvm_type
+        end
+
         def visit_instance_variable(node)
             obj_ptr = builder.load @variable_pointers["this"]
             index = node.owner.instance_var_index node.value

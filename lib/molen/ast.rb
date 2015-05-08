@@ -134,6 +134,15 @@ module Molen
         end
     end
 
+    class Cast < Expression
+        attr_accessor :expr, :type
+        attr_eq :expr, :type
+
+        def initialize(expr, type)
+            @expr, @type = expr, type
+        end
+    end
+
     class New < Expression
         attr_accessor :type, :args
         attr_eq :type, :args

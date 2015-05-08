@@ -119,4 +119,9 @@ describe TypingVisitor do
     it_fails_on "Pointer.malloc()", /Expected 2 arguments to Pointer\.malloc/
     it_fails_on "Pointer.malloc(10, 10)", /Expected first argument to Pointer.malloc to be a type/
     it_fails_on "Pointer.malloc(Int, Int)", /Expected second argument to Pointer.malloc to be an int/
+
+    it_types "class X {} new X as Object", "Object"
+    it_types "class X {} a = new X b = &a b as *Object", "*Object"
+    it_fails_on "10 as Foo", /Undefined type 'Foo'/
+    it_fails_on "10 as Object", /Cannot cast Int to Object/
 end

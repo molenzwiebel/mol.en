@@ -126,9 +126,14 @@ module Molen
             infix 1, -> x { x.is? "=" } do |left|
                 raise_error "Expected left hand side of assignment to be an identifier, received #{left.class.name}", token unless left.is_a?(Identifier) or left.is_a?(MemberAccess) or left.is_a?(InstanceVariable)
                 next_token # Consume =
-                right = parse_expression
+                right = parse_expression 0
                 raise_error "Expected expression at right hand side of assignment", token unless right
                 Assign.new left, right
+            end
+
+            infix 2, -> x { x.is_keyword? "as" } do |left|
+                next_token
+                Cast.new left, parse_type
             end
 
             infix 50, -> x { x.is? "." } do |left|

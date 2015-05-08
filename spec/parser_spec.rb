@@ -124,4 +124,10 @@ describe Parser do
     it_parses "struct Foo {}", StructDef.new("Foo", [])
     it_parses "struct Foo { var x: Int }", StructDef.new("Foo", [InstanceVar.new("x", "Int")])
     it_parses "struct Foo { var x: Int var y: Double }", StructDef.new("Foo", [InstanceVar.new("x", "Int"), InstanceVar.new("y", "Double")])
+
+    it_parses "10 as Int", Cast.new(10.literal, "Int")
+    it_parses "10 as *Int", Cast.new(10.literal, "*Int")
+    it_parses "x = 10 as Double", Assign.new("x".ident, Cast.new(10.literal, "Double"))
+    it_parses "x = 10.test() as Double", Assign.new("x".ident, Cast.new(Call.new(10.literal, "test", []), "Double"))
+    it_parses "ptr + 1 as *String", Cast.new(Call.new("ptr".ident, "__add", [1.literal]), "*String")
 end

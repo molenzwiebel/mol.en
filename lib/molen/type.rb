@@ -207,8 +207,7 @@ module Molen
         end
 
         def castable_to?(other)
-            return false, -1 unless other.is_a? PointerType
-            return ptr_type.castable_to? other.ptr_type
+            return other.is_a?(PointerType) || other.is_a?(ObjectType), 0
         end
     end
 

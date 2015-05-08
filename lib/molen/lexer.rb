@@ -30,6 +30,7 @@ module Molen
             /extern/                            => :keyword,
             /fn/                                => :keyword,
             /struct/                            => :keyword,
+            /as/                                => :keyword,
 
             /\{/                                => :begin_block,
             /\}/                                => :end_block,

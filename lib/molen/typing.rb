@@ -68,6 +68,13 @@ module Molen
             node.type = resolve_type node.value
         end
 
+        def visit_cast(node)
+            node.expr.accept self
+            type = resolve_type node.type
+            node.raise "Cannot cast #{node.expr.type.name} to #{type.name}" unless node.expr.type.castable_to?(type).first
+            node.type = type
+        end
+
         def visit_pointer_of(node)
             node.expr.accept self
             node.type = PointerType.new mod, node.expr.type
