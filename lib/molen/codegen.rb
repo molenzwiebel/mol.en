@@ -11,12 +11,15 @@ module Molen
 
     def self.run(src, filename = "unknown_file")
         mod = generate(src, filename)
+        mod.verify
+
         LLVM.init_jit
 
         engine = LLVM::JITCompiler.new mod
         optimizer = LLVM::PassManager.new engine
         optimizer << :arg_promote << :gdce << :global_opt << :gvn << :reassociate << :instcombine << :basicaa << :jump_threading << :simplifycfg << :inline << :mem2reg
         5.times { optimizer.run mod }
+        mod.verify
 
         engine.run_function mod.functions["molen_main"]
     end

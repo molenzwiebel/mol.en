@@ -217,8 +217,11 @@ module Molen
         end
 
         def definitely_returns?
-            returns = self.then.definitely_returns?
-            returns = returns && self.else.definitely_returns? if self.else
+            unless @else
+                return false
+            end
+            returns = @then.definitely_returns?
+            returns = returns && @else.definitely_returns? if @else
             returns
         end
     end
