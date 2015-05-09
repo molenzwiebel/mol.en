@@ -4,7 +4,7 @@ module Molen
     class Call; attr_accessor :target_function; end
     class New; attr_accessor :target_constructor; end
     class InstanceVariable; attr_accessor :owner; end
-    class Function; attr_accessor :is_typed; end
+    class Function; attr_accessor :is_prototype_typed; attr_accessor :is_body_typed; end
     class Return; attr_accessor :func_ret_type; end
 
     def type(mod, tree)
@@ -29,11 +29,13 @@ module Molen
                 putc_func = llvm_mod.functions["putchar"] || llvm_mod.functions.add("putchar", [LLVM::Int], LLVM::Int)
                 builder.ret builder.call putc_func, arg
             }))]
+            @functions["putchar"].first.is_prototype_typed = true; @functions["putchar"].first.is_body_typed = true;
             @functions["puts"] = [Function.new(nil, "puts", mod["Int"], [FunctionArg.new("x", mod["String"])], NativeBody.new(lambda { |arg|
                 puts_func = llvm_mod.functions["puts"] || llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
                 str = builder.struct_gep(arg, 1)
                 builder.ret builder.call puts_func, builder.load(str)
             }))]
+            @functions["puts"].first.is_prototype_typed = true; @functions["puts"].first.is_body_typed = true;
         end
 
         # Types an int node. Simply assigns the type to be Int
@@ -170,7 +172,7 @@ module Molen
             node.type = type
 
             if (fn = find_overloaded_method(node, node.type.functions, "create", node.args)) then
-                type_function(fn) unless fn.is_typed
+                type_function(fn) unless fn.is_body_typed
                 node.target_constructor = fn
             end
         end
@@ -223,7 +225,7 @@ module Molen
             extra_str = node.object ? " (on object of type #{node.object.type.name}) " : " "
             node.raise "No function with name '#{node.name}'#{extra_str}and matching parameters found (given #{node_arg_types.map(&:name).join ", "})." unless function
 
-            type_function(function) unless function.is_a?(ExternalFunc) or function.is_typed
+            type_function(function) unless function.is_a?(ExternalFunc) or function.is_body_typed
 
             node.type = function.return_type
             node.target_function = function
@@ -239,9 +241,6 @@ module Molen
         # Resolves a function and registers it in the appropriate
         # scope.
         def visit_function(node)
-            node.return_type = node.return_type ? resolve_type(node.return_type) : nil
-            node.args.each {|arg| arg.accept self}
-
             func_scope = @functions
             func_scope = node.owner.type.functions if node.owner
 
@@ -249,9 +248,15 @@ module Molen
             func_scope.has_local_key?(node.name) ? func_scope[node.name] << node : func_scope.define(node.name, [node])
         end
 
+        def type_function_prototype(node)
+            node.return_type = node.return_type ? resolve_type(node.return_type) : nil
+            node.args.each {|arg| arg.accept self}
+            node.is_prototype_typed = true
+        end
+
         def type_function(node)
             old_func = @current_function
-            node.is_typed = true if node.is_a?(Function)
+            node.is_body_typed = true if node.is_a?(Function)
 
             @current_function = node
             with_new_scope(false) do
@@ -353,6 +358,7 @@ module Molen
             matches = {}
             in_scope[name].each do |func|
                 next if func.args.size != args.size
+                type_function_prototype(func) unless func.is_a?(ExternalFunc) or func.is_prototype_typed
                 callable, dist = func.callable? args.map(&:type)
                 next if not callable
                 (matches[dist] ||= []) << func

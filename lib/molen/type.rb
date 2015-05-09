@@ -38,7 +38,8 @@ module Molen
             func_def = Function.new ClassDef.new(nil, nil, [], []), name, return_type, args.each_with_index.map{|type, id| FunctionArg.new "arg#{id.to_s}", type}, nil
             func_def.body = body
             func_def.owner.type = self
-            func_def.is_typed = true
+            func_def.is_prototype_typed = true
+            func_def.is_body_typed = true
             return func_def
         end
 
