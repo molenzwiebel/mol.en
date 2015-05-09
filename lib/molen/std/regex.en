@@ -64,7 +64,7 @@ class Regex {
     def match(target: String) -> RegexMatch {
         num_captures = @regex.nsub.to_i() + 1
 
-        matches = Pointer.malloc(C_RegexMatch, 16 * num_captures)
+        matches = Pointer.malloc(C_RegexMatch, num_captures)
         res = C.regexec(&@regex, target.cstr(), num_captures.to_long(), matches, 0)
 
         if (res == 0) {
