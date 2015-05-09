@@ -18,7 +18,7 @@ class StringScanner {
         if (match.is_null()) {
             return null
         } else {
-            @position = @position + match.match_end(0).to_i()
+            @position = @position + match.match_end(0).to_int()
             return match[0]
         }
     }

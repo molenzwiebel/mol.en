@@ -14,7 +14,7 @@ class String {
         C.strlen(@value)
     }
 
-    def to_i() -> Int {
+    def to_int() -> Int {
         C.atoi(@value)
     }
 

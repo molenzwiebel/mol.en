@@ -39,10 +39,10 @@ class Regex {
     }
 
     def match(target: String, start: Int) -> RegexMatch {
-        num_captures = @regex.nsub.to_i() + 1
+        num_captures = @regex.nsub + 1
 
-        matches = Pointer.malloc(C_RegexMatch, num_captures)
-        res = C.regexec(&@regex, target.cstr() + start, num_captures.to_long(), matches, 0)
+        matches = Pointer.malloc(C_RegexMatch, num_captures.to_int())
+        res = C.regexec(&@regex, target.cstr() + start, num_captures, matches, 0)
 
         if (res == 0) {
             return new RegexMatch(new String(target.cstr() + start), matches)
@@ -81,6 +81,6 @@ class RegexMatch {
 
     def __index_get(index: Int) -> String {
         match = @match_at(index)
-        @string.substring(match.start.to_i(), match.end.to_i() - match.start.to_i())
+        @string.substring(match.start.to_int(), match.end.to_int() - match.start.to_int())
     }
 }

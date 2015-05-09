@@ -1,19 +1,20 @@
 
 module Molen
     class Module
-        PRINTF_FORMATS = { char: "c", short: "hi", int: "i", long: "li", float: "f", double: "f" }
+        PRINTF_FORMATS = { bool: "c", char: "c", short: "hi", int: "i", long: "li", float: "f", double: "f" }
 
         def add_natives
             add_numeric_natives
             add_to_s_natives
+            add_other_natives
 
             add_std
         end
 
         def add_numeric_natives
-            char, short, int, long, double, float = self["Char"], self["Short"], self["Int"], self["Long"], self["Double"], self["Float"]
+            char, short, int, long, double, float, bool = self["Char"], self["Short"], self["Int"], self["Long"], self["Double"], self["Float"], self["Bool"]
 
-            [char, short, int, long, double, float].repeated_permutation 2 do |type1, type2|
+            [bool, char, short, int, long, double, float].repeated_permutation 2 do |type1, type2|
                 bigger_type = greatest_type type1, type2
 
                 ["__add", "__sub", "__mul", "__div"].each do |op|
@@ -35,15 +36,15 @@ module Molen
                 end
 
                 type1.define_native_function("to_#{type2.name.downcase}", type2) do |this|
-                    builder.ret convert_type(this, type2, type1)
+                    builder.ret convert_type(this, type1, type2)
                 end
             end
         end
 
         def add_to_s_natives
-            char, short, int, long, double, float, string, object = self["Char"], self["Short"], self["Int"], self["Long"], self["Double"], self["Float"], self["String"], self["Object"]
+            bool, char, short, int, long, double, float, string, object = self["Bool"], self["Char"], self["Short"], self["Int"], self["Long"], self["Double"], self["Float"], self["String"], self["Object"]
 
-            [char, short, int, long, double, float].each do |type|
+            [bool, char, short, int, long, double, float].each do |type|
                 type.define_native_function "to_s", string do |this|
                     builder.ret perform_sprintf("%#{PRINTF_FORMATS[type.name.downcase.to_sym]}", this)
                 end
@@ -64,13 +65,18 @@ module Molen
             end
         end
 
+        def add_other_natives
+            self["Object"].define_native_function("is_null", self["Bool"]) do |this|
+                builder.ret builder.icmp :eq, builder.ptr2int(this, LLVM::Int), LLVM::Int(0)
+            end
+        end
+
         def add_std
             Dir[File.expand_path("../std/**/*.en",  __FILE__)].each do |file|
                 Molen.type(self, Parser.parse(File.read(file), file))
             end
         end
 
-        private
         def rank(type)
             types.keys.index type.name
         end
@@ -101,14 +107,14 @@ module Molen
 
             if to_type.fp? then
                 if from_type.fp? then
-                    return b.fp_ext(value, to_type.llvm_type) if mod.rank(to_type) > mod.rank(from_type)
-                    return b.fp_trunc value, to_type.llvm_type
+                    return builder.fp_ext(value, to_type.llvm_type) if mod.rank(to_type) > mod.rank(from_type)
+                    return builder.fp_trunc value, to_type.llvm_type
                 end
-                return b.si2fp value, to_type.llvm_type
+                return builder.si2fp value, to_type.llvm_type
             else
-                return b.fp2si(value, to_type.llvm_type) if from_type.fp?
-                return b.trunc(value, to_type.llvm_type) if mod.rank(to_type) <= mod.rank(from_type)
-                return b.sext value, to_type.llvm_type
+                return builder.fp2si(value, to_type.llvm_type) if from_type.fp?
+                return builder.trunc(value, to_type.llvm_type) if mod.rank(to_type) <= mod.rank(from_type)
+                return builder.sext value, to_type.llvm_type
             end
         end
 
