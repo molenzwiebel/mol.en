@@ -196,6 +196,7 @@ module Molen
         def visit_body(node)
             node.contents.each_with_index do |n, index|
                 n.accept self
+                node.raise "Unreachable code." if n.is_a?(If) && n.definitely_returns? && index != node.contents.size - 1
             end
             last = node.contents.last
             node.type = (last and last.is_a?(Return)) ? last.type : nil

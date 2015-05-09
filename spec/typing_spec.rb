@@ -91,6 +91,8 @@ describe TypingVisitor do
     it_fails_on "class X { var foo: Int def set_foo(x: Double) @foo = x } y = new X y.set_foo(12.0)", /Cannot assign Double to/
 
     # definitely_returns?
+    it_fails_on "def test() { if (true) { return } 10 } test()", /Unreachable code/
+    it_fails_on "def test() { if (true) { return } else { return } 10 } test()", /Unreachable code/
     it_types "def test() { if (true) { return } else { } 10 }", nil
 
     # Method overloading
