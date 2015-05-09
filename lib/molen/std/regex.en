@@ -35,7 +35,7 @@ class Regex {
     }
 
     def match(target: String) -> RegexMatch {
-        this.match(target, 0)
+        @match(target, 0)
     }
 
     def match(target: String, start: Int) -> RegexMatch {
@@ -72,15 +72,15 @@ class RegexMatch {
     }
 
     def match_begin(match_num: Int) -> Long {
-        this.match_at(match_num).begin
+        @match_at(match_num).begin
     }
 
     def match_end(match_num: Int) -> Long {
-        this.match_at(match_num).end
+        @match_at(match_num).end
     }
 
     def __index_get(index: Int) -> String {
-        match = this.match_at(index)
+        match = @match_at(index)
         @string.substring(match.start.to_i(), match.end.to_i() - match.start.to_i())
     }
 }

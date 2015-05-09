@@ -8,11 +8,11 @@ class StringScanner {
     }
 
     def scan(regex: String) -> String {
-        this.scan(new Regex(regex))
+        @scan(new Regex(regex))
     }
 
     def scan(regex: Regex) -> String {
-        if (this.is_eos()) return null
+        if (@is_eos()) return null
 
         match = regex.match(@string, @position)
         if (match.is_null()) {

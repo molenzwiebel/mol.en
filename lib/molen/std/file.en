@@ -18,21 +18,21 @@ class File {
     }
 
     def print(str: String) {
-        this.ensure_open()
+        @ensure_open()
         C.fputs(str.cstr(), @file_ptr)
     }
 
     def puts(str: String) {
-        this.print(str + "\n")
+        @print(str + "\n")
     }
 
     def is_eof() -> Bool {
-        this.ensure_open()
+        @ensure_open()
         C.feof(@file_ptr) != 0
     }
 
     def get_line() -> String {
-        this.ensure_open()
+        @ensure_open()
 
         buffer = Pointer.malloc(Char, 0)
         cap = 0L
@@ -41,7 +41,7 @@ class File {
     }
 
     def close() {
-        this.ensure_open()
+        @ensure_open()
         C.fclose(@file_ptr)
         @is_closed = true
     }

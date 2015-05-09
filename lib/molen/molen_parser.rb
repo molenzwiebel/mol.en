@@ -76,7 +76,11 @@ module Molen
             end
 
             expr -> tok { tok.is_instance_variable? } do
-                InstanceVariable.new consume.value[1..-1]
+                name = consume.value[1..-1]
+                if token.is_lparen? then
+                    next Call.new(Identifier.new("this"), name, parse_delimited { |parser| parser.parse_expression })
+                end
+                next InstanceVariable.new name
             end
 
             expr -> tok { tok.is_keyword? "new" } do

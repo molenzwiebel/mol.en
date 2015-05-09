@@ -18,18 +18,18 @@ class String {
     }
 
     def __index_get(index: Int) -> Char {
-        CUtil.assert(index < this.length(), "Cannot get char at index " + index + ", String is only " + this.length() + " characters (ranging from 0 to " + (this.length() - 1) + ")")
+        CUtil.assert(index < @length(), "Cannot get char at index " + index + ", String is only " + @length() + " characters (ranging from 0 to " + (@length() - 1) + ")")
         (@value + index).value()
     }
 
     def __index_set(index: Int, val: String) {
-        CUtil.assert(index < this.length(), "Cannot set char at index " + index + ", String is only " + this.length() + " characters (ranging from 0 to " + (this.length() - 1) + ")")
+        CUtil.assert(index < @length(), "Cannot set char at index " + index + ", String is only " + @length() + " characters (ranging from 0 to " + (@length() - 1) + ")")
         (@value + index).set_value(val[0])
     }
-    
+
     def chars() -> Char[] {
         ret = new Char[]
-        for (i = 0, i < this.length(), i = i + 1)
+        for (i = 0, i < @length(), i = i + 1)
             ret.add(this[i])
         ret
     }
@@ -44,7 +44,7 @@ class String {
 
     def substring(start: Int, count: Int) -> String {
         CUtil.assert(start >= 0, "Negative argument to String.substring")
-        CUtil.assert(start + count <= this.length(), "String.substring out of index")
+        CUtil.assert(start + count <= @length(), "String.substring out of index")
 
         buffer = Pointer.malloc(Char, count + 1)
         C.strncpy(buffer, @value + start, count)

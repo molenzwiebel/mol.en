@@ -35,6 +35,8 @@ describe Parser do
     it_parses "x[10] = 12", Call.new("x".ident, "__index_set", [10.literal, 12.literal])
     it_parses "x[10] = y = 12", Call.new("x".ident, "__index_set", [10.literal, Assign.new("y".ident, 12.literal)])
 
+    it_parses "@test(10)", Call.new("this".ident, "test", [10.literal])
+
     it_parses "x = 10", Assign.new("x".ident, 10.literal)
     it_parses "return", Return.new(nil)
     it_parses "return 10", Return.new(10.literal)
