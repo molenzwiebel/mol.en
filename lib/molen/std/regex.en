@@ -16,33 +16,6 @@ extern C {
     fn regerror(code: Int, re: *C_Regex, buffer: *Char, buffer_size: Int) -> Int
 }
 
-class RegexMatch {
-    var string: String
-    var matches: *C_RegexMatch
-
-    def create(string: String, matches: *C_RegexMatch) {
-        @string = string
-        @matches = matches
-    }
-
-    def match_at(index: Int) -> C_RegexMatch {
-        (@matches + index).value()
-    }
-
-    def match_begin(match_num: Int) -> Long {
-        this.match_at(match_num).begin
-    }
-
-    def match_end(match_num: Int) -> Long {
-        this.match_at(match_num).end
-    }
-
-    def __index_get(index: Int) -> String {
-        match = this.match_at(index)
-        @string.substring(match.start.to_i(), match.end.to_i() - match.start.to_i())
-    }
-}
-
 class Regex {
     var regex: C_Regex
     var source: String
@@ -82,5 +55,32 @@ class Regex {
             CUtil.assert(false, "Error matching regex: " + new String(buf))
             return null
         }
+    }
+}
+
+class RegexMatch {
+    var string: String
+    var matches: *C_RegexMatch
+
+    def create(string: String, matches: *C_RegexMatch) {
+        @string = string
+        @matches = matches
+    }
+
+    def match_at(index: Int) -> C_RegexMatch {
+        (@matches + index).value()
+    }
+
+    def match_begin(match_num: Int) -> Long {
+        this.match_at(match_num).begin
+    }
+
+    def match_end(match_num: Int) -> Long {
+        this.match_at(match_num).end
+    }
+
+    def __index_get(index: Int) -> String {
+        match = this.match_at(index)
+        @string.substring(match.start.to_i(), match.end.to_i() - match.start.to_i())
     }
 }
