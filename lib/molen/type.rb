@@ -200,6 +200,15 @@ module Molen
             define_native_function "__add", self, mod["Int"] do |this, offset|
                 builder.ret builder.gep(this, [offset])
             end
+
+            ptr = self
+            define_native_function "realloc", self, mod["Int"] do |this, new_size|
+                realloc_func = llvm_mod.functions["realloc"] || llvm_mod.functions.add("realloc", [LLVM::Pointer(LLVM::Int8), LLVM::Int], LLVM::Pointer(LLVM::Int8))
+
+                casted_buffer = builder.bit_cast this, LLVM::Pointer(LLVM::Int8)
+                new_buffer = builder.call realloc_func, casted_buffer, new_size
+                builder.ret builder.bit_cast new_buffer, ptr.llvm_type
+            end
         end
 
         def llvm_type
