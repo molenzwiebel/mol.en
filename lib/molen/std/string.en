@@ -2,6 +2,7 @@ extern C {
     fn strlen(str: *Char) -> Int
     fn atoi(str: *Char) -> Int
     fn strncpy(s1: *Char, s2: *Char, n: Int) -> *Char
+    fn strcmp(s1: *Char, s2: *Char) -> Int
 }
 
 class String {
@@ -38,10 +39,6 @@ class String {
         @value
     }
 
-    def __add(other: Int) -> String {
-        this + other.to_s()
-    }
-
     def substring(start: Int, count: Int) -> String {
         CUtil.assert(start >= 0, "Negative argument to String.substring")
         CUtil.assert(start + count <= @length(), "String.substring out of index")
@@ -51,5 +48,21 @@ class String {
         (buffer + count).set_value(0.to_char())
 
         new String(buffer)
+    }
+
+    def __eq(other: String) -> Bool {
+        C.strcmp(@value, other.cstr()) == 0
+    }
+
+    def __add(other: Int) -> String {
+        this + other.to_s()
+    }
+
+    def __add(other: Object) -> String {
+        this + other.to_s()
+    }
+
+    def hash() -> Int {
+        @length()
     }
 }

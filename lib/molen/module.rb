@@ -9,9 +9,12 @@ module Molen
             self["Object"] = object = ObjectType.new "Object"
 
             self["Bool"] = PrimitiveType.new "Bool", LLVM::Int1, 1
-            self["Char"] = PrimitiveType.new "Char", LLVM::Int8, 2
+
+            self["Char"] = PrimitiveType.new "Char", LLVM::Int8, 1
+            self["Short"] = PrimitiveType.new "Short", LLVM::Int16, 2
             self["Int"] = PrimitiveType.new "Int", LLVM::Int32, 4
             self["Long"] = PrimitiveType.new "Long", LLVM::Int64, 8
+            self["Float"] = PrimitiveType.new "Float", LLVM::Float, 4
             self["Double"] = PrimitiveType.new "Double", LLVM::Double, 8
 
             self["String"] = ObjectType.new "String", object

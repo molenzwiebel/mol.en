@@ -1,7 +1,7 @@
 task :console do
   require 'irb'
   require 'pry'
-  require 'pry-debugger'
+  require 'pry-byebug'
   require_relative 'lib/molen'
   include Molen
   ARGV.clear

@@ -169,6 +169,10 @@ module Molen
             @size
         end
 
+        def fp?
+            name == "Double" || name == "Float"
+        end
+
         def ==(other)
             other.class == self.class and other.name == name and other.type == type
         end
@@ -272,6 +276,10 @@ module Molen
 
             define_native_function "capacity", mod["Int"] do |this|
                 builder.ret builder.load builder.struct_gep this, 1
+            end
+
+            define_native_function("is_null", mod["Bool"]) do |this|
+                builder.ret builder.icmp :eq, builder.ptr2int(this, LLVM::Int), LLVM::Int(0)
             end
 
             define_native_function "add", el_type, el_type do |this, arg|
