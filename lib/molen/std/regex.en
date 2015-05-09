@@ -62,13 +62,17 @@ class Regex {
     }
 
     def match(target: String) -> RegexMatch {
+        this.match(target, 0)
+    }
+
+    def match(target: String, start: Int) -> RegexMatch {
         num_captures = @regex.nsub.to_i() + 1
 
         matches = Pointer.malloc(C_RegexMatch, num_captures)
-        res = C.regexec(&@regex, target.cstr(), num_captures.to_long(), matches, 0)
+        res = C.regexec(&@regex, target.cstr() + start, num_captures.to_long(), matches, 0)
 
         if (res == 0) {
-            return new RegexMatch(target, matches)
+            return new RegexMatch(new String(target.cstr() + start), matches)
         } elseif (res == 1) {
             return null
         } else {
