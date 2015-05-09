@@ -1,4 +1,8 @@
 require 'llvm/execution_engine'
+require 'llvm/transforms/scalar'
+require 'llvm/transforms/ipo'
+require 'llvm/transforms/vectorize'
+require 'llvm/transforms/builder'
 
 module Molen
     def run(src, filename = "unknown_file")
@@ -8,7 +12,12 @@ module Molen
     def self.run(src, filename = "unknown_file")
         mod = generate(src, filename)
         LLVM.init_jit
+
         engine = LLVM::JITCompiler.new mod
+        optimizer = LLVM::PassManager.new engine
+        optimizer << :arg_promote << :gdce << :global_opt << :gvn << :reassociate << :instcombine << :basicaa << :jump_threading << :simplifycfg << :inline << :mem2reg
+        5.times { optimizer.run mod }
+
         engine.run_function mod.functions["molen_main"]
     end
 
