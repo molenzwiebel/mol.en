@@ -200,6 +200,7 @@ module Molen
             builder.store LLVM::Int(capacity), builder.struct_gep(arr_struct, 1)
 
             arr_buffer = builder.array_malloc(node.type.element_type.llvm_type, LLVM::Int(capacity))
+            memset arr_buffer, LLVM::Int(0), builder.mul(node.type.element_type.llvm_type.size, LLVM::Int64.from_i(capacity))
             builder.store arr_buffer, builder.struct_gep(arr_struct, 2)
 
             node.elements.each_with_index do |elem, index|
