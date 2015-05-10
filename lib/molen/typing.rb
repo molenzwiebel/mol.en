@@ -4,8 +4,19 @@ module Molen
     class Call; attr_accessor :target_function; end
     class New; attr_accessor :target_constructor; end
     class InstanceVariable; attr_accessor :owner; end
-    class Function; attr_accessor :is_prototype_typed; attr_accessor :is_body_typed; end
     class Return; attr_accessor :func_ret_type; end
+    class Function
+        attr_accessor :is_prototype_typed, :is_body_typed
+
+        def add_overrider(node)
+            @overriding_functions = {} unless @overriding_functions
+            @overriding_functions[node.owner.type.name] = node
+        end
+
+        def overriding_functions
+            @overriding_functions || {}
+        end
+    end
 
     def type(mod, tree)
         Molen.type(mod, tree)
@@ -227,6 +238,7 @@ module Molen
 
             type_function(function) unless function.is_a?(ExternalFunc) or function.is_body_typed
 
+            node.object.type.use_function(function) if node.object && node.object.type.is_a?(ObjectType)
             node.type = function.return_type
             node.target_function = function
         end
@@ -245,6 +257,21 @@ module Molen
             func_scope = node.owner.type.functions if node.owner
 
             node.raise "Redefinition of #{node.owner.type.name rescue "<top level>"}##{node.name} with same argument types" unless assure_unique func_scope.this, node.name, node.args.map(&:type)
+
+            if node.owner && func_scope[node.name] && !func_scope.has_local_key?(node.name) then
+                existing_functions = func_scope[node.name]
+                overrides_func = existing_functions.find do |func|
+                    next false if func.args.size != node.args.size
+
+                    ret_type = func.return_type.nil? ? nil : func.is_prototype_typed ? func.return_type.name : func.return_type
+                    arg_types = func.is_prototype_typed ? func.args.map(&:type).map(&:name) : func.args.map(&:type)
+
+                    node.return_type == ret_type && node.args.map(&:name) == arg_types
+                end
+
+                overrides_func.add_overrider node if overrides_func
+            end
+
             func_scope.has_local_key?(node.name) ? func_scope[node.name] << node : func_scope.define(node.name, [node])
         end
 
@@ -257,6 +284,11 @@ module Molen
         def type_function(node)
             old_func = @current_function
             node.is_body_typed = true if node.is_a?(Function)
+
+            node.overriding_functions.each do |type, overriding_func|
+                type_function_prototype(overriding_func) unless overriding_func.is_prototype_typed
+                type_function(overriding_func) unless overriding_func.is_body_typed
+            end
 
             @current_function = node
             with_new_scope(false) do

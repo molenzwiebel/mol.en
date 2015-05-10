@@ -39,6 +39,7 @@ module Molen
     end
 
     class GeneratingVisitor < Visitor
+        VOID_PTR = LLVM::Pointer(LLVM::Int8)
         attr_accessor :mod, :llvm_mod, :builder
 
         def initialize(mod, ret_type)
@@ -58,6 +59,7 @@ module Molen
                 end
             end
 
+            @type_infos = {}
             @vtables = {}
 
             @variable_pointers = Scope.new
@@ -105,7 +107,7 @@ module Molen
         end
 
         def visit_null(node)
-            builder.int2ptr LLVM::Int(0), LLVM::Pointer(LLVM::Int8)
+            builder.int2ptr LLVM::Int(0), VOID_PTR
         end
 
         def visit_instance_variable(node)
@@ -213,11 +215,6 @@ module Molen
         end
 
         def visit_call(node)
-            func = @function_pointers[node.target_function]
-            unless func
-                func = generate_function(node.target_function)
-            end
-
             # Setup arguments and cast them if needed.
             args = []
             node.args.each_with_index do |arg, i|
@@ -234,9 +231,28 @@ module Molen
                 args = [casted_this] + args
             end
 
-            ret_ptr = builder.call func, *args
-            return ret_ptr if func.function_type.return_type != LLVM.Void
-            return nil
+            if node.object && node.object.type.is_a?(ObjectType) then
+                func = @function_pointers[node.target_function]
+
+                vtable_ptr = builder.bit_cast args[0], LLVM::Pointer(LLVM::Pointer(LLVM::Pointer(func.function_type)))
+                vtable = builder.load vtable_ptr, "vtable"
+
+                func_ptr = builder.inbounds_gep(vtable, [LLVM::Int64.from_i(node.object.type.function_index(node.target_function))])
+                loaded_func = builder.load func_ptr
+
+                res = builder.call loaded_func, *args
+                return res if func.function_type.return_type != LLVM.Void
+                return nil
+            else
+                func = @function_pointers[node.target_function]
+                unless func
+                    func = generate_function(node.target_function)
+                end
+
+                ret_ptr = builder.call func, *args
+                return ret_ptr if func.function_type.return_type != LLVM.Void
+                return nil
+            end
         end
 
         # This is not a normal visit_### function because we only
@@ -281,6 +297,11 @@ module Molen
 
             builder.ret nil if node.return_type.nil? and not node.body.definitely_returns?
             builder.position_at_end old_pos
+
+            node.overriding_functions.each do |type, func|
+                generate_function(func) unless @function_pointers[func]
+            end
+
             func
         end
 
@@ -339,9 +360,9 @@ module Molen
         end
 
         def memset(pointer, value, size)
-            memset_func = llvm_mod.functions['memset'] || llvm_mod.functions.add('memset', [LLVM::Pointer(LLVM::Int8), LLVM::Int, LLVM::Int], LLVM::Pointer(LLVM::Int8))
+            memset_func = llvm_mod.functions['memset'] || llvm_mod.functions.add('memset', [VOID_PTR, LLVM::Int, LLVM::Int], VOID_PTR)
 
-            pointer = builder.bit_cast pointer, LLVM::Pointer(LLVM::Int8)
+            pointer = builder.bit_cast pointer, VOID_PTR
             builder.call memset_func, pointer, value, builder.trunc(size, LLVM::Int32)
         end
 
@@ -352,24 +373,28 @@ module Molen
             return builder.gep ptr_to_obj, [LLVM::Int(0), LLVM::Int(index)], node.field.value + "_ptr"
         end
 
+        def get_or_create_type_info(type)
+            return @type_infos[type.name] if @type_infos[type.name]
+
+            parent_ptr = type.superclass ? builder.bit_cast(get_or_create_type_info(type.superclass), VOID_PTR) : builder.int2ptr(LLVM::Int(0), VOID_PTR)
+            @type_infos[type.name] = add_global("typeinfo.#{type.name}", LLVM::ConstantStruct.const([parent_ptr, builder.global_string_pointer(type.name)]))
+        end
+
         def get_or_create_vtable(type)
             return @vtables[type.name] if @vtables[type.name]
 
-            parent_ptr = type.superclass ? get_or_create_vtable(type.superclass) : builder.int2ptr(LLVM::Int(0), LLVM::Pointer(type.vtable_type))
-
-            const = LLVM::ConstantStruct.const([parent_ptr, builder.global_string_pointer(type.name)])
-
-            global = @vtables[type.name] = llvm_mod.globals.add(const, "#{type.name}_vtable") do |var|
-                var.linkage = :private
-                var.global_constant = true
-                var.initializer = const
+            used_funcs = type.vtable_functions.map do |f|
+                generate_function(f) unless @function_pointers[f]
+                builder.bit_cast(@function_pointers[f], VOID_PTR)
             end
+
+            @vtables[type.name] = add_global("vtable.#{type.name}", LLVM::ConstantArray.const(VOID_PTR, [builder.bit_cast(get_or_create_type_info(type), VOID_PTR)] + used_funcs))
         end
 
         def populate_vtable(allocated_struct, type)
-            str = builder.struct_gep allocated_struct, 0
-            vtable = get_or_create_vtable(type).bitcast_to LLVM::Pointer(type.vtable_type)
-            builder.store vtable, str
+            vtable_ptr = builder.bit_cast allocated_struct, LLVM::Pointer(LLVM::Pointer(VOID_PTR)), "vtable_ptr"
+
+            builder.store builder.inbounds_gep(get_or_create_vtable(type), [LLVM::Int64.from_i(0), LLVM::Int64.from_i(1)]), vtable_ptr
         end
 
         def allocate_string(val_ptr)
@@ -377,6 +402,14 @@ module Molen
             populate_vtable allocated_struct, mod["String"]
             builder.store val_ptr, builder.struct_gep(allocated_struct, 1)
             allocated_struct
+        end
+
+        def add_global(name, val)
+            llvm_mod.globals.add(val, name) do |var|
+                var.linkage = :private
+                var.global_constant = true
+                var.initializer = val
+            end
         end
     end
 

@@ -67,13 +67,15 @@ module Molen
     end
 
     class ObjectType < Type
-        attr_accessor :instance_variables
+        VTABLE_PTR = LLVM::Pointer(LLVM::Pointer(LLVM::Function([], LLVM::Int, varargs: true)))
+        attr_accessor :instance_variables, :used_functions
 
         def initialize(name, supertype = nil)
             raise "Expected superclass of #{name} to be an object, #{supertype.to_s} received." if supertype and !supertype.is_a?(ObjectType)
             super name, supertype
 
             @instance_variables = supertype ? Scope.new(supertype.instance_variables) : Scope.new
+            @used_functions = []
         end
 
         def llvm_type
@@ -81,27 +83,40 @@ module Molen
         end
 
         def llvm_struct
-            LLVM::Struct *([LLVM::Pointer(vtable_type)] + instance_variables.values.map(&:llvm_type))
+            LLVM::Struct *([VTABLE_PTR] + instance_variables.values.map(&:llvm_type))
         end
 
         def llvm_size
             8 # Size of a pointer
         end
 
-        def vtable_type
-            @vtable_type ||= begin
-                struct = LLVM::Struct("#{name}_vtable_type")
-                struct.element_types = [LLVM::Pointer(superclass ? superclass.vtable_type : struct), LLVM::Pointer(LLVM::Int8)]
-                struct
-            end
-        end
-
         def ==(other)
             other.class == self.class and other.name == name and other.superclass == superclass and other.instance_variables == instance_variables
         end
 
+        def use_function(func)
+            existing = used_functions.count {|x| (x.owner && func.owner ? x.owner.type == func.owner.type : true) && x == func} > 0
+            @used_functions << func unless existing
+        end
+
+        def used_functions
+            (superclass ? superclass.used_functions : []) + @used_functions
+        end
+
+        def vtable_functions
+            used_functions.map do |func|
+                next func if func.overriding_functions.size == 0
+                next func unless func.overriding_functions[name]
+                func.overriding_functions[name]
+            end
+        end
+
         def instance_var_index(name)
             @instance_variables.keys.index(name) + 1 # Add 1 to skip the vtable
+        end
+
+        def function_index(func)
+            used_functions.index func
         end
 
         def castable_to?(other)
