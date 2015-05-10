@@ -191,6 +191,7 @@ module Molen
                 expect_next_and_consume(:lparen)
                 cond = parse_expression
                 raise_error "Expected condition in if statement", token unless cond
+                cond = Call.new(cond, "to_bool", [])
                 expect_and_consume(:rparen)
 
                 if_then = parse_body false
@@ -204,7 +205,8 @@ module Molen
                     else
                         expect_and_consume(:lparen)
                         elseif_cond = parse_expression
-                        raise_error "Expected condition in elseif statement", token unless cond
+                        raise_error "Expected condition in elseif statement", token unless elseif_cond
+                        elseif_cond = Call.new(elseif_cond, "to_bool", [])
                         expect_and_consume(:rparen)
 
                         else_ifs << [elseif_cond, parse_body(false)]
@@ -220,6 +222,7 @@ module Molen
                 expect_and_consume(",")
                 cond = parse_expression
                 raise_error "Expected condition in for loop", token unless cond
+                cond = Call.new(cond, "to_bool", [])
                 expect_and_consume(",")
                 step = parse_node
                 expect_and_consume(:rparen)

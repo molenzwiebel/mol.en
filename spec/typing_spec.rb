@@ -36,11 +36,9 @@ describe TypingVisitor do
 
     # If statements
     it_types "if (true) { 10 } else { 11 }", nil
-    it_fails_on "if (10) {}", /Expected condition in if to be a boolean/
 
     # For statements
     it_types "for(,true,) { 10 }", nil
-    it_fails_on "for (,10,) {}", /Expected condition in loop to be a boolean/
 
     # Return
     it_fails_on "return 10", /Cannot return if not in a function!/

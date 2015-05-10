@@ -96,19 +96,19 @@ describe Parser do
 
     it_parses "def test(a: Int[], b: Bool[]) -> Int[] 10", Function.new(nil, "test", "Int[]", [FunctionArg.new("a", "Int[]"), FunctionArg.new("b", "Bool[]")], Body.from(Return.new(10.literal)))
 
-    it_parses "if (true) 10", If.new(true.literal, Body.from(10.literal), nil, [])
-    it_parses "if (true) 10 else 11", If.new(true.literal, Body.from(10.literal), Body.from(11.literal), [])
-    it_parses "if (true) 10 elseif (false) 11", If.new(true.literal, Body.from(10.literal), nil, [[false.literal, Body.from(11.literal)]])
-    it_parses "if (true) 10 elseif (false) 11 else 12",  If.new(true.literal, Body.from(10.literal), Body.from(12.literal), [[false.literal, Body.from(11.literal)]])
+    it_parses "if (true) 10", If.new(Call.new(true.literal, "to_bool", []), Body.from(10.literal), nil, [])
+    it_parses "if (true) 10 else 11", If.new(Call.new(true.literal, "to_bool", []), Body.from(10.literal), Body.from(11.literal), [])
+    it_parses "if (true) 10 elseif (false) 11", If.new(Call.new(true.literal, "to_bool", []), Body.from(10.literal), nil, [[Call.new(false.literal, "to_bool", []), Body.from(11.literal)]])
+    it_parses "if (true) 10 elseif (false) 11 else 12",  If.new(Call.new(true.literal, "to_bool", []), Body.from(10.literal), Body.from(12.literal), [[Call.new(false.literal, "to_bool", []), Body.from(11.literal)]])
     it_errors_on "if (true) 10 else 11 else 12", /Multiple else blocks in if statement/
     it_errors_on "if true", /Expected token of type LPAREN/
     it_errors_on "if (true", /Expected token of type RPAREN/
     it_errors_on "if ()", /Expected condition/
 
-    it_parses "for (true, true, true) 10", For.new(true.literal, true.literal, true.literal, 10.literal)
-    it_parses "for (, true, true) 10", For.new(nil, true.literal, true.literal, 10.literal)
-    it_parses "for (true, true, ) 10", For.new(true.literal, true.literal, nil, 10.literal)
-    it_parses "for (, true, ) 10", For.new(nil, true.literal, nil, 10.literal)
+    it_parses "for (true, true, true) 10", For.new(true.literal, Call.new(true.literal, "to_bool", []), true.literal, 10.literal)
+    it_parses "for (, true, true) 10", For.new(nil, Call.new(true.literal, "to_bool", []), true.literal, 10.literal)
+    it_parses "for (true, true, ) 10", For.new(true.literal, Call.new(true.literal, "to_bool", []), nil, 10.literal)
+    it_parses "for (, true, ) 10", For.new(nil, Call.new(true.literal, "to_bool", []), nil, 10.literal)
     it_errors_on "for (,,) 10", /Expected condition in for loop/
     it_errors_on "for true", /Expected token of type LPAREN/
     it_errors_on "for (true 1)", /Expected token with value of ','/
