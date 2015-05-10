@@ -58,8 +58,8 @@ module Molen
             end
 
             string.define_native_function("__add", string, string) do |this, other|
-                this = builder.load builder.struct_gep(this, 1)
-                other = builder.load builder.struct_gep(other, 1)
+                this = builder.load builder.struct_gep(this, 2)
+                other = builder.load builder.struct_gep(other, 2)
 
                 builder.ret perform_sprintf("%s%s", this, other)
             end
