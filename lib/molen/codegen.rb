@@ -393,7 +393,7 @@ module Molen
 
         def populate_vtable(allocated_struct, type)
             builder.store get_or_create_vtable(type).bitcast_to(ObjectType::VTABLE_PTR), builder.struct_gep(allocated_struct, 0)
-            builder.store get_or_create_type_info(type).bitcast_to(VOID_PTR), builder.struct_gep(allocated_struct, 1)
+            builder.store get_or_create_type_info(type).bitcast_to(ObjectType::TYPEINFO_PTR), builder.struct_gep(allocated_struct, 1)
         end
 
         def allocate_string(val_ptr)

@@ -68,6 +68,8 @@ module Molen
 
     class ObjectType < Type
         VTABLE_PTR = LLVM::Pointer(LLVM::Pointer(LLVM::Function([], LLVM::Int, varargs: true)))
+        TYPEINFO_PTR = LLVM::Pointer(LLVM::Struct(GeneratingVisitor::VOID_PTR, GeneratingVisitor::VOID_PTR, "_typeinfo"))
+
         attr_accessor :instance_variables, :used_functions
 
         def initialize(name, supertype = nil)
@@ -83,7 +85,7 @@ module Molen
         end
 
         def llvm_struct
-            LLVM::Struct *([VTABLE_PTR, LLVM::Pointer(LLVM::Int8)] + instance_variables.values.map(&:llvm_type))
+            LLVM::Struct *([VTABLE_PTR, TYPEINFO_PTR] + instance_variables.values.map(&:llvm_type) + ["class.#{name}"])
         end
 
         def llvm_size
