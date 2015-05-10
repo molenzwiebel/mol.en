@@ -61,6 +61,7 @@ module Molen
 
             @type_infos = {}
             @vtables = {}
+            @object_allocators = {}
 
             @variable_pointers = Scope.new
             @function_pointers = {}
@@ -169,9 +170,10 @@ module Molen
         end
 
         def visit_new(node)
-            allocated_struct = builder.malloc node.type.llvm_struct, node.type.name
-            memset allocated_struct, LLVM::Int(0), node.type.llvm_struct.size
-            populate_vtable allocated_struct, node.type if node.type.is_a?(ObjectType)
+            allocator = @object_allocators[node.type.name]
+            allocator = generate_object_allocator(node.type) unless allocator
+
+            allocated_struct = builder.call allocator
 
             if node.target_constructor then
                 create_func = @function_pointers[node.target_constructor]
@@ -189,6 +191,22 @@ module Molen
             end
 
             allocated_struct
+        end
+
+        def generate_object_allocator(type)
+            old_pos = builder.insert_block
+
+            @object_allocators[type.name] = func = llvm_mod.functions.add("_allocate_#{type.name}", [], type.llvm_type)
+            builder.position_at_end func.basic_blocks.append("entry")
+
+            allocated_struct = builder.malloc type.llvm_struct, type.name
+            memset allocated_struct, LLVM::Int(0), type.llvm_struct.size
+            populate_vtable allocated_struct, type if type.is_a?(ObjectType)
+
+            builder.ret allocated_struct
+
+            builder.position_at_end old_pos
+            func
         end
 
         def visit_new_array(node)
