@@ -63,6 +63,11 @@ class String {
     }
 
     def hash() -> Int {
-        @length()
+        res = 0
+        chars = @chars()
+        for (i = 0, i < chars.size(), i = i + 1) {
+            res = 17 * res + chars[i]
+        }
+        res
     }
 }
