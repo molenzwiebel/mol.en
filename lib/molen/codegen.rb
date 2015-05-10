@@ -197,6 +197,7 @@ module Molen
             old_pos = builder.insert_block
 
             @object_allocators[type.name] = func = llvm_mod.functions.add("_allocate_#{type.name}", [], type.llvm_type)
+            func.linkage = :internal
             builder.position_at_end func.basic_blocks.append("entry")
 
             allocated_struct = builder.malloc type.llvm_struct, type.name
