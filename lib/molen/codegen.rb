@@ -21,7 +21,7 @@ module Molen
         5.times { optimizer.run mod }
         mod.verify
 
-        engine.run_function mod.functions["molen_main"]
+        engine.run_function mod.functions["main"]
     end
 
     def generate(src, filename = "unknown_file")
@@ -49,6 +49,7 @@ module Molen
             @builder = LLVM::Builder.new
 
             main_func = llvm_mod.functions.add "molen_main", [], ret_type ? ret_type.llvm_type : LLVM.Void
+            main_func.linkage = :internal
             main_block = main_func.basic_blocks.append("entry")
             builder.position_at_end main_block
 
