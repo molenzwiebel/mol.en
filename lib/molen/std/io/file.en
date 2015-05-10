@@ -1,0 +1,13 @@
+extern C {
+    fn fopen(filename: *Char, mode: *Char) -> *Void
+}
+
+class File :: IO {
+    var file_ptr: *Void
+    var location: String
+
+    def create(file: String, mode: String) {
+        @location = file
+        @in = @out = C.fopen(file.cstr(), mode.cstr())
+    }
+}

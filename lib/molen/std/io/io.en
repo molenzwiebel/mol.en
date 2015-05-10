@@ -1,0 +1,40 @@
+extern C {
+    fn fputs(str: *Char, file: *Void) -> Int
+    fn fclose(file: *Void) -> Int
+    fn feof(file: *Void) -> Int
+    fn getline(linep: **Char, linecap: *Long, file: *Void) -> Long
+    fn fflush(file: *Void) -> Int
+}
+
+class IO {
+    var in: *Void
+    var out: *Void
+
+    def print(str: String) {
+        C.fputs(str.cstr(), @out)
+    }
+
+    def puts(str: String) {
+        @print(str + "\n")
+    }
+
+    def flush() {
+        C.fflush(@out)
+    }
+
+    def is_eof() -> Bool {
+        C.feof(@in) != 0
+    }
+
+    def get_line() -> String {
+        buffer = Pointer.malloc(Char, 0)
+        cap = 0L
+        len = C.getline(&buffer, &cap, @in)
+        new String(buffer)
+    }
+
+    def close() {
+        C.fclose(@in)
+        C.fclose(@out)
+    }
+}
