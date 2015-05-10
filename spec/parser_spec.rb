@@ -63,10 +63,14 @@ describe Parser do
     it_errors_on "(test", /Expected token of type RPAREN/
 
     it_parses "test(10, 11)", Call.new(nil, "test", [10.literal, 11.literal])
-    it_parses "new Test", New.new("Test".const, [])
-    it_parses "new Test()", New.new("Test".const, [])
-    it_parses "new Test(10, 11)", New.new("Test".const, [10.literal, 11.literal])
+    it_parses "new Test", New.new("Test".const, [], [])
+    it_parses "new Test()", New.new("Test".const, [], [])
+    it_parses "new Test(10, 11)", New.new("Test".const, [], [10.literal, 11.literal])
     it_errors_on "new test()", /Expected token of type CONSTANT/
+
+    it_parses "new Test<A>", New.new("Test".const, ["A"], [])
+    it_parses "new Test<A, B>", New.new("Test".const, ["A", "B"], [])
+    it_parses "new Test<A, B>(10)", New.new("Test".const, ["A", "B"], [10.literal])
 
     it_parses "new Test[](10)", NewArray.new("Test[]", [10.literal])
     it_parses "new Test[]", NewArray.new("Test[]", [])
@@ -118,6 +122,10 @@ describe Parser do
     it_parses "class Test :: Super { var foo: Int }", ClassDef.new("Test", "Super", [InstanceVar.new("foo", "Int")], [], [])
     it_parses "class Test :: Super { def test() 10 }", ClassDef.new("Test", "Super", [], [Function.new(nil, "test", nil, [], 10.literal)], [])
     it_parses "class Test :: Super { static def test() 10 }", ClassDef.new("Test", "Super", [], [], [Function.new(nil, "test", nil, [], 10.literal)])
+
+    it_parses "class Test<A> {}", ClassDef.new("Test", "Object", [], [], [], ["A"])
+    it_parses "class Test<A, B> {}", ClassDef.new("Test", "Object", [], [], [], ["A", "B"])
+    it_parses "class Test<A> :: Super {}", ClassDef.new("Test", "Super", [], [], [], ["A"])
 
     it_parses "extern C {}", ExternalDef.new("C", nil, [])
     it_parses "extern C('test') {}", ExternalDef.new("C", "test", [])

@@ -86,10 +86,14 @@ module Molen
             expr -> tok { tok.is_keyword? "new" } do
                 expect_next :constant
                 name = parse_type
+                types = []
+                if token.is?("<") then
+                    types = parse_delimited("<", ",", ">") { |parser| parser.parse_type }
+                end
 
                 args = !token.is?("(") ? [] : parse_delimited { |parser| parser.parse_expression }
 
-                next New.new Constant.new(name), args unless name.include? "["
+                next New.new Constant.new(name), types, args unless name.include? "["
                 NewArray.new name, args
             end
 
@@ -245,13 +249,20 @@ module Molen
             stmt -> x { x.is_keyword? "class" } do
                 name = expect_next_and_consume(:constant).value
                 parent = "Object"
+                type_vars = []
+
+                if token.is? "<" then
+                    type_vars = parse_delimited "<", ",", ">" do |parser|
+                        parser.expect_and_consume(:constant).value
+                    end
+                end
 
                 if token.is? "::" then
                     parent = expect_next_and_consume(:constant).value
                 end
                 expect_and_consume(:begin_block)
 
-                clazz = ClassDef.new(name, parent)
+                clazz = ClassDef.new(name, parent, [], [], [], type_vars)
 
                 until token.is_end_block?
                     raise_error "Unexpected EOF in class body", token if token.is_eof?

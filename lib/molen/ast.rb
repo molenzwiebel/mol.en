@@ -146,11 +146,11 @@ module Molen
     end
 
     class New < Expression
-        attr_accessor :type, :args
-        attr_eq :type, :args
+        attr_accessor :type, :generic_types, :args
+        attr_eq :type, :generic_types, :args
 
-        def initialize(type, args)
-            @type, @args = type, args
+        def initialize(type, generic_types, args)
+            @type, @generic_types, @args = type, generic_types, args
         end
     end
 
@@ -256,11 +256,11 @@ module Molen
     end
 
     class ClassDef < Statement
-        attr_accessor :name, :superclass, :instance_vars, :functions, :class_functions
-        attr_eq :name, :superclass, :instance_vars, :functions, :class_functions
+        attr_accessor :name, :superclass, :type_vars, :instance_vars, :functions, :class_functions
+        attr_eq :name, :superclass, :type_vars, :instance_vars, :functions, :class_functions
 
-        def initialize(name, superclass, vars = [], funcs = [], class_funcs = [])
-            @name, @superclass, @instance_vars, @functions, @class_functions = name, superclass, vars, funcs, class_funcs
+        def initialize(name, superclass, vars = [], funcs = [], class_funcs = [], type_vars = [])
+            @name, @superclass, @instance_vars, @functions, @class_functions, @type_vars = name, superclass, vars, funcs, class_funcs, type_vars
         end
     end
 
