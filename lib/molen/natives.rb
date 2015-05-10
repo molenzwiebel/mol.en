@@ -51,7 +51,7 @@ module Molen
             end
 
             object.define_native_function "to_s", string do |this|
-                vtable = builder.load builder.struct_gep this, 0
+                vtable = builder.load builder.struct_gep this, 1
                 name_ptr = builder.load builder.struct_gep vtable, 1
 
                 builder.ret perform_sprintf("#<%s:0x%016lx>", name_ptr, this)

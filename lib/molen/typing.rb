@@ -43,7 +43,7 @@ module Molen
             @functions["putchar"].first.is_prototype_typed = true; @functions["putchar"].first.is_body_typed = true;
             @functions["puts"] = [Function.new(nil, "puts", mod["Int"], [FunctionArg.new("x", mod["String"])], NativeBody.new(lambda { |arg|
                 puts_func = llvm_mod.functions["puts"] || llvm_mod.functions.add("puts", [LLVM::Pointer(LLVM::Int8)], LLVM::Int)
-                str = builder.struct_gep(arg, 1)
+                str = builder.struct_gep(arg, 2)
                 builder.ret builder.call puts_func, builder.load(str)
             }))]
             @functions["puts"].first.is_prototype_typed = true; @functions["puts"].first.is_body_typed = true;
