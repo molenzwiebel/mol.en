@@ -1,3 +1,5 @@
+import "io/io"
+
 extern C {
     fn fopen(filename: *Char, mode: *Char) -> *Void
 }

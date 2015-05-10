@@ -68,6 +68,10 @@ module Molen
             @function_pointers = {}
         end
 
+        def visit_import(node)
+            node.imported_body.accept self
+        end
+
         def visit_int(node)
             LLVM::Int32.from_i node.value
         end

@@ -5,6 +5,7 @@ module Molen
     class New; attr_accessor :target_constructor; end
     class InstanceVariable; attr_accessor :owner; end
     class Return; attr_accessor :func_ret_type; end
+    class Import; attr_accessor :imported_body; end
     class Function
         attr_accessor :is_prototype_typed, :is_body_typed
 
@@ -47,6 +48,11 @@ module Molen
                 builder.ret builder.call puts_func, builder.load(str)
             }))]
             @functions["puts"].first.is_prototype_typed = true; @functions["puts"].first.is_body_typed = true;
+        end
+
+        # Imports the contents of the specified file
+        def visit_import(node)
+            node.imported_body = mod.import node.value, node.filename
         end
 
         # Types an int node. Simply assigns the type to be Int

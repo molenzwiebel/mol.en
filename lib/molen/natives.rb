@@ -84,8 +84,9 @@ module Molen
         end
 
         def add_std
-            Dir[File.expand_path("../std/**/*.en",  __FILE__)].each do |file|
-                Molen.type(self, Parser.parse(File.read(file), file))
+            Dir[File.expand_path("../std/*.en",  __FILE__)].each do |file|
+                #Molen.type(self, Parser.parse(File.read(file), file))
+                import File.basename(file), nil
             end
         end
 
