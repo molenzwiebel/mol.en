@@ -71,7 +71,7 @@ module Molen
             end
 
             self["Object"].define_native_function("to_bool", self["Bool"]) do |this|
-                builder.ret builder.icmp :eq, builder.ptr2int(this, LLVM::Int), LLVM::Int(0)
+                builder.ret builder.icmp :ne, builder.ptr2int(this, LLVM::Int), LLVM::Int(0)
             end
 
             self["Bool"].define_native_function("__or", self["Bool"], self["Bool"]) do |this, other|

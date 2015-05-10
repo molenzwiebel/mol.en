@@ -1,0 +1,63 @@
+import "io/io"
+
+struct SockAddrIn {
+    var len: Char
+    var family: Char
+    var port: Short
+    var addr: Int
+    var zero: Long
+}
+
+extern C {
+    fn socket(domain: Int, t: Int, protocol: Int) -> Int
+    fn htons(n: Int) -> Short
+    fn bind(fd: Int, addr: *SockAddrIn, addr_len: Int) -> Int
+    fn listen(fd: Int, backlog: Int) -> Int
+    fn accept(fd: Int, addr: *SockAddrIn, addr_len: *Int) -> Int
+
+    fn inet_ntop(domain: Int, addr: *SockAddrIn, buf: *Char, buf_len: Int) -> *Char
+}
+
+class Socket :: IO {
+    var addr: SockAddrIn
+
+    def create(addr: SockAddrIn, fd: Int) {
+        @addr = addr
+
+        @in = C.fdopen(fd, "r".cstr())
+        @out = C.fdopen(fd, "w".cstr())
+    }
+
+    def ip_addr() -> String {
+        buf = Pointer.malloc(Char, 16)
+        C.inet_ntop(2, &@addr, buf, 16)
+        new String(buf)
+    }
+
+    def port() -> Int {
+        @addr.port.to_int()
+    }
+}
+
+class TCPServer {
+    var socket: Int
+
+    def create(port: Int) {
+        @socket = C.socket(2, 1, 0)
+
+        addr = new SockAddrIn
+        addr.family = 2.to_char()
+        addr.addr = 0
+        addr.port = C.htons(port)
+
+        CUtil.assert(C.bind(@socket, &addr, 16) == 0, "Error binding socket")
+        CUtil.assert(C.listen(@socket, 5) == 0, "Error listening to socket")
+    }
+
+    def accept() -> Socket {
+        client_addr = new SockAddrIn
+        len = 16
+
+        new Socket(client_addr, C.accept(@socket, &client_addr, &len))
+    }
+}

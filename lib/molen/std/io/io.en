@@ -30,7 +30,8 @@ class IO {
         buffer = Pointer.malloc(Char, 0)
         cap = 0L
         len = C.getline(&buffer, &cap, @in)
-        new String(buffer)
+        if (len > 0) return new String(buffer)
+        return null
     }
 
     def close() {
