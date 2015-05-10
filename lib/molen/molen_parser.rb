@@ -328,6 +328,11 @@ module Molen
 
                 StructDef.new name, vars
             end
+
+            stmt -> x { x.is_keyword? "import" } do
+                file = expect_next_and_consume(:string).value.gsub(/\\"/, "\"").gsub(/\\'/, "'").gsub(/^"|"$/, "").gsub(/^'|'$/, '')
+                Import.new file
+            end
         end
     end
 

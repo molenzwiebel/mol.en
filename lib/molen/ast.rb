@@ -85,6 +85,7 @@ module Molen
     class Identifier < Literal; end
     class Constant < Literal; end
     class InstanceVariable < Literal; end
+    class Import < Literal; end
 
     class Null < Expression
         attr_eq

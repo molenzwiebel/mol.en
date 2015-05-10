@@ -52,7 +52,7 @@ module Molen
             /!=/                                => :operator
         }
 
-        KEYWORDS = ["def", "if", "elseif", "else", "for", "return", "new", "var", "class", "static", "extern", "fn", "struct", "as", "and", "or"]
+        KEYWORDS = ["def", "if", "elseif", "else", "for", "return", "new", "var", "class", "static", "extern", "fn", "struct", "as", "and", "or", "import"]
 
         def initialize(source, file_name = "src")
             @source = source

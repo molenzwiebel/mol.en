@@ -134,4 +134,8 @@ describe Parser do
     it_parses "x = 10 as Double", Assign.new("x".ident, Cast.new(10.literal, "Double"))
     it_parses "x = 10.test() as Double", Assign.new("x".ident, Cast.new(Call.new(10.literal, "test", []), "Double"))
     it_parses "ptr + 1 as *String", Cast.new(Call.new("ptr".ident, "__add", [1.literal]), "*String")
+
+    it_parses "import 'test'", Import.new("test")
+    it_parses "import \"test\"", Import.new("test")
+    it_errors_on "import", /Expected token of type STRING/
 end
