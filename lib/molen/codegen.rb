@@ -231,7 +231,7 @@ module Molen
                 args = [casted_this] + args
             end
 
-            if node.object && node.object.type.is_a?(ObjectType) then
+            if node.object && node.object.type.is_a?(ObjectType) && node.target_function.overriding_functions.size > 0 then
                 func = @function_pointers[node.target_function]
 
                 vtable_ptr = builder.bit_cast args[0], LLVM::Pointer(LLVM::Pointer(LLVM::Pointer(func.function_type)))
@@ -399,7 +399,7 @@ module Molen
         def allocate_string(val_ptr)
             allocated_struct = builder.malloc mod["String"].llvm_struct, "String"
             populate_vtable allocated_struct, mod["String"]
-            builder.store val_ptr, builder.struct_gep(allocated_struct, 1)
+            builder.store val_ptr, builder.struct_gep(allocated_struct, 2)
             allocated_struct
         end
 
