@@ -83,7 +83,7 @@ module Molen
         end
 
         def llvm_struct
-            LLVM::Struct *([VTABLE_PTR] + instance_variables.values.map(&:llvm_type))
+            LLVM::Struct *([VTABLE_PTR, LLVM::Pointer(LLVM::Int8)] + instance_variables.values.map(&:llvm_type))
         end
 
         def llvm_size
@@ -112,7 +112,7 @@ module Molen
         end
 
         def instance_var_index(name)
-            @instance_variables.keys.index(name) + 1 # Add 1 to skip the vtable
+            @instance_variables.keys.index(name) + 2 # Add 1 to skip the vtable and type info
         end
 
         def function_index(func)

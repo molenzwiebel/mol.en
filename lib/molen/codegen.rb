@@ -388,13 +388,12 @@ module Molen
                 builder.bit_cast(@function_pointers[f], VOID_PTR)
             end
 
-            @vtables[type.name] = add_global("vtable.#{type.name}", LLVM::ConstantArray.const(VOID_PTR, [builder.bit_cast(get_or_create_type_info(type), VOID_PTR)] + used_funcs))
+            @vtables[type.name] = add_global("vtable.#{type.name}", LLVM::ConstantArray.const(VOID_PTR, used_funcs))
         end
 
         def populate_vtable(allocated_struct, type)
-            vtable_ptr = builder.bit_cast allocated_struct, LLVM::Pointer(LLVM::Pointer(VOID_PTR)), "vtable_ptr"
-
-            builder.store builder.inbounds_gep(get_or_create_vtable(type), [LLVM::Int64.from_i(0), LLVM::Int64.from_i(1)]), vtable_ptr
+            builder.store get_or_create_vtable(type).bitcast_to(ObjectType::VTABLE_PTR), builder.struct_gep(allocated_struct, 0)
+            builder.store get_or_create_type_info(type).bitcast_to(VOID_PTR), builder.struct_gep(allocated_struct, 1)
         end
 
         def allocate_string(val_ptr)
