@@ -1,9 +1,14 @@
 import "io/socket"
 
-server = new TCPServer(8000)
-puts("Listening on http://localhost:8000!")
+extern C {
+    fn getchar() -> Char
+}
 
-for (,true,) {
+server = new TCPServer(8000)
+puts("Listening on http://localhost:8000, ^D to exit.")
+
+# Keep looping until Ctrl+D is pressed.
+for (, C.getchar() != -1, ) {
     sock = server.accept()
     puts("Client at " + sock.ip_addr() + ":" + sock.port() + " connected.")
     for (, str = sock.get_line(), ) {

@@ -380,6 +380,7 @@ module Molen
 
             node.functions.each do |func|
                 func.accept self
+                next if node.type.class_functions[func.name] # Assume that methods are differently named, so just ignore it if a function is defined twice 
                 node.type.class_functions[func.name] = (node.type.class_functions[func.name] || []) << func
             end
         end
