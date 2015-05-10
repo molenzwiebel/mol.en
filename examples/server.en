@@ -18,3 +18,4 @@ for (,true,) {
     }
     puts("Done serving client.")
 }
+server.close()

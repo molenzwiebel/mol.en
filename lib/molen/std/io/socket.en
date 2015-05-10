@@ -14,6 +14,7 @@ extern C {
     fn bind(fd: Int, addr: *SockAddrIn, addr_len: Int) -> Int
     fn listen(fd: Int, backlog: Int) -> Int
     fn accept(fd: Int, addr: *SockAddrIn, addr_len: *Int) -> Int
+    fn close(fd: Int) -> Int
 
     fn inet_ntop(domain: Int, addr: *SockAddrIn, buf: *Char, buf_len: Int) -> *Char
 }
@@ -59,5 +60,9 @@ class TCPServer {
         len = 16
 
         new Socket(client_addr, C.accept(@socket, &client_addr, &len))
+    }
+
+    def close() {
+        C.close(@socket)
     }
 }
