@@ -1,0 +1,35 @@
+class Array<E> {
+    var length: Int
+    var capacity: Int
+    var buffer: *E
+
+    def create() {
+        @create(8)
+    }
+
+    def create(initial_size: Int) {
+        @length = 0
+        @capacity = initial_size
+        @buffer = Pointer.malloc(sizeof E * initial_size) as *E
+    }
+
+    def add(value: E) -> E {
+        if (@length == @capacity) {
+            @capacity = @capacity * 2
+            new_buf_size = sizeof E * @capacity
+            @buffer = @buffer.realloc(new_buf_size.to_int())
+        }
+        (@buffer + @length).set_value(value)
+        @length = @length + 1
+        return value
+    }
+
+    def __index_get(index: Int) -> E {
+        (@buffer + index).value()
+    }
+
+    def __index_set(index: Int, value: E) -> E {
+        (@buffer + index).set_value(value)
+        return value
+    }
+}
