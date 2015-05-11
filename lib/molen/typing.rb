@@ -187,7 +187,7 @@ module Molen
             node.args.each {|arg| arg.accept self}
             type = resolve_type node.type.value
             node.raise "Cannot instantiate primitive" if type.is_a? PrimitiveType
-            node.raise "Cannot instantiate generic type without type args" if type.generic_types.size > 0 && !node.type.value.include?("<")
+            node.raise "Cannot instantiate generic type without type args" if type.is_a?(ObjectType) && type.generic_types.size > 0 && !node.type.value.include?("<")
             node.type = type
 
             if (fn = find_overloaded_method(node, node.type.functions, "create", node.args)) then
@@ -424,7 +424,7 @@ module Molen
         end
 
         def resolve_type(name)
-            if @current_function && @current_function.owner_type && @current_function.owner_type.generic_types[name] then
+            if @current_function && @current_function.owner_type && @current_function.owner_type.is_a?(ObjectType) && @current_function.owner_type.generic_types[name] then
                 return @current_function.owner_type.generic_types[name]
             end
             return mod[name] if mod[name]

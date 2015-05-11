@@ -138,4 +138,10 @@ describe TypingVisitor do
     it_fails_on "struct X { var foo: Int var xyz: String } struct Y { var bar: Int var xyz: Bool } x = new X x as Y", /Cannot cast X to Y/
     it_types "y = Pointer.malloc(Int, 1) y as *Float", "*Float"
     it_types "x = 10 y = &x y as *Int", "*Int"
+
+    # Generics
+    it_types "class X<A, B> {}", nil
+    it_types "class X<A> { var a: A } new X<String>.a", "String"
+    it_types "class X<A> { def get_a() -> A 10 } new X<Int>.get_a()", "Int"
+    it_types "class X { var foo: Int } class Y<T> :: X { def get_foo() -> T @foo } new Y<Int>.get_foo()", "Int"
 end
