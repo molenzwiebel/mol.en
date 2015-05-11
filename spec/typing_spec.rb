@@ -33,6 +33,7 @@ describe TypingVisitor do
     it_types "x = 10 x", "Int"
     it_fails_on "x = 10 for(,true,) { y = 5 } y", /Undefined variable 'y'/
     it_fails_on "x = 10 x = true", /Cannot assign Bool to 'x'/
+    it_fails_on "class X { def test() this = 10 } new X.test()", /Cannot reassign this!/
 
     # If statements
     it_types "if (true) { 10 } else { 11 }", nil

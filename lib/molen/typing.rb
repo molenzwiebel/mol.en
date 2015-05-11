@@ -313,6 +313,8 @@ module Molen
             node.value.accept self # Check value.
 
             if node.name.is_a? Identifier then
+                node.raise "Cannot reassign this!" if node.name.value == "this" && @current_function && @current_function.owner.is_a?(ClassDef) && @current_function.owner_type
+
                 old_type = @scope[node.name.value]
                 unless old_type
                     old_type = node.value.type

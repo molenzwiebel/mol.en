@@ -124,9 +124,8 @@ module Molen
         end
 
         def visit_instance_variable(node)
-            obj_ptr = builder.load @variable_pointers["this"]
             index = node.owner.instance_var_index node.value
-            builder.load builder.gep(obj_ptr, [LLVM::Int(0), LLVM::Int(index)], node.value + "_ptr"), node.value
+            builder.load builder.gep(@variable_pointers["this"], [LLVM::Int(0), LLVM::Int(index)], node.value + "_ptr")
         end
 
         def visit_pointer_of(node)
@@ -161,7 +160,7 @@ module Molen
                 val = node.value.accept(self)
                 val = builder.bit_cast(val, node.type.llvm_type) if node.type != node.value.type
 
-                obj_ptr = builder.load @variable_pointers["this"]
+                obj_ptr = @variable_pointers["this"]
                 index = node.name.owner.instance_var_index node.name.value
                 builder.store val, builder.gep(obj_ptr, [LLVM::Int(0), LLVM::Int(index)], node.name.value + "_ptr")
                 return val
@@ -313,9 +312,13 @@ module Molen
             with_new_variable_scope(false) do
                 # Save each variable to a fresh pointer so you can change function arguments
                 args.each_with_index do |arg, i|
-                    ptr = builder.alloca arg.type.llvm_type, arg.name
-                    @variable_pointers.define arg.name, ptr
-                    builder.store func.params[i], ptr
+                    if i == 0 && node.owner.is_a?(ClassDef) && node.owner_type then
+                        @variable_pointers.define "this", func.params[i]
+                    else
+                        ptr = builder.alloca arg.type.llvm_type, arg.name
+                        @variable_pointers.define arg.name, ptr
+                        builder.store func.params[i], ptr
+                    end
                 end
 
                 node.body.accept self
