@@ -426,10 +426,24 @@ module Molen
         end
 
         def allocate_string(val_ptr)
-            allocated_struct = builder.malloc mod["String"].llvm_struct, "String"
-            populate_vtable allocated_struct, mod["String"]
-            builder.store val_ptr, builder.struct_gep(allocated_struct, 2)
-            allocated_struct
+            unless llvm_mod.functions["__do_allocate_string"]
+                old_pos = builder.insert_block
+
+                func = llvm_mod.functions.add("__do_allocate_string", [LLVM::Pointer(LLVM::Int8)], mod["String"].llvm_type)
+                func.linkage = :internal
+                builder.position_at_end func.basic_blocks.append("entry")
+
+                allocated_struct = builder.malloc mod["String"].llvm_struct, "String"
+                memset allocated_struct, LLVM::Int(0), mod["String"].llvm_struct.size
+                populate_vtable allocated_struct, mod["String"]
+
+                builder.store func.params[0], builder.struct_gep(allocated_struct, 2)
+                builder.ret allocated_struct
+
+                builder.position_at_end old_pos
+            end
+
+            builder.call llvm_mod.functions["__do_allocate_string"], val_ptr
         end
 
         def add_global(name, val)
