@@ -112,6 +112,11 @@ module Molen
                 PointerOf.new expr
             end
 
+            expr -> tok { tok.is_keyword? "sizeof" } do
+                next_token # Consume sizeof
+                SizeOf.new parse_type
+            end
+
             infix 11, -> x { x.is_operator? "+" }, &create_binary_parser(11)
             infix 11, -> x { x.is_operator? "-" }, &create_binary_parser(11)
             infix 12, -> x { x.is_operator? "*" }, &create_binary_parser(12)
@@ -146,7 +151,6 @@ module Molen
                 right = parse_expression 50
                 raise_error "Expected identifier or call after '.'", token unless right.is_a?(Call) or right.is_a?(Identifier)
 
-                next PointerMalloc.new right.args if (left.is_a?(Constant) and left.value == "Pointer") and (right.is_a?(Call) and right.name == "malloc")
                 next Call.new left, right.name, right.args if right.is_a? Call
                 next MemberAccess.new left, right
             end

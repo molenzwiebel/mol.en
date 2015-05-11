@@ -100,6 +100,10 @@ module Molen
             node.contents.each {|n| n.accept self}
         end
 
+        def visit_size_of(node)
+            node.size_type.llvm_type.is_a?(LLVM::Type) ? node.size_type.llvm_type.size : node.size_type.llvm_type.type.size
+        end
+
         def visit_native_body(node)
             instance_exec *builder.insert_block.parent.params.to_a, &node.block
         end
@@ -132,11 +136,6 @@ module Molen
             end
             ptr = builder.load(ptr) if node.expr.type.is_a? StructType
             ptr
-        end
-
-        def visit_pointer_malloc(node)
-            type = node.args[0].type.is_a?(StructType) ? node.args[0].type.llvm_struct : node.args[0].type.llvm_type
-            builder.array_malloc type, node.args[1].accept(self)
         end
 
         def visit_assign(node)

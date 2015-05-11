@@ -122,13 +122,6 @@ describe TypingVisitor do
     it_types "def do_something(arg: **Int) true x = 10 y = &x do_something(&y)", nil
     #it_fails_on "def do_something(arg: **Int) true x = 10 do_something(&x)", /No function with name 'do_something' and matching parameters found \(given \*Int\)/
 
-    # Pointer.malloc
-    it_types "Pointer.malloc(Int, 10)", "*Int"
-    it_types "Pointer.malloc(String, 10)", "*String"
-    it_fails_on "Pointer.malloc()", /Expected 2 arguments to Pointer\.malloc/
-    it_fails_on "Pointer.malloc(10, 10)", /Expected first argument to Pointer.malloc to be a type/
-    it_fails_on "Pointer.malloc(Int, true)", /Expected second argument to Pointer.malloc to be an int/
-
     # Casting
     it_types "class X {} new X as Object", "Object"
     it_types "class X {} a = new X b = &a b as *Object", "*Object"
@@ -144,4 +137,10 @@ describe TypingVisitor do
     it_types "class X<A> { var a: A } new X<String>.a", "String"
     it_types "class X<A> { def get_a() -> A 10 } new X<Int>.get_a()", "Int"
     it_types "class X { var foo: Int } class Y<T> :: X { def get_foo() -> T @foo } new Y<Int>.get_foo()", "Int"
+
+    # Sizeof
+    it_types "sizeof Int", "Long"
+    it_types "class Foo {} sizeof Foo", "Long"
+    it_fails_on "sizeof Foo", /Undefined type 'Foo'/
+    it_types "class Foo<X> {} sizeof Foo<Object>", "Long"
 end

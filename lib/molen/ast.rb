@@ -118,12 +118,12 @@ module Molen
         end
     end
 
-    class PointerMalloc < Expression
-        attr_accessor :args
-        attr_eq :args
+    class SizeOf < Expression
+        attr_accessor :size_type
+        attr_eq :size_type
 
-        def initialize(args)
-            @args = args
+        def initialize(size_type)
+            @size_type = size_type
         end
     end
 
