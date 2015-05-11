@@ -84,8 +84,7 @@ module Molen
             end
 
             expr -> tok { tok.is_keyword? "new" } do
-                expect_next :constant
-                name = parse_type
+                name = expect_next_and_consume(:constant).value
                 types = []
                 if token.is?("<") then
                     types = parse_delimited("<", ",", ">") { |parser| parser.parse_type }
@@ -385,9 +384,8 @@ module Molen
             end
 
             type = expect_and_consume(:constant).value
-            while token.is?("[")
-                expect_next_and_consume "]"
-                type += "[]"
+            if token.is?("<")
+                type = type + "<" + parse_delimited("<", ",", ">"){|x| x.parse_type}.join(", ") + ">"
             end
             type
         end

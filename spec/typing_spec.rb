@@ -57,18 +57,15 @@ describe TypingVisitor do
     # Arrays, array common superclass deducing, __index_get, __index_set
     it_fails_on "[]", /Cannot deduce type of array: No initial elements or type given\./
     it_fails_on "[1, 3.3]", /Cannot deduce type of array: No common superclass found\./
-    it_types "new String[](10)", "String[]"
-    it_types "new String[][](10)", "String[][]"
-    it_fails_on "new Bla[](10)", /Undefined type 'Bla'/
     it_types "x = [1, 2, 3] x[0]", "Int"
-    it_types "x = [[1], [2]] x[0]", "Int[]"
+    it_types "x = [[1], [2]] x[0]", "Array<Int>"
     it_types "x = [[1], [2]] x[0][0]", "Int"
     it_types "x = [0, 2] x[0] = 1", "Int"
-    it_types "[10]", "Int[]"
-    it_types "[10, 3, 4]", "Int[]"
-    it_types "[[1,3], [3, 2]]", "Int[][]"
-    it_types "class X {} class Y :: X {} [new X, new Y]", "X[]"
-    it_types "class X {} class Y {} [new X, new Y]", "Object[]"
+    it_types "[10]", "Array<Int>"
+    it_types "[10, 3, 4]", "Array<Int>"
+    it_types "[[1,3], [3, 2]]", "Array<Array<Int>>"
+    it_types "class X {} class Y :: X {} [new X, new Y]", "Array<X>"
+    it_types "class X {} class Y {} [new X, new Y]", "Array<Object>"
     it_fails_on "x = [1, 2] x[0] = 3.14", /No function with name '__index_set' \(on object of type Int\[\]\) and matching parameters found \(given Int, Double\)/
     it_fails_on "x = [1, 2] x[1.0] = 3", /No function with name '__index_set' \(on object of type Int\[\]\) and matching parameters found \(given Double, Int\)/
     it_fails_on "x = 3 x[3]", /No function with name '__index_get'/
@@ -96,7 +93,7 @@ describe TypingVisitor do
     # Method overloading
     it_types "def test() -> Int 10 def test(a: Int) -> Double 10.1 test()", "Int"
     it_types "def test() -> Int 10 def test(a: Int) -> Double 10.1 test(1)", "Double"
-    it_types "def test() -> Int[] new Int[]() test()", "Int[]"
+    it_types "def test() -> Array<Int> new Array<Int> test()", "Array<Int>"
     it_types "class Int { def test() -> Int this } 10.test()", "Int"
 
     # Static functions
@@ -139,8 +136,6 @@ describe TypingVisitor do
     it_fails_on "10 as Object", /Cannot cast Int to Object/
     it_types "struct X { var foo: Int var xyz: String } struct Y { var bar: Int } x = new X x as Y", "Y"
     it_fails_on "struct X { var foo: Int var xyz: String } struct Y { var bar: Int var xyz: Bool } x = new X x as Y", /Cannot cast X to Y/
-    it_types "y = Pointer.malloc(Int, 1) y as Int[]", "Int[]"
-    #it_types "class Foo {} y = Pointer.malloc(Foo, 1) y as Foo", "Foo"
+    it_types "y = Pointer.malloc(Int, 1) y as *Float", "*Float"
     it_types "x = 10 y = &x y as *Int", "*Int"
-    #it_fails_on "x = 10 y = &x z = &y z as *Int", /Cannot cast \*\*Int to \*Int/
 end

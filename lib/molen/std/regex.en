@@ -30,7 +30,7 @@ class Regex {
             buf = Pointer.malloc(Char, 100)
             C.regerror(res, &@regex, buf, 100)
 
-            CUtil.assert(false, "Error compiling regex '" + src + "': " + new String(buf))
+            CUtil.assert(false, "Error compiling regex '" + src + "': " + String.from_cstr(buf))
         }
     }
 
@@ -45,14 +45,14 @@ class Regex {
         res = C.regexec(&@regex, target.cstr() + start, num_captures, matches, 0)
 
         if (res == 0) {
-            return new RegexMatch(new String(target.cstr() + start), matches)
+            return new RegexMatch(String.from_cstr(target.cstr() + start), matches)
         } elseif (res == 1) {
             return null
         } else {
             buf = Pointer.malloc(Char, 100)
             C.regerror(res, &@regex, buf, 100)
 
-            CUtil.assert(false, "Error matching regex: " + new String(buf))
+            CUtil.assert(false, "Error matching regex: " + String.from_cstr(buf))
             return null
         }
     }

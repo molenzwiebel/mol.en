@@ -6,8 +6,10 @@ extern C {
 }
 
 class String {
-    def create(ptr: *Char) {
-        @value = ptr
+    static def from_cstr(ptr: *Char) {
+        str = new String
+        str.value = ptr
+        return str
     }
 
     def length() -> Int {
@@ -28,8 +30,8 @@ class String {
         (@value + index).set_value(val[0])
     }
 
-    def chars() -> Char[] {
-        ret = new Char[]
+    def chars() -> Array<Char> {
+        ret = new Array<Char>
         for (i = 0, i < @length(), i = i + 1)
             ret.add(this[i])
         ret
@@ -47,7 +49,7 @@ class String {
         C.strncpy(buffer, @value + start, count)
         (buffer + count).set_value(0.to_char())
 
-        new String(buffer)
+        String.from_cstr(buffer)
     }
 
     def __eq(other: String) -> Bool {

@@ -41,12 +41,9 @@ describe Parser do
     it_parses "return", Return.new(nil)
     it_parses "return 10", Return.new(10.literal)
     it_parses "var x: Int", InstanceVar.new("x", "Int")
-    it_parses "var x: Int[]", InstanceVar.new("x", "Int[]")
-    it_parses "var x: Int[][]", InstanceVar.new("x", "Int[][]")
 
     it_parses "var x: *Int", InstanceVar.new("x", "*Int")
     it_parses "var x: **Int", InstanceVar.new("x", "**Int")
-    it_parses "var x: **Int[][]", InstanceVar.new("x", "**Int[][]")
 
     it_parses "&x", PointerOf.new("x".ident)
     it_parses "&@test", PointerOf.new(InstanceVariable.new("test"))
@@ -72,9 +69,6 @@ describe Parser do
     it_parses "new Test<A, B>", New.new("Test".const, ["A", "B"], [])
     it_parses "new Test<A, B>(10)", New.new("Test".const, ["A", "B"], [10.literal])
 
-    it_parses "new Test[](10)", NewArray.new("Test[]", [10.literal])
-    it_parses "new Test[]", NewArray.new("Test[]", [])
-
     it_parses "[1, 2, 3]", NewArray.new(nil, [1.literal, 2.literal, 3.literal])
 
     Molen::OPERATOR_NAMES.each do |op, name|
@@ -98,7 +92,7 @@ describe Parser do
     it_parses "def test() {}", Function.new(nil, "test", nil, [], nil)
     it_parses "def test() { 10 }", Function.new(nil, "test", nil, [], Body.from(10.literal))
 
-    it_parses "def test(a: Int[], b: Bool[]) -> Int[] 10", Function.new(nil, "test", "Int[]", [FunctionArg.new("a", "Int[]"), FunctionArg.new("b", "Bool[]")], Body.from(Return.new(10.literal)))
+    it_parses "def test(a: Array<Int>, b: Array<Bool>) -> Hash<Int, Bool> 10", Function.new(nil, "test", "Hash<Int, Bool>", [FunctionArg.new("a", "Array<Int>"), FunctionArg.new("b", "Array<Bool>")], Body.from(Return.new(10.literal)))
 
     it_parses "if (true) 10", If.new(Call.new(true.literal, "to_bool", []), Body.from(10.literal), nil, [])
     it_parses "if (true) 10 else 11", If.new(Call.new(true.literal, "to_bool", []), Body.from(10.literal), Body.from(11.literal), [])
