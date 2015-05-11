@@ -169,7 +169,7 @@ module Molen
         def visit_member_access(node)
             node.object.accept self
             obj_type = node.object.type
-            node.raise "Can only access members of objects and structs" unless obj_type.is_a?(ObjectType) or obj_type.is_a?(StructType)
+            node.raise "Can only access members of objects and structs. Tried to access #{node.field.value} on #{obj_type.name}" unless obj_type.is_a?(ObjectType) or obj_type.is_a?(StructType)
             node.raise "Unknown member #{node.field.value} on object of type #{obj_type.name}" unless obj_type.instance_variables[node.field.value]
             node.type = obj_type.instance_variables[node.field.value]
         end
@@ -341,7 +341,7 @@ module Molen
             node.type = node_type unless node.type_vars.size > 0
 
             node.instance_vars.each do |var|
-                type = node_type.generic_types.keys.include?(var.type) ? var.type : resolve_type(var.type)
+                type = node_type.generic_types.keys.include?(var.type.gsub(/\*/, '')) ? var.type : resolve_type(var.type)
                 node_type.instance_variables.define var.name, type
             end
             node.functions.each do |func|
@@ -422,6 +422,9 @@ module Molen
             if @current_function && @current_function.owner_type && @current_function.owner_type.is_a?(ObjectType) && @current_function.owner_type.generic_types[name] then
                 return @current_function.owner_type.generic_types[name]
             end
+            if @current_generic_types && @current_generic_types[name] then
+                return @current_generic_types[name]
+            end
             return mod[name] if mod[name]
 
             if name[0] == "*" then
@@ -441,10 +444,17 @@ module Molen
             raise "Undefined type #{name}. #{type_name} was found but is not an object." unless type.is_a? ObjectType
             raise "Undefined type #{name}. #{type_name} was found but is not generic." unless type.generic_types.size > 0
 
-            types = Hash[type.generic_types.keys.zip(generic_types)]
+            old = @current_generic_types
+            @current_generic_types = types = Hash[type.generic_types.keys.zip(generic_types)]
 
             new_type = ObjectType.new(type_name, type.superclass, types)
             mod[new_type.name] = new_type
+
+            type.instance_variables.this.each do |name, type|
+                type = resolve_type(type) if type.is_a?(String)
+                new_type.instance_variables.define name, type
+            end
+            @current_generic_types = old
 
             type.functions.this.each do |name, funcs|
                 new_funcs = DeepClone.clone(funcs)
@@ -452,11 +462,6 @@ module Molen
                     func.owner_type = new_type
                     func.accept self
                 end
-            end
-
-            type.instance_variables.this.each do |name, type|
-                type = types[type] if type.is_a?(String)
-                new_type.instance_variables.define name, type
             end
 
             return new_type
