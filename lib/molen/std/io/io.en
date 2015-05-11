@@ -27,7 +27,7 @@ class IO {
     }
 
     def get_line() -> String {
-        buffer = Pointer.malloc(Char, 0)
+        buffer = Pointer.malloc(0L) as *Char
         cap = 0L
         len = C.getline(&buffer, &cap, @in)
         if (len > 0) return new String(buffer)

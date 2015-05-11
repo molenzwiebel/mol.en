@@ -6,7 +6,7 @@ extern C {
 }
 
 class String {
-    static def from_cstr(ptr: *Char) {
+    static def from_cstr(ptr: *Char) -> String {
         str = new String
         str.value = ptr
         return str
@@ -45,7 +45,7 @@ class String {
         CUtil.assert(start >= 0, "Negative argument to String.substring")
         CUtil.assert(start + count <= @length(), "String.substring out of index")
 
-        buffer = Pointer.malloc(Char, count + 1)
+        buffer = Pointer.malloc(sizeof Char * (count + 1)) as *Char
         C.strncpy(buffer, @value + start, count)
         (buffer + count).set_value(0.to_char())
 

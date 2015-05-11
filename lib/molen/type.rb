@@ -33,22 +33,22 @@ module Molen
             ret
         end
 
-        def create_func(name, return_type, *args, &block)
+        def create_func(static, name, return_type, *args, &block)
             body = NativeBody.new block
             func_def = Function.new ClassDef.new(nil, nil, [], []), name, return_type, args.each_with_index.map{|type, id| FunctionArg.new "arg#{id.to_s}", type}, nil
             func_def.body = body
-            func_def.owner_type = self
+            func_def.owner_type = self unless static
             func_def.is_prototype_typed = true
             return func_def
         end
 
         def define_native_function(name, return_type, *args, &block)
-            f = create_func name, return_type, *args, &block
+            f = create_func false, name, return_type, *args, &block
             functions.has_local_key?(name) ? functions[name] << f : functions.define(name, [f])
         end
 
         def define_static_native_function(name, return_type, *args, &block)
-            class_functions[name] = (class_functions[name] || []) << create_func(name, return_type, *args, &block)
+            class_functions[name] = (class_functions[name] || []) << create_func(true, name, return_type, *args, &block)
         end
     end
 

@@ -27,7 +27,7 @@ class Regex {
 
         res = C.regcomp(&@regex, src.cstr(), 1)
         if (res != 0) {
-            buf = Pointer.malloc(Char, 100)
+            buf = Pointer.malloc(sizeof Char * 100) as *Char
             C.regerror(res, &@regex, buf, 100)
 
             CUtil.assert(false, "Error compiling regex '" + src + "': " + String.from_cstr(buf))
@@ -41,7 +41,7 @@ class Regex {
     def match(target: String, start: Int) -> RegexMatch {
         num_captures = @regex.nsub + 1
 
-        matches = Pointer.malloc(C_RegexMatch, num_captures.to_int())
+        matches = Pointer.malloc(sizeof C_RegexMatch * num_captures.to_int())
         res = C.regexec(&@regex, target.cstr() + start, num_captures, matches, 0)
 
         if (res == 0) {
@@ -49,7 +49,7 @@ class Regex {
         } elseif (res == 1) {
             return null
         } else {
-            buf = Pointer.malloc(Char, 100)
+            buf = Pointer.malloc(sizeof Char * 100) as *Char
             C.regerror(res, &@regex, buf, 100)
 
             CUtil.assert(false, "Error matching regex: " + String.from_cstr(buf))

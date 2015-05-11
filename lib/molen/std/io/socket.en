@@ -30,7 +30,7 @@ class Socket :: IO {
     }
 
     def ip_addr() -> String {
-        buf = Pointer.malloc(Char, 16)
+        buf = Pointer.malloc(sizeof Char * 16) as *Char
         C.inet_ntop(2, &@addr, buf, 16)
         new String(buf)
     }

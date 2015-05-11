@@ -7,6 +7,7 @@ module Molen
             add_numeric_natives
             add_to_s_natives
             add_other_natives
+            add_pointer_malloc
 
             add_std
         end
@@ -83,9 +84,14 @@ module Molen
             end
         end
 
+        def add_pointer_malloc
+            self["Pointer"].define_static_native_function("malloc", self["*Void"], self["Long"]) do |size|
+                builder.ret builder.malloc size
+            end
+        end
+
         def add_std
             Dir[File.expand_path("../std/*.en",  __FILE__)].each do |file|
-                #Molen.type(self, Parser.parse(File.read(file), file))
                 import File.basename(file), nil
             end
         end

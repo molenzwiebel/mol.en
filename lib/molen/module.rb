@@ -22,6 +22,7 @@ module Molen
             self["String"].instance_variables.define "value", PointerType.new(self, self["Char"])
 
             self["*Void"] = PointerType.new self, self["Char"]
+            self["Pointer"] = ObjectType.new "Pointer"
 
             add_natives
         end

@@ -101,7 +101,10 @@ module Molen
         end
 
         def visit_size_of(node)
-            node.size_type.llvm_type.is_a?(LLVM::Type) ? node.size_type.llvm_type.size : node.size_type.llvm_type.type.size
+            type = node.size_type.llvm_type
+            type = node.size_type.llvm_struct if node.size_type.is_a?(StructType)
+
+            type.is_a?(LLVM::Type) ? type.size : type.type.size
         end
 
         def visit_native_body(node)
@@ -283,7 +286,7 @@ module Molen
         def generate_function(node)
             # Add a 'this' argument at the start if this is an instance method
             args = node.args
-            args = [FunctionArg.new("this", node.owner_type)] + args if node.owner.is_a?(ClassDef)
+            args = [FunctionArg.new("this", node.owner_type)] + args if node.owner.is_a?(ClassDef) && node.owner_type
 
             # Compute types and create the actual LLVM function
             ret_type = node.return_type ? node.return_type.llvm_type : LLVM.Void
@@ -437,7 +440,7 @@ module Molen
 
     class Function
         def ir_name
-            if owner then
+            if owner && owner_type then
                 "#{owner_type.name}##{name}<#{args.map(&:type).map(&:name).join ","}>"
             else
                 "#{name}<#{args.map(&:type).map(&:name).join ","}>"
