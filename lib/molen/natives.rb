@@ -86,7 +86,8 @@ module Molen
 
         def add_pointer_malloc
             self["Pointer"].define_static_native_function("malloc", self["*Void"], self["Long"]) do |size|
-                builder.ret builder.malloc size
+                malloc_func = llvm_mod.functions["malloc"] || llvm_mod.functions.add("malloc", [LLVM::Int64], LLVM::Pointer(LLVM::Int8))
+                builder.ret builder.call malloc_func, size
             end
         end
 

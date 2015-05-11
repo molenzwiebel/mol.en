@@ -17,7 +17,7 @@ module Molen
 
         engine = LLVM::JITCompiler.new mod
         optimizer = LLVM::PassManager.new engine
-        optimizer << :arg_promote << :gdce << :global_opt << :gvn << :reassociate << :instcombine << :basicaa << :jump_threading << :simplifycfg << :inline << :mem2reg
+        optimizer << :arg_promote << :gdce << :global_opt << :gvn << :reassociate << :instcombine << :basicaa << :jump_threading << :simplifycfg << :inline << :mem2reg << :loop_unroll << :loop_rotate << :loop_deletion << :tailcallelim
         5.times { optimizer.run mod }
         mod.verify
 
