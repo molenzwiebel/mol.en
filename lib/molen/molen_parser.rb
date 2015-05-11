@@ -84,16 +84,12 @@ module Molen
             end
 
             expr -> tok { tok.is_keyword? "new" } do
-                name = expect_next_and_consume(:constant).value
-                types = []
-                if token.is?("<") then
-                    types = parse_delimited("<", ",", ">") { |parser| parser.parse_type }
-                end
+                expect_next :constant
+                type = parse_type
 
                 args = !token.is?("(") ? [] : parse_delimited { |parser| parser.parse_expression }
 
-                next New.new Constant.new(name), types, args unless name.include? "["
-                NewArray.new name, args
+                next New.new Constant.new(type), args
             end
 
             expr -> tok { tok.is? "[" } do

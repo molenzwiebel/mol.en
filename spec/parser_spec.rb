@@ -60,14 +60,14 @@ describe Parser do
     it_errors_on "(test", /Expected token of type RPAREN/
 
     it_parses "test(10, 11)", Call.new(nil, "test", [10.literal, 11.literal])
-    it_parses "new Test", New.new("Test".const, [], [])
-    it_parses "new Test()", New.new("Test".const, [], [])
-    it_parses "new Test(10, 11)", New.new("Test".const, [], [10.literal, 11.literal])
+    it_parses "new Test", New.new("Test".const, [])
+    it_parses "new Test()", New.new("Test".const, [])
+    it_parses "new Test(10, 11)", New.new("Test".const, [10.literal, 11.literal])
     it_errors_on "new test()", /Expected token of type CONSTANT/
 
-    it_parses "new Test<A>", New.new("Test".const, ["A"], [])
-    it_parses "new Test<A, B>", New.new("Test".const, ["A", "B"], [])
-    it_parses "new Test<A, B>(10)", New.new("Test".const, ["A", "B"], [10.literal])
+    it_parses "new Test<A>", New.new("Test<A>".const, [])
+    it_parses "new Test<A, B>", New.new("Test<A, B>".const, [])
+    it_parses "new Test<A, B>(10)", New.new("Test<A, B>".const, [10.literal])
 
     it_parses "[1, 2, 3]", NewArray.new(nil, [1.literal, 2.literal, 3.literal])
 

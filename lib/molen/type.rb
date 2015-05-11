@@ -248,7 +248,6 @@ module Molen
 
         def castable_to?(other)
             return true, 0 if other.is_a?(PointerType)
-            return true, 0 if other.is_a?(ArrayType) && other.element_type == ptr_type
             return false, -1
         end
     end
@@ -263,92 +262,6 @@ module Molen
 
         def ==(other)
             other.class == self.class and other.name == name and other.location == location
-        end
-
-        def castable_to?(other)
-            return other == self, 0
-        end
-    end
-
-    class ArrayType < Type
-        attr_accessor :element_type
-
-        def initialize(mod, el_type)
-            super(el_type.name + "[]", nil)
-            @element_type = el_type
-
-            define_native_function "__index_get", el_type, mod["Int"] do |this, index|
-                arr_buffer = builder.load builder.struct_gep this, 2
-                builder.ret builder.load builder.gep arr_buffer, [index]
-            end
-
-            define_native_function "__index_set", el_type, mod["Int"], el_type do |this, index, obj|
-                arr_buffer = builder.load builder.struct_gep this, 2
-                builder.store obj, builder.gep(arr_buffer, [index])
-                builder.ret obj
-            end
-
-            define_native_function "size", mod["Int"] do |this|
-                builder.ret builder.load builder.struct_gep this, 0
-            end
-
-            define_native_function "capacity", mod["Int"] do |this|
-                builder.ret builder.load builder.struct_gep this, 1
-            end
-
-            define_native_function("is_null", mod["Bool"]) do |this|
-                builder.ret builder.icmp :eq, builder.ptr2int(this, LLVM::Int), LLVM::Int(0)
-            end
-
-            define_native_function "add", el_type, el_type do |this, arg|
-                realloc_func = llvm_mod.functions["realloc"] || llvm_mod.functions.add("realloc", [LLVM::Pointer(LLVM::Int8), LLVM::Int], LLVM::Pointer(LLVM::Int8))
-
-                the_func = builder.insert_block.parent
-                resize_block = the_func.basic_blocks.append("resize")
-                exit_block = the_func.basic_blocks.append("exit")
-
-                arr_size = builder.load builder.struct_gep(this, 0)
-                arr_cap = builder.load builder.struct_gep(this, 1)
-                arr_el_size = el_type.llvm_type.is_a?(LLVM::Type) ? el_type.llvm_type.size : el_type.llvm_type.type.size
-                builder.cond(builder.icmp(:eq, arr_size, arr_cap), resize_block, exit_block)
-
-                builder.position_at_end resize_block
-                new_capacity = builder.mul arr_cap, LLVM::Int(2)
-                new_buffer_size = builder.mul new_capacity, builder.trunc(arr_el_size, LLVM::Int32)
-
-                old_buffer = builder.load builder.struct_gep(this, 2)
-                old_buffer = builder.bit_cast old_buffer, LLVM::Pointer(LLVM::Int8)
-                new_buffer = builder.call realloc_func, old_buffer, new_buffer_size
-
-                builder.store builder.bit_cast(new_buffer, LLVM::Pointer(el_type.llvm_type)), builder.struct_gep(this, 2)
-                builder.store new_capacity, builder.struct_gep(this, 1)
-                builder.br exit_block
-
-                builder.position_at_end exit_block
-                new_size = builder.add arr_size, LLVM::Int(1)
-                builder.store new_size, builder.struct_gep(this, 0)
-
-                arr_buffer = builder.load builder.struct_gep this, 2
-                builder.store arg, builder.gep(arr_buffer, [arr_size])
-                builder.ret arg
-            end
-        end
-
-        def llvm_type
-            LLVM::Pointer llvm_struct
-        end
-
-        def llvm_struct
-            # First int is for size, second for capacity, third is the actual contents
-            LLVM::Struct LLVM::Int, LLVM::Int, LLVM::Pointer(element_type.llvm_type)
-        end
-
-        def llvm_size
-            4 + 4 + 8 # Size of two ints and a pointer
-        end
-
-        def ==(other)
-            other.class == self.class and other.element_type == element_type
         end
 
         def castable_to?(other)

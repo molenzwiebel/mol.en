@@ -309,14 +309,6 @@ module Molen
             node.raise "Function #{node.name} has a path that does not return! #{node.body.definitely_returns?}, #{node.return_type.class.name}" if !node.body.definitely_returns? && node.return_type != nil
         end
 
-        def visit_array_access(node)
-            node.array.accept(self)
-            node.index.accept(self)
-            node.raise "Cannot index array: Target is not an array" unless node.array.type.is_a? ArrayType
-            node.raise "Cannot index array with type #{node.index.type.name}, Int expected" unless node.index.type == mod["Int"]
-            node.type = node.array.type.element_type
-        end
-
         # Types and validates the assignment of a variable. Defines
         # the variable if it wasn't set already.
         def visit_assign(node)
@@ -330,7 +322,7 @@ module Molen
                 end
 
                 node.type = node.name.type = old_type
-                node.raise "Cannot assign void to #{node.name.value}" if node.value.type.nil? && !(old_type.is_a?(ObjectType) || old_type.is_a?(PointerType) || old_type.is_a?(ArrayType))
+                node.raise "Cannot assign void to #{node.name.value}" if node.value.type.nil? && !(old_type.is_a?(ObjectType) || old_type.is_a?(PointerType))
                 node.raise "Cannot assign #{node.value.type.name} to '#{node.name.value}' (a #{old_type.name})" unless node.value.type.castable_to?(old_type).first
             else
                 node.name.accept self
@@ -380,7 +372,7 @@ module Molen
 
             node.functions.each do |func|
                 func.accept self
-                next if node.type.class_functions[func.name] # Assume that methods are differently named, so just ignore it if a function is defined twice 
+                next if node.type.class_functions[func.name] # Assume that methods are differently named, so just ignore it if a function is defined twice
                 node.type.class_functions[func.name] = (node.type.class_functions[func.name] || []) << func
             end
         end
@@ -431,18 +423,19 @@ module Molen
                 return mod[name] = PointerType.new(mod, resolve_type(name[1..-1]))
             end
 
-            unless name.include? "["
-                # It is not an array and it wasn't in mod, which means it is undefined
+            unless name =~ /(.+?)<(.*)>/
+                # It is not a generic, it means its undefined.
                 raise "Undefined type '#{name}'"
             end
 
-            mod[name] = ArrayType.new mod, resolve_type(name[0...-2])
+            # TODO
+            return nil
         end
     end
 end
 
 class NilClass
     def castable_to?(other)
-        return other.is_a?(ObjectType) || other.is_a?(PointerType) || other.is_a?(ArrayType), 0
+        return other.is_a?(ObjectType) || other.is_a?(PointerType), 0
     end
 end
