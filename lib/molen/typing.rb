@@ -1,3 +1,4 @@
+require "deep_clone"
 
 module Molen
     class ASTNode; attr_accessor :type; end
@@ -7,11 +8,11 @@ module Molen
     class Return; attr_accessor :func_ret_type; end
     class Import; attr_accessor :imported_body; end
     class Function
-        attr_accessor :is_prototype_typed, :is_body_typed
+        attr_accessor :is_prototype_typed, :is_body_typed, :owner_type
 
         def add_overrider(node)
             @overriding_functions = {} unless @overriding_functions
-            @overriding_functions[node.owner.type.name] = node
+            @overriding_functions[node.owner_type.name] = node
         end
 
         def overriding_functions
@@ -121,8 +122,8 @@ module Molen
         # if the variable was not found.
         def visit_instance_variable(node)
             node.raise "Cannot access instance variables if not in a function" unless @current_function
-            node.raise "Cannot access instance variables if not in a class function" unless @current_function.owner
-            obj_type = @current_function.owner.type
+            node.raise "Cannot access instance variables if not in a class function" unless @current_function.owner_type
+            obj_type = @current_function.owner_type
             node.raise "Cannot access instance variable of primitive type" if obj_type.is_a? PrimitiveType
             node.raise "Unknown instance variable #{node.value} on object of type #{obj_type.name}" unless obj_type.instance_variables[node.value]
             node.type = obj_type.instance_variables[node.value]
@@ -186,6 +187,7 @@ module Molen
             node.args.each {|arg| arg.accept self}
             type = resolve_type node.type.value
             node.raise "Cannot instantiate primitive" if type.is_a? PrimitiveType
+            node.raise "Cannot instantiate generic type without type args" if type.generic_types.size > 0 && !node.type.value.include?("<")
             node.type = type
 
             if (fn = find_overloaded_method(node, node.type.functions, "create", node.args)) then
@@ -252,7 +254,6 @@ module Molen
         # Resolves the type of a function argument, or errors if
         # not found.
         def visit_function_arg(node)
-            node.raise "Unknown type #{node.type} for argument #{name}." unless resolve_type(node.type)
             node.type = resolve_type node.type
         end
 
@@ -260,11 +261,11 @@ module Molen
         # scope.
         def visit_function(node)
             func_scope = @functions
-            func_scope = node.owner.type.functions if node.owner
+            func_scope = node.owner_type.functions if node.owner_type
 
-            node.raise "Redefinition of #{node.owner.type.name rescue "<top level>"}##{node.name} with same argument types" unless assure_unique func_scope.this, node.name, node.args.map(&:type)
+            node.raise "Redefinition of #{node.owner_type.name rescue "<top level>"}##{node.name} with same argument types" unless assure_unique func_scope.this, node.name, node.args.map(&:type)
 
-            if node.owner && func_scope[node.name] && !func_scope.has_local_key?(node.name) then
+            if node.owner_type && func_scope[node.name] && !func_scope.has_local_key?(node.name) then
                 existing_functions = func_scope[node.name]
                 overrides_func = existing_functions.find do |func|
                     next false if func.args.size != node.args.size
@@ -282,9 +283,13 @@ module Molen
         end
 
         def type_function_prototype(node)
+            old_func = @current_function
+
+            @current_function = node
             node.return_type = node.return_type ? resolve_type(node.return_type) : nil
             node.args.each {|arg| arg.accept self}
             node.is_prototype_typed = true
+            @current_function = old_func
         end
 
         def type_function(node)
@@ -298,7 +303,7 @@ module Molen
 
             @current_function = node
             with_new_scope(false) do
-                @scope.define "this", node.owner.type if node.owner
+                @scope.define "this", node.owner_type if node.owner_type
                 node.args.each do |arg|
                     @scope.define arg.name, arg.type
                 end
@@ -337,19 +342,21 @@ module Molen
         def visit_class_def(node)
             superclass = mod[node.superclass]
             node.raise "Class #{node.superclass} (superclass of #{node.name}) not found!" unless superclass
-            node.type = mod.types[node.name] ||= ObjectType.new(node.name, superclass)
-
-            @scope.define node.name, node.type unless @scope.has_local_key? node.name
+            node_type = mod.types[node.name] ||= ObjectType.new(node.name, superclass, Hash[node.type_vars.map{|x| [x, nil]}])
+            node.type = node_type unless node.type_vars.size > 0
 
             node.instance_vars.each do |var|
-                type = resolve_type var.type
-                node.raise "Unknown type #{var.type} (used in #{node.name}##{var.name})" unless type
-                node.type.instance_variables.define var.name, type
+                type = node_type.generic_types.keys.include?(var.type) ? var.type : resolve_type(var.type)
+                node_type.instance_variables.define var.name, type
             end
-            node.functions.each { |func| func.accept self }
+            node.functions.each do |func|
+                func.owner_type = node_type
+                func.accept self
+                func.owner_type = nil if node.type_vars.size > 0
+            end
             node.class_functions.each do |func|
                 func.accept self
-                node.type.class_functions[func.name] = (node.type.class_functions[func.name] || []) << func
+                node_type.class_functions[func.name] = (node_type.class_functions[func.name] || []) << func
             end
         end
 
@@ -417,19 +424,72 @@ module Molen
         end
 
         def resolve_type(name)
+            if @current_function && @current_function.owner_type && @current_function.owner_type.generic_types[name] then
+                return @current_function.owner_type.generic_types[name]
+            end
             return mod[name] if mod[name]
 
             if name[0] == "*" then
                 return mod[name] = PointerType.new(mod, resolve_type(name[1..-1]))
             end
 
-            unless name =~ /(.+?)<(.*)>/
+            unless name =~ /(.+?)<(.+)>/
                 # It is not a generic, it means its undefined.
                 raise "Undefined type '#{name}'"
             end
 
-            # TODO
-            return nil
+            type_name, generic_args = /(.+?)<(.+)>/.match(name).captures
+
+            generic_types = split_generic_args("<" + generic_args + ">").map {|type_name| resolve_type type_name}
+            type = resolve_type type_name
+
+            raise "Undefined type #{name}. #{type_name} was found but is not an object." unless type.is_a? ObjectType
+            raise "Undefined type #{name}. #{type_name} was found but is not generic." unless type.generic_types.size > 0
+
+            types = Hash[type.generic_types.keys.zip(generic_types)]
+
+            new_type = ObjectType.new(type_name, type.superclass, types)
+            mod[new_type.name] = new_type
+
+            type.functions.this.each do |name, funcs|
+                new_funcs = DeepClone.clone(funcs)
+                new_funcs.each do |func|
+                    func.owner_type = new_type
+                    func.accept self
+                end
+            end
+
+            type.instance_variables.this.each do |name, type|
+                type = types[type] if type.is_a?(String)
+                new_type.instance_variables.define name, type
+            end
+
+            return new_type
+        end
+
+        def split_generic_args(str)
+            parts = []
+            cur_part = ""
+            level = 0
+            str.chars.each do |char|
+                if char == "<" then
+                    level += 1
+                    cur_part << "<" if level > 1
+                elsif char == ">" then
+                    cur_part << ">" if level > 1
+                    if level == 1 then
+                        parts << cur_part.strip
+                        cur_part = ""
+                    end
+                    level -= 1
+                elsif char == "," && level == 1 then
+                    parts << cur_part.strip
+                    cur_part = ""
+                else
+                    cur_part += char
+                end
+            end
+            parts
         end
     end
 end

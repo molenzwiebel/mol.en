@@ -183,7 +183,7 @@ module Molen
             if node.target_constructor then
                 create_func = @function_pointers[node.target_constructor]
                 create_func = generate_function(node.target_constructor) unless create_func
-                casted_this = builder.bit_cast allocated_struct, node.target_constructor.owner.type.llvm_type
+                casted_this = builder.bit_cast allocated_struct, node.target_constructor.owner_type.llvm_type
 
                 args = [casted_this]
                 node.args.each_with_index do |arg, i|
@@ -251,7 +251,7 @@ module Molen
 
             if node.object && !node.object.is_a?(Constant) then
                 obj = node.object.accept(self)
-                casted_this = builder.bit_cast obj, node.target_function.owner.type.llvm_type
+                casted_this = builder.bit_cast obj, node.target_function.owner_type.llvm_type
                 args = [casted_this] + args
             end
 
@@ -284,7 +284,7 @@ module Molen
         def generate_function(node)
             # Add a 'this' argument at the start if this is an instance method
             args = node.args
-            args = [FunctionArg.new("this", node.owner.type)] + args if node.owner.is_a?(ClassDef)
+            args = [FunctionArg.new("this", node.owner_type)] + args if node.owner.is_a?(ClassDef)
 
             # Compute types and create the actual LLVM function
             ret_type = node.return_type ? node.return_type.llvm_type : LLVM.Void
@@ -439,7 +439,7 @@ module Molen
     class Function
         def ir_name
             if owner then
-                "#{owner.type.name}##{name}<#{args.map(&:type).map(&:name).join ","}>"
+                "#{owner_type.name}##{name}<#{args.map(&:type).map(&:name).join ","}>"
             else
                 "#{name}<#{args.map(&:type).map(&:name).join ","}>"
             end

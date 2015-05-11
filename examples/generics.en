@@ -1,0 +1,31 @@
+class Pair<LeftType, RightType> {
+    var left: LeftType
+    var right: RightType
+
+    def create(l: LeftType, r: RightType) {
+        @left = l
+        @right = r
+    }
+
+    def get_left() -> LeftType @left
+    def get_right() -> RightType @right
+
+    def set_left(new_val: LeftType) -> LeftType @left = new_val
+    def set_right(new_val: RightType) -> RightType @right = new_val
+
+    def to_s() -> String {
+        "Pair[" + @left + ", " + @right + "]"
+    }
+}
+
+intStringPair = new Pair<Int, String>(42, "Answer")
+puts(intStringPair.to_s())
+
+stringObjectPair = new Pair<String, Object>("Empty Right", null)
+puts(stringObjectPair.get_left())
+
+if (stringObjectPair.get_right()) {
+    puts("Something weird happened")
+} else {
+    puts("Yep, right is null")
+}

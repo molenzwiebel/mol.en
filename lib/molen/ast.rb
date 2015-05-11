@@ -150,7 +150,7 @@ module Molen
         attr_eq :type, :args
 
         def initialize(type, args)
-            @type, @generic_types, @args = type, args
+            @type, @args = type, args
         end
     end
 
