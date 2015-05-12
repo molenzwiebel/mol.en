@@ -23,7 +23,7 @@ module Molen
 
             class_eval %Q(
                 def initialize(#{fields.map(&:to_s).join ", "})
-                    #{fields.map(&:to_s).map{|x| x.include? "body" ? "@#{x} = Body.from #{x}" : "@#{x} = #{x}"}.join("\n")}
+                    #{fields.map(&:to_s).map{|x| x.include?("body") ? "@#{x} = Body.from #{x}" : "@#{x} = #{x}"}.join("\n")}
                 end
             )
         end
@@ -68,7 +68,7 @@ module Molen
         end
     end
 
-    class Literal; attrs :value; end;
+    class Literal < ASTNode; attrs :value; end;
     class Str < Literal; end
     class Bool < Literal; end
     class Int < Literal; end
@@ -79,7 +79,7 @@ module Molen
     class Import < Literal; end
     class InstanceVariable < Literal; end
 
-    class Null; attrs; end;
+    class Null < ASTNode; attrs; end;
 
     class Call < Expression
         attrs :object, :name, :args
