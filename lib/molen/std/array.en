@@ -32,4 +32,13 @@ class Array<E> {
         (@buffer + index).set_value(value)
         return value
     }
+
+    def to_s() -> String {
+        res = "["
+        for (i = 0, i < @length, i = i + 1) {
+            if (i > 0) res = res + ", "
+            res = res + this[i].to_s()
+        }
+        res + "]"
+    }
 }
