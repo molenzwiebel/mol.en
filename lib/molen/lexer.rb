@@ -48,7 +48,7 @@ module Molen
 
             # Note that the order of these matters! This lexer is lazy, so it will always match `=` over `==` unless we specify `==` first.
             /==/                                => :operator,
-            /=/                                 => :operator,
+            /=/                                 => :special,
             /!=/                                => :operator
         }
 
