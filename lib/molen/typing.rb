@@ -61,9 +61,39 @@ module Molen
             node.type = program.string
         end
 
+        def visit_sizeof(node)
+            node.type = program.long
+        end
+
+        def visit_identifier(node)
+            node.type = @scope[node.value] || node.raise "Could not resolve variable #{node.value}"
+        end
+
+        def visit_constant(node)
+            node.type = UnresolvedSimpleType.new(node.value).resolve(@type_scope)
+            node.raise "Could not resolve constant #{node.value}" unless node.type
+            node.type = node.type.metaclass
+        end
+
+        def visit_assign(node)
+            node.value.accept self
+
+            if node.object.is_a?(Identifier) then
+                type = @scope[node.object.value]
+
+                unless type
+                    type = @scope[node.object.value] = node.value.type
+                end
+                node.type = node.object.type = type
+            else
+                node.object.accept self
+                node.type = node.object.type
+            end
+        end
+
         def visit_function(node)
             current_type.functions[node.name] << node
-            node.owner_type = current_type
+            node.owner_type = current_type unless current_type.is_a?(Program)
         end
 
         def type_function_prototype(node)
@@ -120,8 +150,10 @@ module Molen
                 scope = current_type
             end
 
-            possible_functions = scope.functions[node.name]
-            possible_functions.each { |x| type_function_prototype(x) unless x.is_prototype_typed }
+            possible_functions = scope.functions[node.name].reject do |func|
+                type_function_prototype(func) unless func.is_prototype_typed
+                func.args.size != node.args.size
+            end
             raise "No functions named #{node.name} found (searching in scope #{scope.class.name})!" if possible_functions.size == 0
 
             #TODO: Check overloading
