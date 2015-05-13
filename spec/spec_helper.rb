@@ -1,15 +1,13 @@
 require File.expand_path("../../lib/molen",  __FILE__)
 include Molen
 
-class Object
-    def return
-        Return.new self
-    end
-end
-
 class NilClass
     def literal
         Null.new
+    end
+
+    def type
+        UnresolvedVoidType.new
     end
 end
 
@@ -60,6 +58,14 @@ end
 class ASTNode
     def ptr
         PointerOf.new self
+    end
+
+    def return
+        Return.new self
+    end
+
+    def to_bool_call
+        Call.new(self, "to_bool", [])
     end
 end
 

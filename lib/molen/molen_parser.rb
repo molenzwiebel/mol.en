@@ -142,6 +142,128 @@ module Molen
 
                 Call.new(left, "__index_get", [ind])
             end
+
+            stmt -> x { x.is_keyword? "def" } do
+                name = expect_next_and_consume(:identifier).value
+
+                args = parse_delimited do
+                    n = expect_and_consume(:identifier).value
+                    expect_and_consume(":")
+                    FunctionArg.new n, parse_type
+                end
+
+                type = UnresolvedVoidType.new
+                if token.is? "->" then
+                    next_token # Consume ->
+                    type = parse_type
+                end
+
+                Function.new name, type, args, parse_body(!type.is_a?(UnresolvedVoidType))
+            end
+
+            stmt -> x { x.is_keyword? "if" } do
+                expect_next_and_consume(:lparen)
+
+                cond = parse_expression
+                raise_error "Expected condition in if statement", token unless cond
+                cond = Call.new(cond, "to_bool", [])
+
+                expect_and_consume(:rparen)
+
+                then_body = parse_body false
+                else_body = nil
+
+                elseifs = []
+                while token.is_keyword? "else" or token.is_keyword? "elseif"
+                    raise_error "Multiple else blocks in if statement", token if token.is_keyword? "else" and else_body
+                    if consume.is_keyword? "else" then
+                        else_body = parse_body false
+                    else
+                        expect_and_consume(:lparen)
+
+                        elseif_cond = parse_expression
+                        raise_error "Expected condition in elseif statement", token unless elseif_cond
+                        elseif_cond = Call.new(elseif_cond, "to_bool", [])
+
+                        expect_and_consume(:rparen)
+                        elseifs << [elseif_cond, parse_body(false)]
+                    end
+                end
+
+                elseifs.reverse_each do |else_if|
+                    else_body = If.new else_if.first, else_if.last, else_body
+                end
+
+                If.new cond, then_body, else_body
+            end
+
+            stmt -> x { x.is_keyword? "for" } do
+                expect_next_and_consume(:lparen)
+
+                init = parse_node
+                expect_and_consume(",")
+
+                cond = parse_expression
+                raise_error "Expected condition in for loop", token unless cond
+                cond = Call.new(cond, "to_bool", [])
+                expect_and_consume(",")
+
+                step = parse_node
+                expect_and_consume(:rparen)
+
+                For.new init, cond, step, parse_body(false)
+            end
+
+            stmt -> x { x.is_keyword? "return" } do
+                next_token # Consume return
+                Return.new parse_expression
+            end
+
+            stmt -> x { x.is_keyword? "var" } do
+                name = expect_next_and_consume(:identifier).value
+                expect_and_consume(":")
+                VarDef.new name, parse_type
+            end
+
+            stmt -> x { x.is_keyword? "class" } do
+                name = expect_next_and_consume(:constant).value
+                parent = "Object"
+                type_vars = []
+
+                if token.is? "<" then
+                    type_vars = parse_delimited "<", ",", ">" do
+                        parse_type
+                    end
+                end
+
+                if token.is? "::" then
+                    parent = expect_next_and_consume(:constant).value
+                end
+
+                ClassDef.new(name, parent, type_vars, parse_body(false))
+            end
+
+            stmt -> x { x.is_keyword? "extern" } do
+                name = expect_next_and_consume(:constant).value
+
+                loc = nil
+                if token.is? "(" then
+                    loc = expect_next_and_consume(:string).value.gsub(/\\"/, "\"").gsub(/\\'/, "'").gsub(/^"|"$/, "").gsub(/^'|'$/, '')
+                    expect_and_consume(")")
+                end
+
+                ExternalDef.new(name, loc, parse_body(false))
+            end
+
+            stmt -> x { x.is_keyword? "struct" } do
+                name = expect_next_and_consume(:constant).value
+                StructDef.new name, parse_body(false)
+            end
+
+            stmt -> x { x.is_keyword? "import" } do
+                file = expect_next_and_consume(:string).value.gsub(/\\"/, "\"").gsub(/\\'/, "'").gsub(/^"|"$/, "").gsub(/^'|'$/, '')
+                Import.new file
+            end
         end
     end
 
@@ -180,7 +302,7 @@ module Molen
             unless token.is_begin_block?
                 node = parse_node
                 raise_error "Expected node in body. Did you forget '{'?", token unless node
-                node = Return.new(node) if node.is_a?(Expression) and auto_return
+                node = Return.new(node) if node.is_a?(Expression) && auto_return
                 return Body.from node
             end
 
@@ -194,7 +316,7 @@ module Molen
             end
             next_token # Consume }
 
-            contents.push(Return.new(contents.pop)) if contents.size > 0 and contents.last.is_a?(Expression) and auto_return
+            contents.push(Return.new(contents.pop)) if contents.size > 0 && contents.last.is_a?(Expression) && auto_return
             Body.from contents
         end
     end

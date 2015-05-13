@@ -68,7 +68,7 @@ module Molen
         end
     end
 
-    class Literal < ASTNode; attrs :value; end;
+    class Literal < Expression; attrs :value; end;
     class Str < Literal; end
     class Bool < Literal; end
     class Int < Literal; end
@@ -76,9 +76,9 @@ module Molen
     class Double < Literal; end
     class Identifier < Literal; end
     class Constant < Literal; end
-    class Import < Literal; end
     class InstanceVariable < Literal; end
 
+    class Import < ASTNode; attrs :value; end
     class Null < ASTNode; attrs; end;
 
     class Call < Expression

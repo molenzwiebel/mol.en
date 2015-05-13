@@ -31,6 +31,16 @@ module Molen
         end
     end
 
+    class UnresolvedVoidType < UnresolvedType
+        def resolve(program)
+            #TODO: program.types["void"]
+        end
+
+        def ==(other)
+            other.class == self.class
+        end
+    end
+
     class UnresolvedSimpleType < UnresolvedType
         attr_accessor :name
 
