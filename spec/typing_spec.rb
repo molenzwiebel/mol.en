@@ -24,4 +24,9 @@ describe TypingVisitor do
     it_types "10L", "Long"
     it_types "2.2", "Double"
     it_types "'test'", "String"
+
+    it_types "class X {} def test() -> X 10 test()", "X"
+    it_types "class X { class Y {} def test() -> Y 10 test() }", nil
+    it_fails_on "class X { class Y {} } def test() -> Y 10 test()", /Could not resolve function test's return type! \(Y given\)/
+    it_types "def test() -> Int 10 test()", "Int"
 end

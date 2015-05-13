@@ -94,10 +94,10 @@ describe Parser do
     it_parses "var x: Int", VarDef.new("x", "Int".type)
     it_parses "var x: *Int", VarDef.new("x", "Int".type.ptr)
 
-    it_parses "class X {}", ClassDef.new("X", "Object", [], [])
-    it_parses "class X :: Super {}", ClassDef.new("X", "Super", [], [])
-    it_parses "class X 10", ClassDef.new("X", "Object", [], 10.literal)
-    it_parses "class X :: Super 10", ClassDef.new("X", "Super", [], 10.literal)
+    it_parses "class X {}", ClassDef.new("X", "Object".type, [], [])
+    it_parses "class X :: Super {}", ClassDef.new("X", "Super".type, [], [])
+    it_parses "class X 10", ClassDef.new("X", "Object".type, [], 10.literal)
+    it_parses "class X :: Super 10", ClassDef.new("X", "Super".type, [], 10.literal)
 
     it_parses "struct Foo {}", StructDef.new("Foo", [])
     it_parses "struct Foo { var x: Int }", StructDef.new("Foo", [VarDef.new("x", "Int".type)])

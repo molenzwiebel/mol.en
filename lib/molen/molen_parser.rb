@@ -227,7 +227,7 @@ module Molen
 
             stmt -> x { x.is_keyword? "class" } do
                 name = expect_next_and_consume(:constant).value
-                parent = "Object"
+                parent = UnresolvedSimpleType.new "Object"
                 type_vars = []
 
                 if token.is? "<" then
@@ -237,7 +237,8 @@ module Molen
                 end
 
                 if token.is? "::" then
-                    parent = expect_next_and_consume(:constant).value
+                    next_token # Consume ::
+                    parent = parse_type
                 end
 
                 ClassDef.new(name, parent, type_vars, parse_body(false))

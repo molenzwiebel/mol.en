@@ -26,14 +26,18 @@ module Molen
     # codegen can understand. These types will be converted
     # to normal types as part of the typing and validating.
     class UnresolvedType
-        def resolve(program)
+        def resolve(type_scope)
             raise "Uninplemented UnresolvedType#resolve!"
         end
     end
 
     class UnresolvedVoidType < UnresolvedType
-        def resolve(program)
+        def resolve(type_scope)
             #TODO: program.types["void"]
+        end
+
+        def to_s
+            "void"
         end
 
         def ==(other)
@@ -52,10 +56,22 @@ module Molen
             other.is_a?(UnresolvedSimpleType) && other.name == name
         end
 
-        def resolve(program)
-            type = program.types[name]
-            raise "Undefined type '#{name}'!" unless type
-            return type
+        def resolve(type_scope)
+            type = nil
+
+            type_scope.reverse_each do |scope|
+                if !scope.is_a?(Program) && scope.name == name then
+                    type = scope
+                    break
+                end
+                type = scope.types[name] and break
+            end
+
+            type
+        end
+
+        def to_s
+            name
         end
     end
 
@@ -70,8 +86,12 @@ module Molen
             other.class == self.class && other.ptr_type == ptr_type
         end
 
-        def resolve(program)
+        def resolve(type_scope)
             #TODO: PointerType.new ptr_type.resolve(program)
+        end
+
+        def to_s
+            "*" + type.to_s
         end
     end
 
@@ -86,8 +106,12 @@ module Molen
             other.class == self.class && other.base_type == base_type && other.type_args == type_args
         end
 
-        def resolve(program)
+        def resolve(type_scope)
             # TODO
+        end
+
+        def to_s
+            base_type.to_s + "<" + type_args.map(&:to_s).join(", ") + ">"
         end
     end
 end
