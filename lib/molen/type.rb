@@ -135,7 +135,7 @@ module Molen
             super type.name + ":Metaclass"
 
             @type = type
-            @functions = {}
+            @functions = Hash.new { |h,k| h[k] = [] }
         end
 
         def ==(other)

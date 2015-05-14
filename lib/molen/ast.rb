@@ -115,7 +115,7 @@ module Molen
 
     class FunctionArg < ASTNode; attrs :name, :type; end;
     class Function < Statement
-        attrs :name, :return_type, :args, :body
+        attrs :name, :is_static, :return_type, :args, :body
     end
 
     class If < Statement

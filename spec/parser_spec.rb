@@ -73,11 +73,12 @@ describe Parser do
     it_parses "a[1]", Call.new("a".ident, "__index_get", [1.literal])
     it_parses "a[1] = 2", Call.new("a".ident, "__index_set", [1.literal, 2.literal])
 
-    it_parses "def foo() bar", Function.new("foo", nil.type, [], "bar".ident)
-    it_parses "def foo(a: Int) bar", Function.new("foo", nil.type, [FunctionArg.new("a", "Int".type)], "bar".ident)
-    it_parses "def foo(a: Int, b: Bool) bar", Function.new("foo", nil.type, [FunctionArg.new("a", "Int".type), FunctionArg.new("b", "Bool".type)], "bar".ident)
-    it_parses "def foo() -> Int 10", Function.new("foo", "Int".type, [], 10.literal.return)
-    it_parses "def foo(a: Int) -> Bool true", Function.new("foo", "Bool".type, [FunctionArg.new("a", "Int".type)], true.literal.return)
+    it_parses "def foo() bar", Function.new("foo", false, nil.type, [], "bar".ident)
+    it_parses "def foo(a: Int) bar", Function.new("foo", false, nil.type, [FunctionArg.new("a", "Int".type)], "bar".ident)
+    it_parses "def foo(a: Int, b: Bool) bar", Function.new("foo", false, nil.type, [FunctionArg.new("a", "Int".type), FunctionArg.new("b", "Bool".type)], "bar".ident)
+    it_parses "def foo() -> Int 10", Function.new("foo", false, "Int".type, [], 10.literal.return)
+    it_parses "def foo(a: Int) -> Bool true", Function.new("foo", false, "Bool".type, [FunctionArg.new("a", "Int".type)], true.literal.return)
+    it_parses "def static foo() bar", Function.new("foo", true, nil.type, [], "bar".ident)
 
     it_parses "if (true) 10", If.new(true.literal.to_bool_call, 10.literal, nil)
     it_parses "if (true) 10 else 11", If.new(true.literal.to_bool_call, 10.literal, 11.literal)

@@ -144,7 +144,14 @@ module Molen
             end
 
             stmt -> x { x.is_keyword? "def" } do
-                name = expect_next_and_consume(:identifier).value
+                next_token # Consume def
+                is_static = false
+                if token.is? "static" then
+                    is_static = true
+                    next_token # Consume static
+                end
+
+                name = expect_and_consume(:identifier).value
 
                 args = parse_delimited do
                     n = expect_and_consume(:identifier).value
@@ -158,7 +165,7 @@ module Molen
                     type = parse_type
                 end
 
-                Function.new name, type, args, parse_body(!type.is_a?(UnresolvedVoidType))
+                Function.new name, is_static, type, args, parse_body(!type.is_a?(UnresolvedVoidType))
             end
 
             stmt -> x { x.is_keyword? "if" } do

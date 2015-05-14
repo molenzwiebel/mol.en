@@ -103,8 +103,11 @@ module Molen
         end
 
         def visit_function(node)
-            current_type.functions[node.name] << node
-            node.owner_type = current_type unless current_type.is_a?(Program)
+            receiver_type = current_type
+            receiver_type = receiver_type.metaclass if node.is_static
+
+            receiver_type.functions[node.name] << node
+            node.owner_type = receiver_type unless receiver_type.is_a?(Program)
         end
 
         def type_function_prototype(node)
@@ -142,7 +145,6 @@ module Molen
             node.raise "Could not resolve supertype #{node.superclass.to_s}." unless parent
 
             existing_type = current_type.types[node.name]
-            node.raise "Superclass mismatch." if existing_type && node.superclass && existing_type.parent_type != parent
             existing_type = current_type.types[node.name] = ObjectType.new(node.name, parent) unless existing_type
 
             @type_scope.push existing_type
