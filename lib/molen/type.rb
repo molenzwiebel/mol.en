@@ -11,6 +11,14 @@ module Molen
             raise "Unimplemented llvm_type on #{name}"
         end
 
+        def upcastable_to?(other)
+            raise "Unimplemented upcastable_to? on #{name}"
+        end
+
+        def explicitly_castable_to?(other)
+            raise "Unimplemented explicitly_castable_to? on #{name}"
+        end
+
         def metaclass
             @metaclass ||= Metaclass.new(self)
         end
@@ -46,6 +54,10 @@ module Molen
             @functions = parent ? ParentHash.new(parent.functions) : Hash.new { |h, k| h[k] = [] }
         end
 
+        def inheritance_chain
+            [self] + (parent_type ? parent_type.inheritance_chain : [])
+        end
+
         def ==(other)
             super && other.parent_type == parent_type && other.functions == functions
         end
@@ -66,6 +78,14 @@ module Molen
 
         def ==(other)
             parent && other.name == name && other.llvm_type == llvm_type && other.functions == functions
+        end
+
+        def upcastable_to?(other)
+            return other.llvm_type == llvm_type, 0
+        end
+
+        def explicitly_castable_to?(other)
+            upcastable_to?(other).first
         end
     end
 
@@ -93,6 +113,19 @@ module Molen
         def ==(other)
             super && other.vars == vars
         end
+
+        def upcastable_to?(other)
+            return other.is_a?(ObjectType) && inheritance_chain.include?(other), inheritance_chain.index(other)
+        end
+
+        def explicitly_castable_to?(other)
+            return false unless other.is_a?(ObjectType)
+
+            is_upcast = upcastable_to?(other).first
+            return true if is_upcast
+
+            return other.inheritance_chain.include?(self)
+        end
     end
 
     class Metaclass < Type
@@ -107,6 +140,14 @@ module Molen
 
         def ==(other)
             other.class == self.class && other.type == type && other.functions == functions
+        end
+
+        def upcastable_to?(other)
+            return other == self, 0
+        end
+
+        def explicitly_castable_to?(other)
+            upcastable_to?(other).first
         end
     end
 end

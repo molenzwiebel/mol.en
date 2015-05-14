@@ -85,9 +85,12 @@ module Molen
                 unless type
                     type = @scope[node.target.value] = node.value.type
                 end
+
+                node.raise "Cannot assign #{node.value.type.name} to '#{node.target.value}' (a #{type.name})" unless node.value.type.upcastable_to?(type).first
                 node.type = node.target.type = type
             else
                 node.target.accept self
+                node.raise "Cannot assign #{node.value.type.name} to '#{node.target.to_s}' (a #{node.target.type.name})" unless node.value.type.upcastable_to?(node.target.type).first
                 node.type = node.target.type
             end
         end
