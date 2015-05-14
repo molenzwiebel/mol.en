@@ -151,7 +151,8 @@ module Molen
                     next_token # Consume static
                 end
 
-                name = expect_and_consume(:identifier).value
+                raise_error "Expected identifier or operator as function name", token unless token.is_identifier? or token.is_operator?
+                name = consume.value
 
                 args = parse_delimited do
                     n = expect_and_consume(:identifier).value
