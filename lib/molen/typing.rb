@@ -62,11 +62,12 @@ module Molen
         end
 
         def visit_sizeof(node)
+            node.target_type.resolve(@type_scope) || node.raise("Undefined type #{node.target_type.to_s}")
             node.type = program.long
         end
 
         def visit_identifier(node)
-            node.type = @scope[node.value] || node.raise "Could not resolve variable #{node.value}"
+            node.type = @scope[node.value] || node.raise("Could not resolve variable #{node.value}")
         end
 
         def visit_constant(node)
@@ -78,16 +79,16 @@ module Molen
         def visit_assign(node)
             node.value.accept self
 
-            if node.object.is_a?(Identifier) then
-                type = @scope[node.object.value]
+            if node.target.is_a?(Identifier) then
+                type = @scope[node.target.value]
 
                 unless type
-                    type = @scope[node.object.value] = node.value.type
+                    type = @scope[node.target.value] = node.value.type
                 end
-                node.type = node.object.type = type
+                node.type = node.target.type = type
             else
-                node.object.accept self
-                node.type = node.object.type
+                node.target.accept self
+                node.type = node.target.type
             end
         end
 

@@ -29,4 +29,7 @@ describe TypingVisitor do
     it_types "class X { class Y {} def test() -> Y 10 test() }", nil
     it_fails_on "class X { class Y {} } def test() -> Y 10 test()", /Could not resolve function test's return type! \(Y given\)/
     it_types "def test() -> Int 10 test()", "Int"
+
+    it_types "x = 3", "Int"
+    it_types "x = 3 x = 4", "Int"
 end
