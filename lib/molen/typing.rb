@@ -95,6 +95,13 @@ module Molen
             end
         end
 
+        def visit_cast(node)
+            node.target.accept self
+            type = node.type.resolve(@type_scope)
+            node.raise "Cannot cast #{node.target.type.name} to #{type.name}" unless node.target.type.explicitly_castable_to?(type)
+            node.type = type
+        end
+
         def visit_function(node)
             current_type.functions[node.name] << node
             node.owner_type = current_type unless current_type.is_a?(Program)
@@ -158,10 +165,8 @@ module Molen
                 type_function_prototype(func) unless func.is_prototype_typed
                 func.args.size != node.args.size
             end
-            raise "No functions named #{node.name} found (searching in scope #{scope.class.name})!" if possible_functions.size == 0
-
-            #TODO: Check overloading
-            function = possible_functions.first
+            function = find_overloaded_method(possible_functions, node.args)
+            raise "No function named #{node.name} with matching argument types found!" unless function
 
             type_function_body(function) unless function.is_body_typed
             node.type = function.return_type
@@ -178,6 +183,28 @@ module Molen
             @scope = inherit ? ParentHash.new(old) : {}
             yield
             @scope = old
+        end
+
+        def find_overloaded_method(options, args)
+            matches = Hash.new {|h,k| h[k] = []}
+            options.each do |func|
+                total_dist, valid = 0, true
+
+                func.args.map(&:type).each_with_index do |arg_type, i|
+                    can, dist = arg_type.upcastable_to? args[i].type
+                    valid = valid && can
+                    next unless can
+                    total_dist += dist
+                end
+
+                next unless valid
+                matches[total_dist] << func
+            end
+            return nil if matches.size == 0
+
+            dist, functions = matches.min_by {|k, v| k}
+            node.raise "Multiple functions named #{name} found matching argument set '#{args.map(&:type).map(&:name).join ", "}'. Be more specific!" if functions and functions.size > 1
+            functions.first
         end
     end
 end

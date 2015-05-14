@@ -33,4 +33,6 @@ describe TypingVisitor do
     it_types "x = 3", "Int"
     it_types "x = 3 x = 4", "Int"
     it_fails_on "x = 3 x = true", /Cannot assign Bool to 'x' \(a Int\)/
+
+    it_types "def test(x: Object) -> Bool true def test(x: String) -> Int 11 test('helo')", "Int"
 end
