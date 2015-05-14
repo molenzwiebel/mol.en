@@ -1,0 +1,26 @@
+import "io/socket"
+
+extern C {
+    fn getchar() -> Char
+}
+
+server = new TCPServer(8000)
+puts("Listening on http://localhost:8000, ^D to exit.")
+
+# Keep looping until Ctrl+D is pressed.
+for (, C.getchar() != -1, ) {
+    sock = server.accept()
+    puts("Client at " + sock.ip_addr() + ":" + sock.port() + " connected.")
+    for (, str = sock.get_line(), ) {
+        if (str == "\r\n") {
+            sock.print("HTTP/1.1 200 OK\r\n")
+            sock.print("Content-Type: text/plain\r\n")
+            sock.print("Content-Length: 14\r\n")
+            sock.print("\r\n")
+            sock.print("Hello, mol.en!")
+            sock.flush()
+        }
+    }
+    puts("Done serving client.")
+}
+server.close()
