@@ -76,7 +76,6 @@ module Molen
     class Double < Literal; end
     class Identifier < Literal; end
     class Constant < Literal; end
-    class InstanceVariable < Literal; end
 
     class Import < ASTNode; attrs :value; end
     class Null < ASTNode; attrs; end;

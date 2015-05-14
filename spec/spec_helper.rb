@@ -47,7 +47,7 @@ class String
     end
 
     def var
-        InstanceVariable.new self
+        MemberAccess.new "this".ident, ident
     end
 
     def type

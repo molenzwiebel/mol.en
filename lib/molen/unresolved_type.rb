@@ -33,7 +33,7 @@ module Molen
 
     class UnresolvedVoidType < UnresolvedType
         def resolve(type_scope)
-            #TODO: program.types["void"]
+            VoidType.new
         end
 
         def to_s

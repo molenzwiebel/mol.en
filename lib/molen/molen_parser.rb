@@ -54,7 +54,7 @@ module Molen
                 if token.is_lparen? then
                     next Call.new(Identifier.new("this"), name, parse_delimited { parse_expression })
                 end
-                InstanceVariable.new name
+                MemberAccess.new Identifier.new("this"), Identifier.new(name)
             end
 
             expr -> tok { tok.is? "[" } do

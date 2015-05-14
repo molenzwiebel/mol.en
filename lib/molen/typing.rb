@@ -61,9 +61,15 @@ module Molen
             node.type = program.string
         end
 
-        def visit_sizeof(node)
+        def visit_size_of(node)
             node.target_type.resolve(@type_scope) || node.raise("Undefined type #{node.target_type.to_s}")
             node.type = program.long
+        end
+
+        def visit_pointer_of(node)
+            node.target.accept self
+            node.raise "Cannot take pointer of void" unless node.target.type
+            node.type = PointerType.new node.target.type
         end
 
         def visit_identifier(node)
@@ -74,6 +80,25 @@ module Molen
             node.type = UnresolvedSimpleType.new(node.value).resolve(@type_scope)
             node.raise "Could not resolve constant #{node.value}" unless node.type
             node.type = node.type.metaclass
+        end
+
+        def visit_if(node)
+            node.condition.accept self
+            node.if_body.accept self
+            node.else_body.accept self if node.else_body
+        end
+
+        def visit_for(node)
+            node.init.accept self if node.init
+            node.cond.accept self
+            node.step.accept self if node.step
+            node.body.accept self
+        end
+
+        def visit_var_def(node)
+            node.raise "Unexpected var def!" unless current_type.is_a?(ObjectType) || current_type.is_a?(StructType)
+            node.raise "Redefinition of variable #{node.name}" if current_type.vars[node.name]
+            current_type.vars[node.name] = node.type = node.type.resolve(@type_scope)
         end
 
         def visit_assign(node)
@@ -95,6 +120,14 @@ module Molen
             end
         end
 
+        def visit_member_access(node)
+            node.object.accept self
+            obj_type = node.object.type
+            node.raise "Can only access members of objects and structs. Tried to access #{node.field.value} on #{obj_type.name}" unless obj_type.is_a?(ObjectType) or obj_type.is_a?(StructType)
+            node.raise "Unknown member #{node.field.value} on object of type #{obj_type.name}" unless obj_type.vars[node.field.value]
+            node.type = obj_type.vars[node.field.value]
+        end
+
         def visit_cast(node)
             node.target.accept self
             type = node.type.resolve(@type_scope)
@@ -108,6 +141,18 @@ module Molen
 
             receiver_type.functions[node.name] << node
             node.owner_type = receiver_type unless receiver_type.is_a?(Program)
+        end
+
+        def visit_return(node)
+            node.raise "Cannot return if not in a function!" unless @current_function
+            node.value.accept self if node.value
+            node.type = node.value.nil? ? nil : node.value.type
+
+            # Both are void
+            return if node.value.nil? and @current_function.return_type.nil?
+
+            node.raise "Cannot return void from non-void function" unless node.value and @current_function.return_type
+            node.raise "Cannot return value of type #{node.type.name} from function returning type #{@current_function.return_type.name}" unless node.type.upcastable_to?(@current_function.return_type).first
         end
 
         def type_function_prototype(node)
@@ -126,6 +171,7 @@ module Molen
                 type_function_body(overriding_func) unless overriding_func.is_body_typed
             end
 
+            @current_function, prev = node, @current_function
             with_new_scope(false) do
                 @scope["this"] = node.owner_type if node.owner_type
                 node.args.each do |arg|
@@ -133,6 +179,7 @@ module Molen
                 end
                 node.body.accept self
             end
+            @current_function = prev
         end
 
         def visit_function_arg(node)
@@ -148,6 +195,16 @@ module Molen
             existing_type = current_type.types[node.name] = ObjectType.new(node.name, parent) unless existing_type
 
             @type_scope.push existing_type
+            node.body.accept self
+            @type_scope.pop
+        end
+
+        def visit_struct_def(node)
+            type = current_type.types[node.name]
+            node.raise "Redefinition of #{node.name} in same scope" if type
+            node.type = current_type.types[node.name] = StructType.new(node.name) unless type
+
+            @type_scope.push node.type
             node.body.accept self
             @type_scope.pop
         end

@@ -28,6 +28,24 @@ module Molen
         end
     end
 
+    class VoidType < Type
+        def initialize
+            super "void"
+        end
+
+        def upcastable_to?(other)
+            return other == self, 0
+        end
+
+        def explicitly_castable_to?(other)
+            return other == self
+        end
+
+        def llvm_type
+            LLVM.Void
+        end
+    end
+
     # A container type is able to contain other types. Sorta
     # like ruby modules or java packages.
     class ContainerType < Type
@@ -125,6 +143,68 @@ module Molen
             return true if is_upcast
 
             return other.inheritance_chain.include?(self)
+        end
+    end
+
+    class StructType < ContainerType
+        attr_accessor :functions, :vars
+
+        def initialize(name)
+            super name
+
+            @vars = {}
+            @functions = Hash.new { |h,k| h[k] = [] }
+        end
+
+        def llvm_type
+            LLVM::Pointer llvm_struct
+        end
+
+        def llvm_struct
+            LLVM::Struct *vars.values.map(&:llvm_type)
+        end
+
+        def ==(other)
+            super && other.vars == vars && other.functions == functions
+        end
+
+        def upcastable_to?(other)
+           return false, 0 unless other.is_a?(StructType)
+           return true, 0 if other == self
+           return false, 0 if other.instance_variables.size > instance_variables.size
+
+           slice = instance_variables.values.first(other.instance_variables.size)
+           return slice == other.instance_variables.values, 0
+       end
+
+        def explicitly_castable_to?(other)
+            return upcastable_to?(other).first
+        end
+    end
+
+    class PointerType < Type
+        attr_accessor :type
+
+        def intialize(type)
+            super "*" + type.name
+
+            @type = type
+        end
+
+        def llvm_type
+            LLVM::Pointer type.llvm_type
+        end
+
+        def ==(other)
+            super && other.type == type
+        end
+
+        def upcastable_to?(other)
+            return other == self, 0
+        end
+
+        def explicitly_castable_to?(other)
+            return true # We can cast pointers to anything. Yolo
         end
     end
 
