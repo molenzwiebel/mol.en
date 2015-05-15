@@ -62,7 +62,7 @@ module Molen
         end
 
         def visit_size_of(node)
-            node.target_type.resolve(program, @type_scope) || node.raise("Undefined type #{node.target_type.to_s}")
+            node.target_type.resolve(self, @type_scope) || node.raise("Undefined type #{node.target_type.to_s}")
             node.type = program.long
         end
 
@@ -77,14 +77,14 @@ module Molen
         end
 
         def visit_constant(node)
-            node.type = UnresolvedSimpleType.new(node.value).resolve(program, @type_scope)
+            node.type = UnresolvedSimpleType.new(node.value).resolve(self, @type_scope)
             node.raise "Could not resolve constant #{node.value}" unless node.type
             node.type = node.type.metaclass
         end
 
         def visit_new(node)
             node.args.each {|arg| arg.accept self}
-            type = node.type.resolve(program, @type_scope)
+            type = node.type.resolve(self, @type_scope)
             node.raise "Can only instantiate objects and structs" unless type.is_a?(ObjectType) or type.is_a?(StructType)
             node.type = type
 
@@ -115,8 +115,8 @@ module Molen
         def visit_var_def(node)
             node.raise "Unexpected var def!" unless current_type.is_a?(ObjectType) || current_type.is_a?(StructType)
             node.raise "Redefinition of variable #{node.name}" if current_type.vars[node.name]
-            node.raise "Undefined type '#{node.type.to_s}'" unless node.type.resolve(program, @type_scope) || current_type.generic_types.size > 0
-            current_type.vars[node.name] = node.type = node.type.resolve(program, @type_scope) || node.type
+            node.raise "Undefined type '#{node.type.to_s}'" unless node.type.resolve(self, @type_scope) || current_type.generic_types.size > 0
+            current_type.vars[node.name] = node.type = node.type.resolve(self, @type_scope) || node.type
         end
 
         def visit_assign(node)
@@ -148,7 +148,7 @@ module Molen
 
         def visit_cast(node)
             node.target.accept self
-            type = node.type.resolve(program, @type_scope)
+            type = node.type.resolve(self, @type_scope)
             node.raise "Cannot cast #{node.target.type.name} to #{type.name}" unless node.target.type.explicitly_castable_to?(type)
             node.type = type
         end
@@ -175,7 +175,7 @@ module Molen
         end
 
         def type_function_prototype(node)
-            ret_type = node.return_type ? node.return_type.resolve(program, @type_scope) : nil
+            ret_type = node.return_type ? node.return_type.resolve(self, @type_scope) : nil
             node.raise "Could not resolve function #{node.name}'s return type! (#{node.return_type.to_s} given)" if node.return_type && ret_type.nil?
             node.return_type = ret_type
             node.args.each {|arg| arg.accept self}
@@ -202,12 +202,12 @@ module Molen
         end
 
         def visit_function_arg(node)
-            node.type = node.type.resolve(program, @type_scope)
+            node.type = node.type.resolve(self, @type_scope)
             node.raise "Undefined type #{node.type.to_s} (referenced from argument #{node.name})" unless node.type
         end
 
         def visit_class_def(node)
-            parent = node.superclass ? node.superclass.resolve(program, @type_scope) : program.object
+            parent = node.superclass ? node.superclass.resolve(self, @type_scope) : program.object
             node.raise "Could not resolve supertype #{node.superclass.to_s}." unless parent
 
             existing_type = current_type.types[node.name]

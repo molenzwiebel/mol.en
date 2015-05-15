@@ -74,4 +74,10 @@ describe TypingVisitor do
 
     # Classdef
     it_types "class X {} X", "X:Metaclass"
+
+    # Generics
+    it_types "class X<A, B> {}", nil
+    it_types "class X<A> { var a: A } new X<String>.a", "String"
+    it_types "class X<A> { def get_a() -> A 10 } new X<Int>.get_a()", "Int"
+    it_types "class X { var foo: Int } class Y<T> :: X { def get_foo() -> T @foo } new Y<Int>.get_foo()", "Int"
 end
