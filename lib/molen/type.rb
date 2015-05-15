@@ -62,8 +62,8 @@ module Molen
             @generic_types = generic_types
         end
 
-        def lookup_type(name)
-            types[name] || generic_types[name]
+        def lookup_type(type_name)
+            types[type_name] || generic_types[type_name]
         end
 
         def ==(other)

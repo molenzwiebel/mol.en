@@ -5,7 +5,7 @@ module Molen
     class New; attr_accessor :target_constructor; end
     class Import; attr_accessor :imported_body; end
     class Function
-        attr_accessor :is_prototype_typed, :is_body_typed, :owner_type
+        attr_accessor :type_scope, :is_prototype_typed, :is_body_typed, :owner_type
 
         def add_overrider(node)
             @overriding_functions = {} unless @overriding_functions
@@ -157,6 +157,7 @@ module Molen
             receiver_type = current_type
             receiver_type = receiver_type.metaclass if node.is_static
             node.owner_type = receiver_type unless receiver_type.is_a?(Program)
+            node.type_scope = @type_scope.clone
 
             node.raise "Redefinition of #{receiver_type.name rescue "<top level>"}##{node.name} with same argument types" unless assure_unique(receiver_type.functions, node)
             receiver_type.functions[node.name] << node
@@ -175,7 +176,7 @@ module Molen
         end
 
         def type_function_prototype(node)
-            ret_type = node.return_type ? node.return_type.resolve(self, @type_scope) : nil
+            ret_type = node.return_type ? node.return_type.resolve(self, node.type_scope) : nil
             node.raise "Could not resolve function #{node.name}'s return type! (#{node.return_type.to_s} given)" if node.return_type && ret_type.nil?
             node.return_type = ret_type
             node.args.each {|arg| arg.accept self}
@@ -190,6 +191,7 @@ module Molen
                 type_function_body(overriding_func) unless overriding_func.is_body_typed
             end
 
+            @type_scope, old = node.type_scope, @type_scope
             @current_function, prev = node, @current_function
             with_new_scope(false) do
                 @scope["this"] = node.owner_type if node.owner_type
@@ -198,7 +200,7 @@ module Molen
                 end
                 node.body.accept self
             end
-            @current_function = prev
+            @current_function, @type_scope = prev, old
         end
 
         def visit_function_arg(node)
