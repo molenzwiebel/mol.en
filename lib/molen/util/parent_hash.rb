@@ -15,4 +15,8 @@ class ParentHash < Hash
     def keys
         @parent.keys + super
     end
+
+    def each(&block)
+        @parent.merge(self).each &block
+    end
 end

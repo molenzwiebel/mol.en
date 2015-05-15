@@ -26,5 +26,9 @@ module Molen
             return type if type
             super
         end
+
+        def lookup_type(name)
+            types[name]
+        end
     end
 end

@@ -49,12 +49,21 @@ module Molen
     # A container type is able to contain other types. Sorta
     # like ruby modules or java packages.
     class ContainerType < Type
-        attr_accessor :types
+        attr_accessor :types, :generic_types
 
-        def initialize(name)
-            super name
+        def initialize(name, generic_types = {})
+            if generic_types && generic_types.values.compact.size > 0 then
+                super name + "<" + generic_types.values.map(&:name).join(", ") + ">"
+            else
+                super name
+            end
 
             @types = {}
+            @generic_types = generic_types
+        end
+
+        def lookup_type(name)
+            types[name] || generic_types[name]
         end
 
         def ==(other)
@@ -65,8 +74,8 @@ module Molen
     class ClassType < ContainerType
         attr_accessor :parent_type, :functions
 
-        def initialize(name, parent)
-            super name
+        def initialize(name, parent, generic_types = {})
+            super name, generic_types
 
             @parent_type = parent
             @functions = parent ? ParentHash.new(parent.functions) : Hash.new { |h, k| h[k] = [] }
@@ -110,8 +119,8 @@ module Molen
     class ObjectType < ClassType
         attr_accessor :vars
 
-        def initialize(name, parent)
-            super name, parent
+        def initialize(name, parent, generic_types = {})
+            super name, parent, generic_types
 
             @vars = parent ? ParentHash.new(parent.vars) : {}
         end

@@ -115,7 +115,8 @@ module Molen
         def visit_var_def(node)
             node.raise "Unexpected var def!" unless current_type.is_a?(ObjectType) || current_type.is_a?(StructType)
             node.raise "Redefinition of variable #{node.name}" if current_type.vars[node.name]
-            current_type.vars[node.name] = node.type = node.type.resolve(program, @type_scope)
+            node.raise "Undefined type '#{node.type.to_s}'" unless node.type.resolve(program, @type_scope) || current_type.generic_types.size > 0
+            current_type.vars[node.name] = node.type = node.type.resolve(program, @type_scope) || node.type
         end
 
         def visit_assign(node)
@@ -210,7 +211,7 @@ module Molen
             node.raise "Could not resolve supertype #{node.superclass.to_s}." unless parent
 
             existing_type = current_type.types[node.name]
-            existing_type = current_type.types[node.name] = ObjectType.new(node.name, parent) unless existing_type
+            existing_type = current_type.types[node.name] = ObjectType.new(node.name, parent, Hash[node.type_vars.map { |e| [e.name, nil] }]) unless existing_type
 
             @type_scope.push existing_type
             node.body.accept self
