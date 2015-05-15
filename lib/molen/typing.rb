@@ -82,6 +82,23 @@ module Molen
             node.type = node.type.metaclass
         end
 
+        def visit_new(node)
+            node.args.each {|arg| arg.accept self}
+            type = node.type.resolve(@type_scope)
+            node.raise "Can only instantiate objects and structs" unless type.is_a?(ObjectType) or type.is_a?(StructType)
+            node.type = type
+
+            applicable_constructors = type.functions["create"].reject do |func|
+                type_function_prototype(func) unless func.is_prototype_typed
+                func.args.size != node.args.size
+            end
+
+            if (fn = find_overloaded_method(applicable_constructors, node.args)) then
+                type_function(fn) unless fn.is_body_typed
+                node.target_constructor = fn
+            end
+        end
+
         def visit_if(node)
             node.condition.accept self
             node.if_body.accept self
@@ -138,9 +155,10 @@ module Molen
         def visit_function(node)
             receiver_type = current_type
             receiver_type = receiver_type.metaclass if node.is_static
-
-            receiver_type.functions[node.name] << node
             node.owner_type = receiver_type unless receiver_type.is_a?(Program)
+
+            node.raise "Redefinition of #{receiver_type.name rescue "<top level>"}##{node.name} with same argument types" unless assure_unique(receiver_type.functions, node)
+            receiver_type.functions[node.name] << node
         end
 
         def visit_return(node)
@@ -242,6 +260,14 @@ module Molen
             @scope = inherit ? ParentHash.new(old) : {}
             yield
             @scope = old
+        end
+
+        def assure_unique(scope, function)
+            return true if scope[function.name].size == 0
+            scope[function.name].each do |func|
+                return false if func.args == function.args && func.owner_type == function.owner_type
+            end
+            return true
         end
 
         def find_overloaded_method(options, args)

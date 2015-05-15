@@ -87,7 +87,7 @@ module Molen
         end
 
         def resolve(type_scope)
-            #TODO: PointerType.new ptr_type.resolve(program)
+            PointerType.new ptr_type.resolve(type_scope)
         end
 
         def to_s

@@ -95,11 +95,11 @@ module Molen
         end
 
         def ==(other)
-            parent && other.name == name && other.llvm_type == llvm_type && other.functions == functions
+            super && other.llvm_type == llvm_type
         end
 
         def upcastable_to?(other)
-            return other.llvm_type == llvm_type, 0
+            return other.is_a?(PrimitiveType) && other.llvm_type == llvm_type, 0
         end
 
         def explicitly_castable_to?(other)
