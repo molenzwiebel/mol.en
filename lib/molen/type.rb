@@ -217,6 +217,24 @@ module Molen
         end
     end
 
+    class ExternType < ClassType
+        attr_accessor :libnames
+
+        def initialize(name)
+            super name, nil
+
+            @libnames = []
+        end
+
+        def upcastable_to?(other)
+            return other == self, 0
+        end
+
+        def explicitly_castable_to?(other)
+            other == self
+        end
+    end
+
     class Metaclass < Type
         attr_accessor :type, :functions
 

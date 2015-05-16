@@ -77,9 +77,10 @@ module Molen
         end
 
         def visit_constant(node)
-            node.type = UnresolvedSimpleType.new(node.value).resolve(self)
-            node.raise "Could not resolve constant #{node.value}" unless node.type
-            node.type = node.type.metaclass
+            type = UnresolvedSimpleType.new(node.value).resolve(self)
+            node.raise "Could not resolve constant #{node.value}" unless type
+            node.type = type.metaclass unless type.is_a?(ExternType)
+            node.type = type unless node.type
         end
 
         def visit_new(node)
@@ -245,15 +246,34 @@ module Molen
             end
 
             possible_functions = (scope.functions[node.name] || []).reject do |func|
-                type_function_prototype(func) unless func.is_prototype_typed
+                type_function_prototype(func) unless func.is_a?(ExternalFuncDef) or func.is_prototype_typed
                 func.args.size != node.args.size
             end
             function = find_overloaded_method(possible_functions, node.args)
             raise "No function named #{node.name} with matching argument types found!" unless function
 
-            type_function_body(function) unless function.is_body_typed
+            type_function_body(function) unless function.is_a?(ExternalFuncDef) or function.is_body_typed
             node.type = function.return_type
             node.target_function = function
+        end
+
+        def visit_external_def(node)
+            existing_type = current_type.types[node.name]
+            node.raise "Cannot define external with name #{node.name}: #{node.name} was already defined elsewhere" unless existing_type.nil? || existing_type.is_a?(ExternalType)
+
+            node.type = existing_type || (current_type.types[node.name] = ExternType.new(node.name))
+            node.type.libnames << node.location if node.location
+
+            type_scope.push node.type
+            node.body.accept self
+            type_scope.pop
+        end
+
+        def visit_external_func_def(node)
+            node.args.each { |arg| arg.accept self }
+            node.return_type = node.return_type ? node.return_type.resolve(self) : nil
+
+            current_type.functions[node.name] = (current_type.functions[node.name] || []) << node
         end
 
         private

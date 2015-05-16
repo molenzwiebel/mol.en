@@ -273,6 +273,23 @@ module Molen
                 file = expect_next_and_consume(:string).value.gsub(/\\"/, "\"").gsub(/\\'/, "'").gsub(/^"|"$/, "").gsub(/^'|'$/, '')
                 Import.new file
             end
+
+            stmt -> x { x.is_keyword? "fn" } do
+                func_name = expect_next_and_consume(:identifier).value
+                args = parse_delimited do
+                    n = expect(:identifier).value
+                    expect_next_and_consume(":")
+                    FunctionArg.new n, parse_type
+                end
+                ret_type = nil
+
+                if token.is? "->" then
+                    next_token # Consume ->
+                    ret_type = parse_type
+                end
+
+                ExternalFuncDef.new(func_name, ret_type, args)
+            end
         end
     end
 
