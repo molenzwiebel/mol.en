@@ -6,7 +6,7 @@ module Molen
 
         def initialize
             @types = {}
-            @functions = Hash.new { |h, k| h[k] = [] }
+            @functions = {}
 
             @types["Bool"] = PrimitiveType.new "Bool", LLVM::Int1
             @types["Char"] = PrimitiveType.new "Char", LLVM::Int8

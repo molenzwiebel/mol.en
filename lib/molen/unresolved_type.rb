@@ -26,13 +26,13 @@ module Molen
     # codegen can understand. These types will be converted
     # to normal types as part of the typing and validating.
     class UnresolvedType
-        def resolve(visitor, type_scope)
+        def resolve(visitor)
             raise "Uninplemented UnresolvedType#resolve!"
         end
     end
 
     class UnresolvedVoidType < UnresolvedType
-        def resolve(visitor, type_scope)
+        def resolve(visitor)
             VoidType.new
         end
 
@@ -56,10 +56,11 @@ module Molen
             other.is_a?(UnresolvedSimpleType) && other.name == name
         end
 
-        def resolve(visitor, type_scope)
+        def resolve(visitor)
+            puts "TYPE SCOPE IS NIL #{name}" unless visitor.type_scope
             type = nil
 
-            type_scope.reverse_each do |scope|
+            visitor.type_scope.reverse_each do |scope|
                 if !scope.is_a?(Program) && scope.name == name then
                     type = scope
                     break
@@ -86,8 +87,8 @@ module Molen
             other.class == self.class && other.ptr_type == ptr_type
         end
 
-        def resolve(visitor, type_scope)
-            PointerType.new ptr_type.resolve(visitor, type_scope)
+        def resolve(visitor)
+            PointerType.new ptr_type.resolve(visitor)
         end
 
         def to_s
@@ -107,33 +108,36 @@ module Molen
             other.class == self.class && other.base_type == base_type && other.type_args == type_args
         end
 
-        def resolve(visitor, type_scope)
-            existing = @simple_generic_type.resolve(visitor, type_scope)
+        def resolve(visitor)
+            existing = @simple_generic_type.resolve(visitor)
             return existing if existing
 
-            type = base_type.resolve(visitor, type_scope)
-            args = type_args.map { |e| e.resolve(visitor, type_scope) }
+            type = base_type.resolve(visitor)
+            args = type_args.map { |e| e.resolve(visitor) }
             return nil if type.nil? || args.include?(nil)
 
             new_type = ObjectType.new(type.name, type.parent_type, Hash[type.generic_types.keys.zip(args)])
-            type_scope.last.types[new_type.name] = new_type
-            type_scope.push new_type
+            visitor.type_scope.last.types[new_type.name] = new_type
+            visitor.type_scope.push new_type
 
             type.vars.each do |name, var_type|
-                var_type = var_type.resolve(visitor, type_scope) if var_type.is_a?(UnresolvedType)
+                var_type = var_type.resolve(visitor) if var_type.is_a?(UnresolvedType)
                 new_type.vars[name] = var_type
             end
 
             type.functions.each do |name, funcs|
-                funcs.each {|f| f.owner_type = nil}
+                funcs.each do |f|
+                    # Prevent cloning of these two
+                    f.type_scope = nil
+                    f.owner_type = nil
+                end
                 new_funcs = DeepClone.clone(funcs)
                 new_funcs.each do |func|
-                    func.owner_type = new_type
                     func.accept visitor
                 end
             end
-            
-            type_scope.pop
+
+            visitor.type_scope.pop
             new_type
         end
 

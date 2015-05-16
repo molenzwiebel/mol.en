@@ -78,7 +78,7 @@ module Molen
             super name, generic_types
 
             @parent_type = parent
-            @functions = parent ? ParentHash.new(parent.functions) : Hash.new { |h, k| h[k] = [] }
+            @functions = parent ? ParentHash.new(parent.functions) : {}
         end
 
         def inheritance_chain
