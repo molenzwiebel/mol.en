@@ -66,6 +66,14 @@ module Molen
         def each(&block)
             contents.each &block
         end
+
+        def returns?
+            any? do |e|
+                return true if e.is_a?(Return)
+                return e.returns? if e.class.method_defined?(:returns?)
+                false
+            end
+        end
     end
 
     class Literal < Expression; attrs :value; end;
@@ -119,6 +127,11 @@ module Molen
 
     class If < Statement
         attrs :condition, :if_body, :else_body
+
+        def returns?
+            return false unless else_body
+            if_body.returns? && else_body.returns?
+        end
     end
 
     class For < Statement

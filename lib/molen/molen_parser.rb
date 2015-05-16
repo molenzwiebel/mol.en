@@ -281,7 +281,8 @@ module Molen
                     expect_next_and_consume(":")
                     FunctionArg.new n, parse_type
                 end
-                ret_type = nil
+
+                ret_type = UnresolvedVoidType.new
 
                 if token.is? "->" then
                     next_token # Consume ->

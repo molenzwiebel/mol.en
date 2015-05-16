@@ -233,6 +233,10 @@ module Molen
         def explicitly_castable_to?(other)
             other == self
         end
+
+        def metaclass
+            self
+        end
     end
 
     class Metaclass < Type

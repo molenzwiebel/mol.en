@@ -77,10 +77,9 @@ module Molen
         end
 
         def visit_constant(node)
-            type = UnresolvedSimpleType.new(node.value).resolve(self)
-            node.raise "Could not resolve constant #{node.value}" unless type
-            node.type = type.metaclass unless type.is_a?(ExternType)
-            node.type = type unless node.type
+            node.type = UnresolvedSimpleType.new(node.value).resolve(self)
+            node.raise "Could not resolve constant #{node.value}" unless node.type
+            node.type = node.type.metaclass
         end
 
         def visit_new(node)
@@ -184,20 +183,16 @@ module Molen
         def visit_return(node)
             node.raise "Cannot return if not in a function!" unless @current_function
             node.value.accept self if node.value
-            node.type = node.value.nil? ? nil : node.value.type
+            node.type = node.value ? node.value.type : VoidType.new
 
-            # Both are void
-            return if node.value.nil? and @current_function.return_type.nil?
-
-            node.raise "Cannot return void from non-void function" unless node.value and @current_function.return_type
+            node.raise "Cannot return void from non-void function" if node.value.nil? && @current_function.return_type.is_a?(VoidType)
             node.raise "Cannot return value of type #{node.type.name} from function returning type #{@current_function.return_type.name}" unless node.type.upcastable_to?(@current_function.return_type).first
         end
 
         def type_function_prototype(node)
             with_type_scope(node.type_scope) do
-                ret_type = node.return_type ? node.return_type.resolve(self) : nil
-                node.raise "Could not resolve function #{node.name}'s return type! (#{node.return_type.to_s} given)" if node.return_type && ret_type.nil?
-                node.return_type = ret_type
+                node.return_type = node.return_type.resolve(self)
+                node.raise "Could not resolve function #{node.name}'s return type! (#{node.return_type.to_s} given)" unless node.return_type
                 node.args.each {|arg| arg.accept self}
                 node.is_prototype_typed = true
             end
