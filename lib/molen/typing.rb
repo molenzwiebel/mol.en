@@ -217,6 +217,8 @@ module Molen
                 end
                 @current_function = prev
             end
+
+            node.raise "Function #{node.name} has a path that does not return!" unless node.body.returns? or node.return_type.is_a?(VoidType)
         end
 
         def visit_function_arg(node)
