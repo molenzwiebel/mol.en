@@ -86,6 +86,7 @@ module Molen
         def visit_new(node)
             node.args.each {|arg| arg.accept self}
             type = node.type.resolve(self)
+            node.raise "Undefined type '#{node.type.to_s}'" unless type
             node.raise "Can only instantiate objects and structs" unless type.is_a?(ObjectType) or type.is_a?(StructType)
             node.type = type
 
@@ -177,7 +178,7 @@ module Molen
                 overrides_func.add_overrider node if overrides_func
             end
 
-            receiver_type.functions[node.name] = (receiver_type.functions[node.name] || []) << node
+            receiver_type.functions.has_key?(node.name) ? receiver_type.functions[node.name] << node : receiver_type.functions[node.name] = [node]
         end
 
         def visit_return(node)

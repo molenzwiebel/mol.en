@@ -82,5 +82,5 @@ describe TypingVisitor do
     it_types "class X { var foo: Int } class Y<T> :: X { def get_foo() -> T @foo } new Y<Int>.get_foo()", "Int"
 
     # Make sure that functions get typed if they override others
-    it_fails_on "class X { def foo() {} } class Y :: X { def foo() { new Bar } } new Y.foo()", nil
+    it_fails_on "class X { def foo() {} } class Y :: X { def foo() { new Bar } } new Y.foo()", /Undefined type 'Bar'/
 end
