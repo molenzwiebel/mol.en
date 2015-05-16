@@ -162,7 +162,7 @@ module Molen
             super name
 
             @vars = {}
-            @functions = Hash.new { |h,k| h[k] = [] }
+            @functions = {}
         end
 
         def llvm_type

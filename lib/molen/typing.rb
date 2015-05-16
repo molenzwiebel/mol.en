@@ -161,6 +161,22 @@ module Molen
             node.type_scope = type_scope.clone
 
             node.raise "Redefinition of #{receiver_type.name rescue "<top level>"}##{node.name} with same argument types" unless assure_unique(receiver_type.functions, node)
+
+            # Check if this function overrides other functions.
+            if node.owner_type && receiver_type.functions[node.name] then
+                existing_functions = receiver_type.functions[node.name]
+                overrides_func = existing_functions.find do |func|
+                    next false if func.args.size != node.args.size
+
+                    ret_type = func.return_type.nil? ? nil : func.is_prototype_typed ? func.return_type.name : func.return_type
+                    arg_types = func.is_prototype_typed ? func.args.map(&:type).map(&:name) : func.args.map(&:type)
+
+                    node.return_type == ret_type && node.args.map(&:name) == arg_types
+                end
+
+                overrides_func.add_overrider node if overrides_func
+            end
+
             receiver_type.functions[node.name] = (receiver_type.functions[node.name] || []) << node
         end
 
