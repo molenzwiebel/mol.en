@@ -336,7 +336,7 @@ module Molen
             return nil if matches.size == 0
 
             dist, functions = matches.min_by {|k, v| k}
-            node.raise "Multiple functions named #{name} found matching argument set '#{args.map(&:type).map(&:name).join ", "}'. Be more specific!" if functions and functions.size > 1
+            return nil if functions and functions.size > 1
             functions.first
         end
     end

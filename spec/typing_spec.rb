@@ -80,4 +80,7 @@ describe TypingVisitor do
     it_types "class X<A> { var a: A } new X<String>.a", "String"
     it_types "class X<A> { def get_a() -> A 10 } new X<Int>.get_a()", "Int"
     it_types "class X { var foo: Int } class Y<T> :: X { def get_foo() -> T @foo } new Y<Int>.get_foo()", "Int"
+
+    # Make sure that functions get typed if they override others
+    it_fails_on "class X { def foo() {} } class Y :: X { def foo() { new Bar } } new Y.foo()", nil
 end
