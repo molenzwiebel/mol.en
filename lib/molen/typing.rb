@@ -5,15 +5,14 @@ module Molen
     class New; attr_accessor :target_constructor; end
     class Import; attr_accessor :imported_body; end
     class Function
-        attr_accessor :type_scope, :is_prototype_typed, :is_body_typed, :owner_type
+        attr_accessor :type_scope, :owner_type, :is_prototype_typed, :is_body_typed
 
         def add_overrider(node)
-            @overriding_functions = {} unless @overriding_functions
-            @overriding_functions[node.owner_type.name] = node
+            overriding_functions[node.owner_type.name] = node
         end
 
         def overriding_functions
-            @overriding_functions || {}
+            @overriding_functions ||= {}
         end
     end
 
@@ -80,6 +79,10 @@ module Molen
             node.type = UnresolvedSimpleType.new(node.value).resolve(self)
             node.raise "Could not resolve constant #{node.value}" unless node.type
             node.type = node.type.metaclass
+        end
+
+        def visit_import(node)
+            node.imported_body = program.import node.value, node.filename
         end
 
         def visit_new(node)

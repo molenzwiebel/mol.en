@@ -7,6 +7,7 @@ module Molen
         def initialize
             @types = {}
             @functions = {}
+            @imports = Set.new
 
             @types["Bool"] = PrimitiveType.new "Bool", LLVM::Int1
             @types["Char"] = PrimitiveType.new "Char", LLVM::Int8
@@ -29,6 +30,29 @@ module Molen
 
         def lookup_type(name)
             types[name]
+        end
+
+        def import(file, relative_to_dir)
+            file = "#{file}.en" unless file.end_with? ".en"
+
+            if relative_to_dir then
+                relative_file = File.join(File.dirname(relative_to_dir), file)
+                file = File.exists?(relative_file) ? relative_file : File.expand_path("../std/#{file}", __FILE__)
+                import_file file
+            else
+                import file, File.expand_path("../std/", __FILE__)
+            end
+        end
+
+        private
+        def import_file(file_loc)
+            return if @imports.include? file_loc
+            raise "Cannot import #{file_loc}: File not found" unless File.exists?(file_loc)
+
+            @imports.add file_loc
+            node = Molen.parse File.read(file_loc), file_loc
+            node.accept TypingVisitor.new(self) if node
+            node
         end
     end
 end
