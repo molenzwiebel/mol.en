@@ -23,6 +23,10 @@ module Molen
             @metaclass ||= Metaclass.new(self)
         end
 
+        def pass_as_this?
+            true
+        end
+
         def ==(other)
             other.class == self.class && other.name == name
         end
@@ -43,6 +47,10 @@ module Molen
 
         def explicitly_castable_to?(other)
             return other == self
+        end
+
+        def pass_as_this?
+            false
         end
 
         def llvm_type
@@ -164,11 +172,15 @@ module Molen
         end
 
         def var_index(name)
-            vars.index(name) + 2
+            vars.keys.index(name) + 2
+        end
+
+        def func_index(node)
+            functions.map { |k,v| v }.flatten.select { |e| e.is_body_typed }.index node
         end
 
         def vtable_functions
-            functions.select { |e| e.is_body_typed }.map do |func|
+            functions.map { |k,v| v }.flatten.select { |e| e.is_body_typed }.map do |func|
                 next func if func.overriding_functions.size == 0
                 next func unless func.overriding_functions[self]
                 func.overriding_functions[self]
@@ -234,20 +246,20 @@ module Molen
     end
 
     class PointerType < Type
-        attr_accessor :type
+        attr_accessor :wrap_type
 
-        def intialize(type)
-            super "*" + type.name
+        def initialize(wrap_type)
+            super "*" + wrap_type.name
 
-            @type = type
+            @wrap_type = wrap_type
         end
 
         def llvm_type
-            LLVM::Pointer type.llvm_type
+            LLVM::Pointer wrap_type.llvm_type
         end
 
         def ==(other)
-            super && other.type == type
+            super && other.wrap_type == wrap_type
         end
 
         def upcastable_to?(other)
@@ -259,7 +271,7 @@ module Molen
         end
 
         def hash
-            super + type.hash
+            super + wrap_type.hash
         end
     end
 
@@ -282,6 +294,10 @@ module Molen
 
         def metaclass
             self
+        end
+
+        def pass_as_this?
+            false
         end
 
         def hash
@@ -309,6 +325,10 @@ module Molen
 
         def explicitly_castable_to?(other)
             upcastable_to?(other).first
+        end
+
+        def pass_as_this?
+            false
         end
 
         def hash

@@ -145,7 +145,170 @@ module Molen
             builder.ret node.value.accept(self)
         end
 
+        def visit_new(node)
+            allocator = @object_allocator_functions[node.type]
+            allocator = generate_object_allocator(node.type) unless allocator
+
+            allocated_struct = builder.call allocator
+
+            if node.target_constructor then
+                create_func = @function_pointers[node.target_constructor]
+                create_func = generate_function(node.target_constructor) unless create_func
+                casted_this = builder.bit_cast allocated_struct, node.target_constructor.owner_type.llvm_type
+
+                args = [casted_this]
+                node.args.each_with_index do |arg, i|
+                    val = arg.accept(self)
+                    val = builder.bit_cast val, node.target_constructor.args[i].type.llvm_type
+                    args << val
+                end
+
+                builder.call create_func, *args
+            end
+
+            allocated_struct
+        end
+
+        def visit_call(node)
+            # Setup arguments and cast them if needed.
+            args = []
+            node.args.each_with_index do |arg, i|
+                val = arg.accept(self)
+                val = builder.bit_cast val, node.target_function.args[i].type.llvm_type if arg.type != node.target_function.args[i].type
+                args << val
+            end
+
+            if node.object && node.object.type.pass_as_this? then
+                obj = node.object.accept(self)
+                casted_this = builder.bit_cast obj, node.target_function.owner_type.llvm_type
+                args = [casted_this] + args
+            end
+
+            if node.object && node.object.type.is_a?(ObjectType) && node.target_function.overriding_functions.size > 0 then
+                return generate_vtable_invoke args, node
+            else
+                func = @function_pointers[node.target_function]
+                func = generate_function(node.target_function) unless func
+
+                ret_ptr = builder.call func, *args
+                return ret_ptr if func.function_type.return_type != LLVM.Void
+                return nil
+            end
+        end
+
+        def generate_vtable_invoke(args, node)
+            func = @function_pointers[node.target_function]
+
+            vtable_ptr = builder.bit_cast args[0], LLVM::Pointer(LLVM::Pointer(LLVM::Pointer(func.function_type)))
+            vtable = builder.load vtable_ptr, "vtable"
+
+            func_ptr = builder.inbounds_gep(vtable, [LLVM::Int64.from_i(node.object.type.func_index(node.target_function))])
+            loaded_func = builder.load func_ptr
+
+            res = builder.call loaded_func, *args
+            return res if func.function_type.return_type != LLVM.Void
+            return nil
+        end
+
+        def generate_function(node)
+            args = node.args
+            args = [FunctionArg.new("this", node.owner_type)] + args if node.owner_type && node.owner_type.pass_as_this?
+            llvm_arg_types = args.map(&:type).map(&:llvm_type)
+
+            if node.is_a?(ExternalFuncDef) then
+                func = mod.functions.add(node.name, llvm_arg_types, node.return_type.llvm_type)
+                @function_pointers[node] = func
+
+                return func
+            end
+
+            old_pos = builder.insert_block
+
+            func = mod.functions.add(node.ir_name, llvm_arg_types, node.return_type.llvm_type)
+            func.linkage = :internal # Allow llvm to optimize this function away
+            @function_pointers[node] = func
+
+            entry = func.basic_blocks.append "entry"
+            builder.position_at_end entry
+
+            with_new_scope(false) do
+                args.each_with_index do |arg, i|
+                    func.params[i].name = arg.name
+                    if i == 0 && node.owner_type.pass_as_this? then
+                        @variable_pointers["this"] = func.params[i]
+                    else
+                        ptr = builder.alloca arg.type.llvm_type, arg.name
+                        @variable_pointers[arg.name] = ptr
+                        builder.store func.params[i], ptr
+                    end
+                end
+
+                node.body.accept self
+            end
+
+            builder.ret nil if node.return_type.is_a?(VoidType) and not node.body.returns?
+            builder.position_at_end old_pos
+
+            # Generate overriding functions because they might be virtually invoked.
+            node.overriding_functions.each do |type, func|
+                generate_function(func) unless @function_pointers[func]
+            end
+
+            func
+        end
+
+        def visit_if(node)
+            the_func = builder.insert_block.parent
+
+            then_block = the_func.basic_blocks.append "if.then"
+            else_block = the_func.basic_blocks.append "if.else" if node.else
+            merge_block = the_func.basic_blocks.append "if.after" unless node.returns?
+
+            cond = node.condition.accept(self)
+            node.else ? builder.cond(cond, then_block, else_block) : builder.cond(cond, then_block, merge_block)
+
+            builder.position_at_end then_block
+            with_new_scope { node.then.accept self }
+            builder.br merge_block unless node.then.returns?
+
+            if node.else then
+                builder.position_at_end else_block
+                with_new_scope { node.else.accept self }
+                builder.br merge_block unless node.else.returns?
+            end
+
+            builder.position_at_end merge_block if merge_block
+            nil
+        end
+
+        def visit_for(node)
+            the_func = builder.insert_block.parent
+
+            cond_block = the_func.basic_blocks.append "loop.cond"
+            body_block = the_func.basic_blocks.append "loop.body"
+            after_block = the_func.basic_blocks.append "loop.after"
+
+            node.init.accept self if node.init
+            builder.br cond_block
+
+            builder.position_at_end cond_block
+            builder.cond node.cond.accept(self), body_block, after_block
+
+            builder.position_at_end body_block
+            with_new_scope { node.body.accept self }
+            node.step.accept self if node.step
+            builder.br cond_block
+
+            builder.position_at_end after_block
+        end
+
         private
+        def with_new_scope(inherit = true)
+            old, @variable_pointers = @variable_pointers, inherit ? HashWithParent.new(@variable_pointers) : {}
+            yield
+            @variable_pointers = old
+        end
+
         def member_to_ptr(node)
             ptr_to_obj = node.object.accept(self)
             index = node.object.type.var_index node.field.value
@@ -204,6 +367,16 @@ module Molen
                 var.linkage = :private
                 var.global_constant = true
                 var.initializer = val
+            end
+        end
+    end
+
+    class Function
+        def ir_name
+            if owner_type then
+                "#{owner_type.name}##{name}<#{args.map(&:type).map(&:name).join ","}>"
+            else
+                "#{name}<#{args.map(&:type).map(&:name).join ","}>"
             end
         end
     end
