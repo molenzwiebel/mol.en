@@ -1,5 +1,33 @@
+extern C {
+    fn strlen(str: *Char) -> Int
+    fn atoi(str: *Char) -> Int
+    fn strncpy(s1: *Char, s2: *Char, n: Int) -> *Char
+    fn strcmp(s1: *Char, s2: *Char) -> Int
+}
+
 class String {
+    def static from_cstr(ptr: *Char) -> String {
+        str = new String
+        str.pointer = ptr
+        return str
+    }
+
     def +(other: Object) -> String {
         this + other.to_s()
+    }
+
+    def length() -> Int {
+        C.strlen(@pointer)
+    }
+
+    def substring(start: Int, count: Int) -> String {
+        assert(start >= 0, "Negative argument to String.substring")
+        assert(start + count <= @length(), "String.substring out of index")
+
+        buffer = Pointer.malloc(sizeof Char * (count + 1)) as *Char
+        C.strncpy(buffer, @pointer + start, count)
+        (buffer + count).set(0.to_char())
+
+        String.from_cstr(buffer)
     }
 }

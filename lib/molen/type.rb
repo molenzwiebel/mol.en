@@ -172,7 +172,7 @@ module Molen
 
         def llvm_struct
             @llvm_struct ||= begin
-                llvm_struct = LLVM::Struct(name)
+                llvm_struct = LLVM::Struct("class.#{name}")
                 llvm_struct.element_types = [VTABLE_PTR, TYPEINFO_PTR] + vars.values.map(&:llvm_type)
                 llvm_struct
             end
@@ -231,7 +231,11 @@ module Molen
         end
 
         def llvm_struct
-            LLVM::Struct *vars.values.map(&:llvm_type)
+            @llvm_struct ||= begin
+                llvm_struct = LLVM::Struct("struct.#{name}")
+                llvm_struct.element_types = vars.values.map(&:llvm_type)
+                llvm_struct
+            end
         end
 
         def ==(other)
@@ -252,7 +256,7 @@ module Molen
         end
 
         def var_index(name)
-            vars.index(name)
+            vars.keys.index(name)
         end
 
         def hash
@@ -270,7 +274,7 @@ module Molen
             @functions = {}
 
             define_native_function "get", wrap_type do |this|
-                return builder.ret(this) if wrap_type.is_a?(StructType)
+                next builder.ret(this) if wrap_type.is_a?(StructType)
                 builder.ret builder.load this
             end
 
@@ -294,7 +298,7 @@ module Molen
         end
 
         def llvm_type
-            LLVM::Pointer wrap_type.llvm_type
+            wrap_type.is_a?(StructType) ? wrap_type.llvm_type : LLVM::Pointer(wrap_type.llvm_type)
         end
 
         def ==(other)

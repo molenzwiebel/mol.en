@@ -120,13 +120,16 @@ module Molen
         end
 
         def visit_pointer_of(node)
+            ret = nil
             if node.target.is_a?(Identifier) then
                 ptr = @variable_pointers[node.target.value]
                 ptr = builder.load(ptr) if node.target.type.is_a? StructType
-                return ptr
+                ret = ptr
             elsif node.target.is_a?(MemberAccess) then
-                return member_to_ptr(node.target)
+                ret = member_to_ptr(node.target)
             end
+            ret = builder.load(ret) if node.target.type.is_a? StructType
+            ret
         end
 
         def visit_assign(node)

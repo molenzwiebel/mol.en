@@ -62,7 +62,7 @@ module Molen
         end
 
         def visit_size_of(node)
-            node.target_type.resolve(self) || node.raise("Undefined type #{node.target_type.to_s}")
+            node.target_type = node.target_type.resolve(self) || node.raise("Undefined type #{node.target_type.to_s}")
             node.type = program.long
         end
 
@@ -281,7 +281,7 @@ module Molen
 
         def visit_external_def(node)
             existing_type = current_type.types[node.name]
-            node.raise "Cannot define external with name #{node.name}: #{node.name} was already defined elsewhere" unless existing_type.nil? || existing_type.is_a?(ExternalType)
+            node.raise "Cannot define external with name #{node.name}: #{node.name} was already defined elsewhere" unless existing_type.nil? || existing_type.is_a?(ExternType)
 
             node.type = existing_type || (current_type.types[node.name] = ExternType.new(node.name))
             node.type.libnames << node.location if node.location

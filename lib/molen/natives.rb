@@ -85,8 +85,8 @@ module Molen
         end
 
         def add_pointer_malloc
-            pointer.metaclass.define_native_function("malloc", @types["*Void"], long) do |size|
-                malloc_func = llvm_mod.functions["malloc"] || llvm_mod.functions.add("malloc", [LLVM::Int], LLVM::Pointer(LLVM::Int8))
+            pointer.metaclass.define_native_function("malloc", PointerType.new(self, char), long) do |size|
+                malloc_func = mod.functions["malloc"] || mod.functions.add("malloc", [LLVM::Int], LLVM::Pointer(LLVM::Int8))
                 builder.ret builder.call malloc_func, builder.trunc(size, LLVM::Int)
             end
         end
