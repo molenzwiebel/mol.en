@@ -169,4 +169,8 @@ module Molen
     class StructDef < Statement
         attrs :name, :body
     end
+
+    class ModuleDef < Statement
+        attrs :name, :type_vars, :body
+    end
 end

@@ -304,6 +304,19 @@ module Molen
 
                 ExternalFuncDef.new(func_name, ret_type, args)
             end
+
+            stmt -> x { x.is_keyword? "module" } do
+                name = expect_next_and_consume(:constant).value
+                type_vars = []
+
+                if token.is? "<" then
+                    type_vars = parse_delimited "<", ",", ">" do
+                        parse_type
+                    end
+                end
+
+                ModuleDef.new(name, type_vars, parse_body(false))
+            end
         end
     end
 
