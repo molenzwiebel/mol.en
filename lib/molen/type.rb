@@ -71,10 +71,10 @@ module Molen
 
     # A container type is able to contain other types. Sorta
     # like ruby modules or java packages.
-    class ModuleType < Type
-        attr_accessor :types, :functions, :generic_types
+    class ContainerType < Type
+        attr_accessor :types, :generic_types
 
-        def initialize(name, functions = {}, generic_types = {})
+        def initialize(name, generic_types = {})
             if generic_types && generic_types.values.compact.size > 0 then
                 super name + "<" + generic_types.values.map(&:name).join(", ") + ">"
             else
@@ -83,7 +83,6 @@ module Molen
 
             @types = {}
             @generic_types = generic_types
-            @functions = functions
         end
 
         def lookup_type(type_name)
@@ -91,7 +90,7 @@ module Molen
         end
 
         def ==(other)
-            super && other.types == types && other.functions == functions
+            super && other.types == types
         end
 
         def hash
@@ -99,29 +98,26 @@ module Molen
         end
     end
 
-    class ClassType < ModuleType
-        attr_accessor :parents
+    class ClassType < ContainerType
+        attr_accessor :parent_type, :functions
 
         def initialize(name, parent, generic_types = {})
-            super name, MultiParentFunctionLookupHash.new(self), generic_types
+            super name, generic_types
 
-            @parents = parent ? [parent] : []
-        end
-
-        def superclass
-            @parents.find { |parent| parent.is_a?(ClassType) }
+            @parent_type = parent
+            @functions = parent ? ParentHash.new(parent.functions) : {}
         end
 
         def inheritance_chain
-            [self] + (superclass ? superclass.inheritance_chain : [])
+            [self] + (parent_type ? parent_type.inheritance_chain : [])
         end
 
         def ==(other)
-            super && other.parents == parents
+            super && other.parent_type == parent_type && other.functions == functions
         end
 
         def hash
-            super + [parents, functions].hash
+            super + [parent_type, functions].hash
         end
     end
 
@@ -220,13 +216,14 @@ module Molen
         end
     end
 
-    class StructType < ModuleType
-        attr_accessor :vars
+    class StructType < ContainerType
+        attr_accessor :functions, :vars
 
         def initialize(name)
             super name
 
             @vars = {}
+            @functions = {}
         end
 
         def llvm_type
@@ -321,11 +318,11 @@ module Molen
         end
     end
 
-    class ExternType < ModuleType
+    class ExternType < ClassType
         attr_accessor :libnames
 
         def initialize(name)
-            super name, {}
+            super name, nil
 
             @libnames = []
         end

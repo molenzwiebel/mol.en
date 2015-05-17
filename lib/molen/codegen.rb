@@ -358,7 +358,7 @@ module Molen
         def get_or_create_type_info(type)
             return @type_infos[type] if @type_infos[type]
 
-            parent_ptr = type.superclass ? builder.bit_cast(get_or_create_type_info(type.superclass), VOID_PTR) : builder.int2ptr(LLVM::Int(0), VOID_PTR)
+            parent_ptr = type.parent_type ? builder.bit_cast(get_or_create_type_info(type.parent_type), VOID_PTR) : builder.int2ptr(LLVM::Int(0), VOID_PTR)
             @type_infos[type] = add_global("typeinfo.#{type.name}", LLVM::ConstantStruct.const([parent_ptr, builder.global_string_pointer(type.name)]))
         end
 

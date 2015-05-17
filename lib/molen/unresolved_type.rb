@@ -117,8 +117,7 @@ module Molen
             args = type_args.map { |e| e.resolve(visitor) }
             return nil if type.nil? || args.include?(nil)
 
-            new_type = ObjectType.new(type.name, nil, Hash[type.generic_types.keys.zip(args)])
-            new_type.parents = type.parents
+            new_type = ObjectType.new(type.name, type.parent_type, Hash[type.generic_types.keys.zip(args)])
             visitor.type_scope.last.types[new_type.name] = new_type
             visitor.type_scope.push new_type
 
