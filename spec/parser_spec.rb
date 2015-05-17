@@ -41,6 +41,8 @@ describe Parser do
 
     it_parses "[1, 2, 3]", [1, 2, 3].map(&:literal).new
 
+    it_parses "3 `foo` 3", Call.new(nil, "foo", [3.literal, 3.literal])
+
     it_parses "(10 - 2) * 3", Call.new(Call.new(10.literal, "-", [2.literal]), "*", [3.literal])
 
     it_parses "&foo", "foo".ident.ptr

@@ -88,21 +88,21 @@ module Molen
                 New.new type, args
             end
 
-            infix 11, -> x { x.is_operator? "+" }, &create_binary_parser(11)
-            infix 11, -> x { x.is_operator? "-" }, &create_binary_parser(11)
-            infix 12, -> x { x.is_operator? "*" }, &create_binary_parser(12)
-            infix 12, -> x { x.is_operator? "/" }, &create_binary_parser(12)
-            infix 10, -> x { x.is_operator? "%" }, &create_binary_parser(10)
+            infix 12, -> x { x.is_operator? "+" }, &create_binary_parser(11)
+            infix 12, -> x { x.is_operator? "-" }, &create_binary_parser(11)
+            infix 13, -> x { x.is_operator? "*" }, &create_binary_parser(12)
+            infix 13, -> x { x.is_operator? "/" }, &create_binary_parser(12)
+            infix 11, -> x { x.is_operator? "%" }, &create_binary_parser(10)
 
-            infix 4, -> x { x.is_operator?("&&") or x.is_keyword?("and") }, &create_binary_parser(4)
-            infix 3, -> x { x.is_operator?("||") or x.is_keyword?("or")  }, &create_binary_parser(3)
-            infix 9, -> x { x.is_operator? "<"  }, &create_binary_parser(9)
-            infix 9, -> x { x.is_operator? "<=" }, &create_binary_parser(9)
-            infix 9, -> x { x.is_operator? ">"  }, &create_binary_parser(9)
-            infix 9, -> x { x.is_operator? ">=" }, &create_binary_parser(9)
+            infix 5, -> x { x.is_operator?("&&") or x.is_keyword?("and") }, &create_binary_parser(4)
+            infix 4, -> x { x.is_operator?("||") or x.is_keyword?("or")  }, &create_binary_parser(3)
+            infix 10, -> x { x.is_operator? "<"  }, &create_binary_parser(9)
+            infix 10, -> x { x.is_operator? "<=" }, &create_binary_parser(9)
+            infix 10, -> x { x.is_operator? ">"  }, &create_binary_parser(9)
+            infix 10, -> x { x.is_operator? ">=" }, &create_binary_parser(9)
 
-            infix 8, -> x { x.is_operator? "==" }, &create_binary_parser(8)
-            infix 8, -> x { x.is_operator? "!=" }, &create_binary_parser(8)
+            infix 9, -> x { x.is_operator? "==" }, &create_binary_parser(8)
+            infix 9, -> x { x.is_operator? "!=" }, &create_binary_parser(8)
 
             infix 1, -> x { x.is? "=" } do |left|
                 next_token # Consume =
@@ -114,6 +114,15 @@ module Molen
             infix 2, -> x { x.is_keyword? "as" } do |left|
                 next_token
                 Cast.new left, parse_type
+            end
+
+            infix 3, -> x { x.is_special? "`" } do |left|
+                func_name = expect_next_and_consume(:identifier).value
+                expect_and_consume "`"
+                right = parse_expression 3
+                raise_error "Expected expression at right hand side of `#{func_name}`", token unless right
+
+                Call.new nil, func_name, [left, right]
             end
 
             infix 50, -> x { x.is? "." } do |left|

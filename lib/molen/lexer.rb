@@ -27,6 +27,7 @@ module Molen
             /,/                                 => :special,
             /\[/                                => :special,
             /\]/                                => :special,
+            /`/                                 => :special,
 
             /\+/                                => :operator,
             /\//                                => :operator,
