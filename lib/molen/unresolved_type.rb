@@ -121,18 +121,17 @@ module Molen
             visitor.type_scope.last.types[new_type.name] = new_type
             visitor.type_scope.push new_type
 
-            type.vars.each do |name, var_type|
+            type.vars.local_each do |name, var_type|
                 var_type = var_type.resolve(visitor) if var_type.is_a?(UnresolvedType)
                 new_type.vars[name] = var_type
             end
 
-            type.functions.each do |name, funcs|
+            type.functions.local_each do |name, funcs|
                 funcs.each do |f|
                     # Prevent cloning of these two
                     f.type_scope = nil
                     f.owner_type = nil
                 end
-                binding.pry
                 new_funcs = DeepClone.clone(funcs)
                 new_funcs.each do |func|
                     func.accept visitor

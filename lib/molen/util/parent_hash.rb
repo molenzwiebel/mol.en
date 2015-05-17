@@ -19,4 +19,8 @@ class ParentHash < Hash
     def each(&block)
         @parent.merge(self).each &block
     end
+
+    def local_each(&block)
+        Hash.instance_method(:each).bind(self).call &block
+    end
 end

@@ -45,6 +45,10 @@ module Molen
                 type.define_native_function "to_s", string do |this|
                     builder.ret perform_sprintf("%#{PRINTF_FORMATS[type.name.downcase.to_sym]}", this)
                 end
+
+                string.define_native_function "+", string, type do |this, other|
+                    builder.ret perform_sprintf("%s%#{PRINTF_FORMATS[type.name.downcase.to_sym]}", builder.load(builder.struct_gep(this, 2)), other)
+                end
             end
 
             object.define_native_function "to_s", string do |this|
@@ -104,8 +108,8 @@ module Molen
 
     class GeneratingVisitor
         def perform_sprintf(form, *args)
-            sprintf_func = llvm_mod.functions["sprintf"] || llvm_mod.functions.add("sprintf", [LLVM::Pointer(LLVM::Int8)], LLVM::Int, varargs: true)
-            snprintf_func = llvm_mod.functions["snprintf"] || llvm_mod.functions.add("snprintf", [LLVM::Pointer(LLVM::Int8), LLVM::Int, LLVM::Pointer(LLVM::Int8)], LLVM::Int, varargs: true)
+            sprintf_func = mod.functions["sprintf"] || mod.functions.add("sprintf", [LLVM::Pointer(LLVM::Int8)], LLVM::Int, varargs: true)
+            snprintf_func = mod.functions["snprintf"] || mod.functions.add("snprintf", [LLVM::Pointer(LLVM::Int8), LLVM::Int, LLVM::Pointer(LLVM::Int8)], LLVM::Int, varargs: true)
 
             string_nullptr = builder.int2ptr(LLVM::Int(0), LLVM::Pointer(LLVM::Int8))
             form_ptr = builder.global_string_pointer(form)

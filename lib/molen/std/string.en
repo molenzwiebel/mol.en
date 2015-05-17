@@ -1,0 +1,5 @@
+class String {
+    def +(other: Object) -> String {
+        this + other.to_s()
+    }
+}
