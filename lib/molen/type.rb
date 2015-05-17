@@ -139,11 +139,15 @@ module Molen
         end
 
         def upcastable_to?(other)
-            return other.is_a?(PrimitiveType) && other.llvm_type == llvm_type, 0
+            return (other.is_a?(PrimitiveType) && other.llvm_type == llvm_type), 0
         end
 
         def explicitly_castable_to?(other)
             upcastable_to?(other).first
+        end
+
+        def fp?
+            name == "Double" || name == "Float"
         end
 
         def hash
@@ -179,7 +183,7 @@ module Molen
         end
 
         def upcastable_to?(other)
-            return other.is_a?(ObjectType) && inheritance_chain.include?(other), inheritance_chain.index(other)
+            return (other.is_a?(ObjectType) && inheritance_chain.include?(other)), inheritance_chain.index(other)
         end
 
         def var_index(name)

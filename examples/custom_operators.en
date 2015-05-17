@@ -10,18 +10,18 @@ class MyInt {
     var value: Int
 
     def create(x: Int) {
-        this.value = x
+        @value = x
     }
 
     def to_i() -> Int {
-        this.value
+        @value
     }
 
-    def __mul(other: MyInt) -> MyInt {
+    def *(other: MyInt) -> MyInt {
         new MyInt(this.value * other.value)
     }
 
-    def __add(other: MyInt) -> MyInt {
+    def +(other: MyInt) -> MyInt {
         new MyInt(this.value + other.value)
     }
 

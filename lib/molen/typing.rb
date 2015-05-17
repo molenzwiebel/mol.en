@@ -103,7 +103,7 @@ module Molen
             end
 
             if (fn = find_overloaded_method(applicable_constructors, node.args)) then
-                type_function(fn) unless fn.is_body_typed
+                type_function_body(fn) unless fn.is_body_typed
                 node.target_constructor = fn
             end
         end
@@ -264,7 +264,7 @@ module Molen
                 node.object.accept self
                 scope = node.object.type
             else
-                scope = current_type
+                scope = program
             end
 
             possible_functions = (scope.functions[node.name] || []).reject do |func|
@@ -272,7 +272,7 @@ module Molen
                 func.args.size != node.args.size
             end
             function = find_overloaded_method(possible_functions, node.args)
-            raise "No function named #{node.name} with matching argument types found!" unless function
+            node.raise "No function named #{node.name} with matching argument types found!" unless function
 
             type_function_body(function) unless function.is_a?(ExternalFuncDef) or function.is_body_typed
             node.type = function.return_type
@@ -330,7 +330,7 @@ module Molen
                 total_dist, valid = 0, true
 
                 func.args.map(&:type).each_with_index do |arg_type, i|
-                    can, dist = arg_type.upcastable_to? args[i].type
+                    can, dist = args[i].type.upcastable_to? arg_type
                     valid = valid && can
                     next unless can
                     total_dist += dist

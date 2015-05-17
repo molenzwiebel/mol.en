@@ -20,6 +20,9 @@ module Molen
             @types["Object"] = ObjectType.new "Object", nil
             @types["String"] = ObjectType.new "String", object
             string.vars['pointer'] = PointerType.new char
+
+            @types["Pointer"] = ObjectType.new "Pointer", nil
+            add_natives
         end
 
         def method_missing(name, *args)

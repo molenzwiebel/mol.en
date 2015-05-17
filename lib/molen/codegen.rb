@@ -239,7 +239,7 @@ module Molen
             with_new_scope(false) do
                 args.each_with_index do |arg, i|
                     func.params[i].name = arg.name
-                    if i == 0 && node.owner_type.pass_as_this? then
+                    if i == 0 && node.owner_type && node.owner_type.pass_as_this? then
                         @variable_pointers["this"] = func.params[i]
                     else
                         ptr = builder.alloca arg.type.llvm_type, arg.name
@@ -266,20 +266,20 @@ module Molen
             the_func = builder.insert_block.parent
 
             then_block = the_func.basic_blocks.append "if.then"
-            else_block = the_func.basic_blocks.append "if.else" if node.else
+            else_block = the_func.basic_blocks.append "if.else" if node.else_body
             merge_block = the_func.basic_blocks.append "if.after" unless node.returns?
 
             cond = node.condition.accept(self)
-            node.else ? builder.cond(cond, then_block, else_block) : builder.cond(cond, then_block, merge_block)
+            node.else_body ? builder.cond(cond, then_block, else_block) : builder.cond(cond, then_block, merge_block)
 
             builder.position_at_end then_block
-            with_new_scope { node.then.accept self }
-            builder.br merge_block unless node.then.returns?
+            with_new_scope { node.if_body.accept self }
+            builder.br merge_block unless node.if_body.returns?
 
-            if node.else then
+            if node.else_body then
                 builder.position_at_end else_block
-                with_new_scope { node.else.accept self }
-                builder.br merge_block unless node.else.returns?
+                with_new_scope { node.else_body.accept self }
+                builder.br merge_block unless node.else_body.returns?
             end
 
             builder.position_at_end merge_block if merge_block
@@ -309,7 +309,7 @@ module Molen
 
         private
         def with_new_scope(inherit = true)
-            old, @variable_pointers = @variable_pointers, inherit ? HashWithParent.new(@variable_pointers) : {}
+            old, @variable_pointers = @variable_pointers, inherit ? ParentHash.new(@variable_pointers) : {}
             yield
             @variable_pointers = old
         end

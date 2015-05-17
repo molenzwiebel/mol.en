@@ -57,7 +57,6 @@ module Molen
         end
 
         def resolve(visitor)
-            puts "TYPE SCOPE IS NIL #{name}" unless visitor.type_scope
             type = nil
 
             visitor.type_scope.reverse_each do |scope|
@@ -88,7 +87,9 @@ module Molen
         end
 
         def resolve(visitor)
-            PointerType.new ptr_type.resolve(visitor)
+            type = ptr_type.resolve(visitor)
+            raise "Undefined type '#{ptr_type.to_s}'" unless type
+            PointerType.new type
         end
 
         def to_s
@@ -131,6 +132,7 @@ module Molen
                     f.type_scope = nil
                     f.owner_type = nil
                 end
+                binding.pry
                 new_funcs = DeepClone.clone(funcs)
                 new_funcs.each do |func|
                     func.accept visitor

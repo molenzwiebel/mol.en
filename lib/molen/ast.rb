@@ -88,7 +88,13 @@ module Molen
     class Import < ASTNode; attrs :value; end
     class Null < ASTNode; attrs; end;
 
-    class NativeBody < Statement; attrs :block; end
+    class NativeBody < Statement
+        attrs :block
+
+        def returns?
+            true
+        end
+    end
 
     class Call < Expression
         attrs :object, :name, :args
