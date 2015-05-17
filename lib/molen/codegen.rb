@@ -84,7 +84,7 @@ module Molen
         end
 
         def visit_str(node)
-            #allocate_string builder.global_string_pointer(node.value)
+            allocate_string builder.global_string_pointer(node.value)
         end
 
         def visit_long(node)
@@ -92,6 +92,7 @@ module Molen
         end
 
         def visit_identifier(node)
+            return @variable_pointers[node.value] if node.value == "this"
             builder.load @variable_pointers[node.value], node.value
         end
 
@@ -107,7 +108,7 @@ module Molen
         end
 
         def visit_member_access(node)
-            builder.load member_to_ptr(node), node.field.value
+            builder.load member_to_ptr(node)
         end
 
         def visit_cast(node)
@@ -313,7 +314,7 @@ module Molen
             ptr_to_obj = node.object.accept(self)
             index = node.object.type.var_index node.field.value
 
-            builder.struct_gep ptr_to_obj, index
+            builder.gep ptr_to_obj, [LLVM::Int(0), LLVM::Int(index)], node.field.value + "_ptr"
         end
 
         def memset(pointer, value, size)
@@ -368,6 +369,27 @@ module Molen
                 var.global_constant = true
                 var.initializer = val
             end
+        end
+
+        def allocate_string(val_ptr)
+            unless mod.functions["__do_allocate_string"]
+                old_pos = builder.insert_block
+
+                func = mod.functions.add("__do_allocate_string", [VOID_PTR], program.string.llvm_type)
+                func.linkage = :internal
+                builder.position_at_end func.basic_blocks.append("entry")
+
+                allocated_struct = builder.malloc program.string.llvm_struct, "String"
+                memset allocated_struct, LLVM::Int(0), program.string.llvm_struct.size
+                populate_vtable allocated_struct, program.string
+
+                builder.store func.params[0], builder.struct_gep(allocated_struct, 2)
+                builder.ret allocated_struct
+
+                builder.position_at_end old_pos
+            end
+
+            builder.call mod.functions["__do_allocate_string"], val_ptr
         end
     end
 

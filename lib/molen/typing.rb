@@ -4,6 +4,7 @@ module Molen
     class Call; attr_accessor :target_function; end
     class New; attr_accessor :target_constructor; end
     class Import; attr_accessor :imported_body; end
+    class ExternalFuncDef; attr_accessor :owner_type; end
     class Function
         attr_accessor :type_scope, :owner_type, :is_prototype_typed, :is_body_typed
 
