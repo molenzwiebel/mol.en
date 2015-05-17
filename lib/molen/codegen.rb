@@ -100,6 +100,10 @@ module Molen
             node.each {|n| n.accept self}
         end
 
+        def visit_native_body(node)
+            instance_exec *builder.insert_block.parent.params.to_a, &node.block
+        end
+
         def visit_size_of(node)
             type = node.target_type.llvm_type
             type = node.target_type.llvm_struct if node.target_type.is_a?(StructType)

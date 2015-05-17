@@ -86,6 +86,10 @@ module Molen
             node.imported_body = program.import node.value, node.filename
         end
 
+        def visit_native_body(node)
+            node.type = @current_function.return_type
+        end
+
         def visit_new(node)
             node.args.each {|arg| arg.accept self}
             type = node.type.resolve(self)

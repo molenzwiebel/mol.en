@@ -34,6 +34,17 @@ module Molen
         def hash
             name.hash
         end
+
+        def define_native_function(name, return_type, *args, &block)
+            raise "Cannot define native function for type #{self.class.name}" unless self.class.method_defined?(:functions)
+
+            body = NativeBody.new block
+            func_def = Function.new name, false, return_type, args.each_with_index.map{|type, id| FunctionArg.new "arg#{id.to_s}", type}, body
+            func_def.owner_type = self
+            func_def.is_prototype_typed = true
+
+            functions[name] = (functions[name] || []) << func_def
+        end
     end
 
     class VoidType < Type
