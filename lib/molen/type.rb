@@ -74,7 +74,7 @@ module Molen
     class ModuleType < Type
         attr_accessor :types, :functions, :generic_types
 
-        def initialize(name, functions = {} generic_types = {})
+        def initialize(name, functions = {}, generic_types = {})
             if generic_types && generic_types.values.compact.size > 0 then
                 super name + "<" + generic_types.values.map(&:name).join(", ") + ">"
             else
