@@ -173,4 +173,8 @@ module Molen
     class ModuleDef < Statement
         attrs :name, :type_vars, :body
     end
+
+    class Include < Statement
+        attrs :type
+    end
 end

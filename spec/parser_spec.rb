@@ -106,6 +106,7 @@ describe Parser do
     it_parses "struct Foo { var x: Int }", StructDef.new("Foo", [VarDef.new("x", "Int".type)])
 
     it_parses "import 'foo'", Import.new("foo")
+    it_parses "include Foo", Include.new("Foo".type)
 
     it_parses "module Foo {}", ModuleDef.new("Foo", [], [])
     it_parses "module Foo<X> {}", ModuleDef.new("Foo", ["X".type], [])

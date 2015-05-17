@@ -317,6 +317,11 @@ module Molen
 
                 ModuleDef.new(name, type_vars, parse_body(false))
             end
+
+            stmt -> x { x.is_keyword? "include" } do
+                next_token # Consume include
+                Include.new parse_type
+            end
         end
     end
 
