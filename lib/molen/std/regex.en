@@ -47,15 +47,13 @@ class Regex {
         if (res == 0) {
             return new RegexMatch(String.from_cstr(target.pointer + start), matches)
         } elseif (res == 1) {
-            #return null
-            return new RegexMatch("", matches)
+            return null
         } else {
             buf = Pointer.malloc(sizeof Char * 100) as *Char
             C.regerror(res, &@regex, buf, 100)
 
             assert(false, "Error matching regex: " + String.from_cstr(buf))
-            #return null
-            return new RegexMatch("", matches)
+            return null
         }
     }
 }

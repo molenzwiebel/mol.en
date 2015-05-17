@@ -21,11 +21,11 @@ class Pair<LeftType, RightType> {
 intStringPair = new Pair<Int, String>(42, "Answer to quite some stuff")
 puts(intStringPair.to_s())
 
-#stringObjectPair = new Pair<String, Object>("Empty Right", null)
-#puts(stringObjectPair.get_left())
-#
-#if (stringObjectPair.get_right()) {
-#    puts("Something weird happened")
-#} else {
-#    puts("Yep, right is null")
-#}
+stringObjectPair = new Pair<String, Object>("Empty Right", null)
+puts(stringObjectPair.get_left())
+
+if (stringObjectPair.get_right()) {
+    puts("Something weird happened")
+} else {
+    puts("Yep, right is null")
+}

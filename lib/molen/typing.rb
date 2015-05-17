@@ -61,6 +61,10 @@ module Molen
             node.type = program.string
         end
 
+        def visit_null(node)
+            node.type = VoidType.new
+        end
+
         def visit_size_of(node)
             node.target_type = node.target_type.resolve(self) || node.raise("Undefined type #{node.target_type.to_s}")
             node.type = program.long

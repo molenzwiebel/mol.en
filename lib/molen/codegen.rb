@@ -100,6 +100,10 @@ module Molen
             node.each {|n| n.accept self}
         end
 
+        def visit_null(node)
+            builder.int2ptr LLVM::Int(0), LLVM::Pointer(LLVM::Int8)
+        end
+
         def visit_native_body(node)
             instance_exec *builder.insert_block.parent.params.to_a, &node.block
         end
