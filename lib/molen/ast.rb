@@ -69,8 +69,8 @@ module Molen
 
         def returns?
             any? do |e|
-                return true if e.is_a?(Return)
-                return e.returns? if e.class.method_defined?(:returns?)
+                next true if e.is_a?(Return)
+                next e.returns? if e.class.method_defined?(:returns?)
                 false
             end
         end
