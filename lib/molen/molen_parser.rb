@@ -61,6 +61,10 @@ module Molen
                 NewArray.new parse_delimited("[", ",", "]") { parse_expression }
             end
 
+            expr -> tok { tok.is? "!" } do
+                Call.new parse_expression, "!", []
+            end
+
             expr -> tok { tok.is_lparen? } do
                 next_token # Consume (
                 node = parse_node

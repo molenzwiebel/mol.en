@@ -50,7 +50,8 @@ module Molen
             # Note that the order of these matters! This lexer is lazy, so it will always match `=` over `==` unless we specify `==` first.
             /==/                                => :operator,
             /=/                                 => :special,
-            /!=/                                => :operator
+            /!=/                                => :operator,
+            /!/                                 => :operator
         }
 
         KEYWORDS = ["def", "if", "elseif", "else", "for", "return", "new", "var", "class", "static", "extern", "fn", "struct", "as", "and", "or", "import", "sizeof"]
