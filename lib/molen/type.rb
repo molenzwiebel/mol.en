@@ -26,6 +26,10 @@ module Molen
         def ==(other)
             other.class == self.class && other.name == name
         end
+
+        def hash
+            name.hash
+        end
     end
 
     class VoidType < Type
@@ -69,6 +73,10 @@ module Molen
         def ==(other)
             super && other.types == types
         end
+
+        def hash
+            super + [types, generic_types].hash
+        end
     end
 
     class ClassType < ContainerType
@@ -87,6 +95,10 @@ module Molen
 
         def ==(other)
             super && other.parent_type == parent_type && other.functions == functions
+        end
+
+        def hash
+            super + [parent_type, functions].hash
         end
     end
 
@@ -114,9 +126,15 @@ module Molen
         def explicitly_castable_to?(other)
             upcastable_to?(other).first
         end
+
+        def hash
+            super + llvm_type.hash
+        end
     end
 
     class ObjectType < ClassType
+        VTABLE_PTR = LLVM::Pointer(LLVM::Pointer(LLVM::Function([], LLVM::Int, varargs: true)))
+        TYPEINFO_PTR = LLVM::Pointer(LLVM::Struct(GeneratingVisitor::VOID_PTR, GeneratingVisitor::VOID_PTR, "_typeinfo"))
         attr_accessor :vars
 
         def initialize(name, parent, generic_types = {})
@@ -132,7 +150,7 @@ module Molen
         def llvm_struct
             @llvm_struct ||= begin
                 llvm_struct = LLVM::Struct(name)
-                llvm_struct.element_types = vars.values.map(&:llvm_type)
+                llvm_struct.element_types = [VTABLE_PTR, TYPEINFO_PTR] + vars.values.map(&:llvm_type)
                 llvm_struct
             end
         end
@@ -145,6 +163,18 @@ module Molen
             return other.is_a?(ObjectType) && inheritance_chain.include?(other), inheritance_chain.index(other)
         end
 
+        def var_index(name)
+            vars.index(name) + 2
+        end
+
+        def vtable_functions
+            functions.select { |e| e.is_body_typed }.map do |func|
+                next func if func.overriding_functions.size == 0
+                next func unless func.overriding_functions[self]
+                func.overriding_functions[self]
+            end
+        end
+
         def explicitly_castable_to?(other)
             return false unless other.is_a?(ObjectType)
 
@@ -152,6 +182,10 @@ module Molen
             return true if is_upcast
 
             return other.inheritance_chain.include?(self)
+        end
+
+        def hash
+            super + vars.hash
         end
     end
 
@@ -189,6 +223,14 @@ module Molen
         def explicitly_castable_to?(other)
             return upcastable_to?(other).first
         end
+
+        def var_index(name)
+            vars.index(name)
+        end
+
+        def hash
+            super + [functions, vars].hash
+        end
     end
 
     class PointerType < Type
@@ -215,6 +257,10 @@ module Molen
         def explicitly_castable_to?(other)
             return true # We can cast pointers to anything. Yolo
         end
+
+        def hash
+            super + type.hash
+        end
     end
 
     class ExternType < ClassType
@@ -236,6 +282,10 @@ module Molen
 
         def metaclass
             self
+        end
+
+        def hash
+            super + libnames.hash
         end
     end
 
@@ -259,6 +309,10 @@ module Molen
 
         def explicitly_castable_to?(other)
             upcastable_to?(other).first
+        end
+
+        def hash
+            super + [type, functions].hash
         end
     end
 end

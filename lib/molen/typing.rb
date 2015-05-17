@@ -8,7 +8,7 @@ module Molen
         attr_accessor :type_scope, :owner_type, :is_prototype_typed, :is_body_typed
 
         def add_overrider(node)
-            overriding_functions[node.owner_type.name] = node
+            overriding_functions[node.owner_type] = node
         end
 
         def overriding_functions
