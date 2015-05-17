@@ -69,7 +69,7 @@ module Molen
         def visit_pointer_of(node)
             node.target.accept self
             node.raise "Cannot take pointer of void" unless node.target.type
-            node.type = PointerType.new node.target.type
+            node.type = PointerType.new program, node.target.type
         end
 
         def visit_identifier(node)

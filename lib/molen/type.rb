@@ -261,12 +261,36 @@ module Molen
     end
 
     class PointerType < Type
-        attr_accessor :wrap_type
+        attr_accessor :functions, :wrap_type
 
-        def initialize(wrap_type)
+        def initialize(program, wrap_type)
             super "*" + wrap_type.name
 
             @wrap_type = wrap_type
+            @functions = {}
+
+            define_native_function "get", wrap_type do |this|
+                return builder.ret(this) if wrap_type.is_a?(StructType)
+                builder.ret builder.load this
+            end
+
+            define_native_function "set", VoidType.new, wrap_type do |this, value|
+                builder.store value, this
+                builder.ret nil
+            end
+
+            define_native_function "+", self, program.int do |this, offset|
+                builder.ret builder.gep(this, [offset])
+            end
+
+            ptr = self
+            define_native_function "realloc", self, program.int do |this, new_size|
+                realloc_func = mod.functions["realloc"] || mod.functions.add("realloc", [LLVM::Pointer(LLVM::Int8), LLVM::Int], LLVM::Pointer(LLVM::Int8))
+
+                casted_buffer = builder.bit_cast this, LLVM::Pointer(LLVM::Int8)
+                new_buffer = builder.call realloc_func, casted_buffer, new_size
+                builder.ret builder.bit_cast new_buffer, ptr.llvm_type
+            end
         end
 
         def llvm_type

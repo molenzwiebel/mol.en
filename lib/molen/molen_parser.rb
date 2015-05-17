@@ -72,7 +72,7 @@ module Molen
             expr -> tok { tok.is? "&" } do
                 next_token # Consume &
                 expr = parse_expression
-                raise_error "Expected identifier or instance variable after &", token unless expr.is_a?(Identifier) or expr.is_a?(InstanceVariable)
+                raise_error "Expected identifier or member access after &", token unless expr.is_a?(Identifier) or expr.is_a?(MemberAccess)
                 PointerOf.new expr
             end
 
