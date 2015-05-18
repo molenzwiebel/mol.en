@@ -42,12 +42,15 @@ module Molen
                 if token.is_lparen? || token.is?("[") then
                     type_args = []
                     type_args = parse_delimited "[", ",", "]" do
+                        if token.is?("*") || token.is_constant? then
+                            next parse_type
+                        end
                         parse_expression
                     end if token.is? "["
 
                     if token.is?("(") then
-                        raise_error "Expected only class names in generic function call", token if type_args.reject{|x| x.is_a?(Constant)}.size > 0
-                        next Call.new nil, name, parse_delimited { parse_expression }, type_args.map{|x| UnresolvedSimpleType.new x.names}
+                        raise_error "Expected only types in generic function call", token if type_args.reject{|x| x.is_a?(UnresolvedType)}.size > 0
+                        next Call.new nil, name, parse_delimited { parse_expression }, type_args
                     end
 
                     if token.is?("=") then

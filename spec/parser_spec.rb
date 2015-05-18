@@ -75,7 +75,6 @@ describe Parser do
 
     it_parses "a[1]", Call.new("a".ident, "__index_get", [1.literal], [])
     it_parses "a[1] = 2", Call.new("a".ident, "__index_set", [1.literal, 2.literal], [])
-    it_parses "a.b[1]", Call.new(MemberAccess.new("a".ident, "b".ident), "__index_get", [1.literal], [])
 
     it_parses "test[Int](10)", Call.new(nil, "test", [10.literal], ["Int".type])
     it_parses "test.test[Int, Double](10)", Call.new("test".ident, "test", [10.literal], ["Int".type, "Double".type])
