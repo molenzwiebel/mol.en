@@ -16,6 +16,14 @@ module Molen
             @overriding_functions ||= {}
         end
     end
+    class Body
+        attr_accessor :referenced_identifiers
+
+        def reference(name)
+            @referenced_identifiers ||= []
+            @referenced_identifiers << name unless @referenced_identifiers.include?(name)
+        end
+    end
 
     def type(tree, program)
         Molen.type tree, program
@@ -38,7 +46,9 @@ module Molen
         end
 
         def visit_body(node)
+            @current_body, old = node, @current_body
             node.each { |n| n.accept self }
+            @current_body = old
         end
 
         def visit_bool(node)
@@ -78,6 +88,7 @@ module Molen
 
         def visit_identifier(node)
             node.type = @scope[node.value] || node.raise("Could not resolve variable #{node.value}")
+            @current_body.reference node.value
         end
 
         def visit_constant(node)
@@ -137,6 +148,7 @@ module Molen
 
             if node.target.is_a?(Identifier) then
                 type = @scope[node.target.value]
+                @current_body.reference node.value
 
                 unless type
                     type = @scope[node.target.value] = node.value.type
