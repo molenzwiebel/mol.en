@@ -62,6 +62,7 @@ module Molen
             end
 
             expr -> tok { tok.is? "!" } do
+                next_token # Consume !
                 Call.new parse_expression, "!", []
             end
 
