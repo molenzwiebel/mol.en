@@ -184,7 +184,7 @@ module Molen
                     ret_type = func.return_type.nil? ? nil : func.is_prototype_typed ? func.return_type.name : func.return_type
                     arg_types = func.is_prototype_typed ? func.args.map(&:type).map(&:to_s) : func.args.map(&:type)
 
-                    node.return_type.to_s == ret_type && node.args.map(&:to_s) == arg_types
+                    node.return_type.to_s == ret_type && node.args.map(&:to_s) == arg_types && node.type_vars.size == func.type_vars.size
                 end
 
                 overrides_func.add_overrider node if overrides_func
@@ -273,11 +273,42 @@ module Molen
                 scope = program
             end
 
-            possible_functions = (scope.functions[node.name] || []).reject do |func|
-                type_function_prototype(func) unless func.is_a?(ExternalFuncDef) or func.is_prototype_typed
-                func.args.size != node.args.size
+            function = nil
+
+            if node.type_vars.size == 0 then
+                function = find_function(scope, node.name, node.args)
+            else
+                vars = node.type_vars.map {|x| x.resolve(self)}
+                node.raise "Could not resolve all type args." if vars.include?(nil)
+                name = node.name + "<" + vars.map(&:name).join(", ") + ">"
+
+                function = find_function(scope, name, node.args)
+                unless function
+                    untyped_function = (scope.functions[node.name] || []).reject do |func|
+                        func.args.size != node.args.size || func.type_vars.size != vars.size
+                    end.first
+                    node.raise "Undefined generic function #{node.name}" unless untyped_function
+
+                    puts "Defining #{name} from #{untyped_function.name}"
+
+                    # Prevent cloning of these two
+                    untyped_function.type_scope = nil
+                    untyped_function.owner_type = nil
+                    typed_func = DeepClone.clone(untyped_function)
+                    typed_func.name = name
+                    with_type_scope([scope]) { typed_func.accept self }
+
+                    type_lookup_scope = {}
+                    vars.each_with_index do |var, i|
+                        type_lookup_scope[untyped_function.type_vars[i].names.first] = var
+                    end
+
+                    typed_func.type_scope << FunctionTypeScope.new(type_lookup_scope)
+                    type_function_prototype(typed_func)
+                    function = typed_func
+                end
             end
-            function = find_overloaded_method(possible_functions, node.args)
+
             node.raise "No function named #{node.name} with matching argument types found!" unless function
 
             type_function_body(function) unless function.is_a?(ExternalFuncDef) or function.is_body_typed
@@ -285,6 +316,20 @@ module Molen
             node.target_function = function
 
             node.object.type.use_function(function) if node.object && node.object.type.is_a?(ObjectType)
+        end
+
+        def find_function(scope, name, args, type_var_size = 0)
+            possible_functions = (scope.functions[name] || []).reject do |func|
+                if func.is_a?(ExternalFuncDef) then
+                    next func.args.size != args.size
+                else
+                    next true if type_var_size != func.type_vars.size
+                    type_function_prototype(func) unless func.is_prototype_typed
+
+                    next func.args.size != args.size || func.type_vars.size != type_var_size
+                end
+            end
+            find_overloaded_method(possible_functions, args)
         end
 
         def visit_external_def(node)
@@ -350,7 +395,7 @@ module Molen
             name = names.first
 
             type_scope.reverse_each do |scope|
-                if !scope.is_a?(Program) && scope.name == name then
+                if (!scope.is_a?(Program) && !scope.is_a?(FunctionTypeScope)) && scope.name == name then
                     type = scope
                     break
                 end
@@ -387,7 +432,7 @@ module Molen
         def assure_unique(scope, function)
             return true if scope[function.name].nil? || scope[function.name].size == 0
             scope[function.name].each do |func|
-                return false if func.args == function.args && func.owner_type == function.owner_type
+                return false if func.args == function.args && func.owner_type == function.owner_type && func.type_vars.size == function.type_vars.size
             end
             return true
         end

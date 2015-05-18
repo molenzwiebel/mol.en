@@ -39,20 +39,29 @@ module Molen
 
             expr -> tok { tok.is_identifier? } do
                 name = consume.value
-                if token.is_lparen? then
-                    next Call.new nil, name, parse_delimited { parse_expression }, []
+                if token.is_lparen? || token.is?("[") then
+                    type_args = []
+                    type_args = parse_delimited "[", ",", "]" do
+                        parse_expression
+                    end if token.is? "["
+
+                    if token.is?("(") then
+                        raise_error "Expected only class names in generic function call", token if type_args.reject{|x| x.is_a?(Constant)}.size > 0
+                        next Call.new nil, name, parse_delimited { parse_expression }, type_args.map{|x| UnresolvedSimpleType.new x.names}
+                    end
+
+                    if token.is?("=") then
+                        next_token # Consume =
+
+                        right = parse_expression
+                        raise_error "Expected value in array assignment", token unless right
+
+                        next Call.new(Identifier.new(name), "__index_set", [type_args.first, right], [])
+                    end
+
+                    next Call.new Identifier.new(name), "__index_get", [type_args.first], []
                 end
                 Identifier.new name
-            end
-
-            expr -> tok { tok.is? "<" } do
-                type_args = parse_delimited "<", ",", ">" do
-                    parse_type
-                end
-                call = parse_expression
-                raise_error "Expected call after <#{type_args.map(&:to_s).join(", ")}>", token unless call.is_a?(Call)
-                call.type_vars = type_args
-                call
             end
 
             expr -> tok { tok.is_constant? } do
@@ -147,24 +156,6 @@ module Molen
 
                 next Call.new left, right.name, right.args, right.type_vars if right.is_a? Call
                 next MemberAccess.new left, right
-            end
-
-            infix 25, -> x { x.is? "[" } do |left|
-                next_token # Consume [
-                ind = parse_expression
-                raise_error "Expected indexing expression in []", token unless ind
-                expect_and_consume "]"
-
-                if token.is? "=" then
-                    next_token # Consume =
-
-                    right = parse_expression
-                    raise_error "Expected value in array assignment", token unless right
-
-                    next Call.new(left, "__index_set", [ind, right], [])
-                end
-
-                Call.new(left, "__index_get", [ind], [])
             end
 
             stmt -> x { x.is_keyword? "def" } do
