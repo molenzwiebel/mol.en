@@ -115,6 +115,24 @@ module Molen
                 New.new type, args
             end
 
+            expr -> tok { tok.is_keyword? "def" } do
+                next_token
+
+                ret_type = UnresolvedVoidType.new
+                args = parse_delimited("(", ",", ")") do
+                    name = expect_and_consume(:identifier).value
+                    expect_and_consume(":")
+                    FunctionArg.new name, parse_type
+                end
+
+                if token.is? "->" then
+                    next_token # Consume ->
+                    ret_type = parse_type
+                end
+
+                NewAnonymousFunction.new ret_type, args, parse_body(!ret_type.is_a?(UnresolvedVoidType))
+            end
+
             infix 12, -> x { x.is_operator? "+" }, &create_binary_parser(11)
             infix 12, -> x { x.is_operator? "-" }, &create_binary_parser(11)
             infix 13, -> x { x.is_operator? "*" }, &create_binary_parser(12)
