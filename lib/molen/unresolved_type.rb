@@ -3,11 +3,22 @@ require "deep_clone"
 module Molen
     class Parser
         def parse_type
-            raise_error "Expected constant or * when parsing type.", token unless token.is?("*") || token.is_constant?
+            raise_error "Expected constant, * or ( when parsing type.", token unless token.is?("*") || token.is?("(") || token.is_constant?
 
             if token.is? "*" then
                 next_token # Consume *
                 return UnresolvedPointerType.new parse_type
+            end
+
+            if token.is? "(" then
+                arg_types = parse_delimited { parse_type }
+                ret_type = UnresolvedVoidType.new
+                if token.is? "->" then
+                    next_token
+                    ret_type = parse_type
+                end
+
+                return UnresolvedFunctionType.new ret_type, arg_types
             end
 
             expect(:constant)
@@ -155,6 +166,33 @@ module Molen
 
         def to_s
             base_type.to_s + "<" + type_args.map(&:to_s).join(", ") + ">"
+        end
+    end
+
+    class UnresolvedFunctionType < Type
+        attr_accessor :return_type, :arg_types
+
+        def initialize(return_type, arg_types)
+            @return_type, @arg_types = return_type, arg_types
+        end
+
+        def resolve(visitor)
+            ret_type = return_type.resolve(visitor)
+            args = arg_types.map { |e| e.resolve(visitor) }
+            return nil if ret_type.nil? || args.include?(nil)
+
+            #TODO return FunctionType.new ret_type, args
+            nil
+        end
+
+        def ==(other)
+            other.class == self.class && other.return_type == return_type && other.arg_types == arg_types
+        end
+
+        def to_s
+            ret = "(#{arg_types.map(&:to_s).join(", ")})"
+            ret << " -> #{return_type.to_s}" unless return_type.is_a?(UnresolvedVoidType)
+            ret
         end
     end
 end
