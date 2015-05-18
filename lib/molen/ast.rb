@@ -174,6 +174,10 @@ module Molen
         attrs :name, :type_vars, :body
     end
 
+    class TypeAliasDef < Statement
+        attrs :name, :type
+    end
+
     class Include < Statement
         attrs :type
     end

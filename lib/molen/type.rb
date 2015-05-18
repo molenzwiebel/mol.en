@@ -357,6 +357,40 @@ module Molen
         end
     end
 
+    class AliasType < Type
+        attr_accessor :type
+
+        def initialize(name, type)
+            super name
+
+            @type = type
+        end
+
+        def llvm_type
+            type.llvm_type
+        end
+
+        def upcastable_to?(other)
+            type.upcastable_to?(other)
+        end
+
+        def explicitly_castable_to?(other)
+            type.explicitly_castable_to?(other)
+        end
+
+        def pass_as_this?
+            type.pass_as_this?
+        end
+
+        def ==(other)
+            super && type == other.type
+        end
+
+        def hash
+            super - type.hash
+        end
+    end
+
     class Metaclass < Type
         attr_accessor :type, :functions
 

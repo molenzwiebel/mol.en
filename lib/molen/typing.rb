@@ -335,6 +335,13 @@ module Molen
             end
         end
 
+        def visit_type_alias_def(node)
+            node.raise "Redefinition of #{node.name}" if current_type.types[node.name]
+            type = node.type.resolve(self)
+            node.raise "Undefined type '#{node.type.to_s}'" unless type
+            current_type.types[node.name] = AliasType.new node.name, type
+        end
+
         private
         def current_type
             @type_scope.last

@@ -323,6 +323,15 @@ module Molen
                 next_token # Consume include
                 Include.new parse_type
             end
+
+            stmt -> x { x.is_keyword? "type" } do
+                next_token # Consume type
+                name = expect_and_consume(:constant).value
+
+                expect_and_consume("::")
+
+                TypeAliasDef.new name, parse_type
+            end
         end
     end
 

@@ -110,4 +110,6 @@ describe Parser do
 
     it_parses "module Foo {}", ModuleDef.new("Foo", [], [])
     it_parses "module Foo<X> {}", ModuleDef.new("Foo", ["X".type], [])
+
+    it_parses "type Foo :: Int", TypeAliasDef.new("Foo", "Int".type)
 end
