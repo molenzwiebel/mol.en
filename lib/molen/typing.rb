@@ -175,15 +175,16 @@ module Molen
             node.raise "Redefinition of #{receiver_type.name rescue "<top level>"}##{node.name} with same argument types" unless assure_unique(receiver_type.functions, node)
 
             # Check if this function overrides other functions.
-            if node.owner_type && receiver_type.functions[node.name] then
+            is_generic_or_other = node.owner_type.is_a?(ModuleType) ? node.owner_type.generic_types.keys.size == node.owner_type.generic_types.values.compact.size : true
+            if node.owner_type && is_generic_or_other && receiver_type.functions[node.name] then
                 existing_functions = receiver_type.functions[node.name]
                 overrides_func = existing_functions.find do |func|
                     next false if func.args.size != node.args.size
 
                     ret_type = func.return_type.nil? ? nil : func.is_prototype_typed ? func.return_type.name : func.return_type
-                    arg_types = func.is_prototype_typed ? func.args.map(&:type).map(&:name) : func.args.map(&:type)
+                    arg_types = func.is_prototype_typed ? func.args.map(&:type).map(&:to_s) : func.args.map(&:type)
 
-                    node.return_type == ret_type && node.args.map(&:name) == arg_types
+                    node.return_type.to_s == ret_type && node.args.map(&:to_s) == arg_types
                 end
 
                 overrides_func.add_overrider node if overrides_func
@@ -244,7 +245,7 @@ module Molen
             node.raise "Could not resolve supertype #{node.superclass.to_s}." unless parent
 
             existing_type = current_type.types[node.name]
-            existing_type = current_type.types[node.name] = ObjectType.new(node.name, parent, Hash[node.type_vars.map { |e| [e.name, nil] }]) unless existing_type
+            existing_type = current_type.types[node.name] = ObjectType.new(node.name, parent, Hash[node.type_vars.map { |e| [e.names.first, nil] }]) unless existing_type
 
             type_scope.push existing_type
             node.body.accept self
@@ -282,6 +283,8 @@ module Molen
             type_function_body(function) unless function.is_a?(ExternalFuncDef) or function.is_body_typed
             node.type = function.return_type
             node.target_function = function
+
+            node.object.type.use_function(function) if node.object && node.object.type.is_a?(ObjectType)
         end
 
         def visit_external_def(node)

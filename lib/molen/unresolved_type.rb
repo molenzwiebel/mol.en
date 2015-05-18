@@ -79,7 +79,7 @@ module Molen
 
         def resolve(visitor)
             type = ptr_type.resolve(visitor)
-            raise "Undefined type '#{ptr_type.to_s}'" unless type
+            return nil unless type
             PointerType.new visitor.program, type
         end
 

@@ -172,6 +172,7 @@ module Molen
             super name, parent, generic_types
 
             @vars = parent ? ParentHash.new(parent.vars) : {}
+            @used_functions = []
         end
 
         def llvm_type
@@ -199,15 +200,24 @@ module Molen
             vars.keys.index(name) + 2
         end
 
+        def used_functions
+            (parent_type ? parent_type.used_functions : []) + @used_functions
+        end
+
+        def use_function(func)
+            existing = used_functions.count {|x| (x.owner_type && func.owner_type ? x.owner_type == func.owner_type : true) && x == func} > 0
+            @used_functions << func unless existing
+        end
+
         def func_index(node)
-            functions.map { |k,v| v }.flatten.select { |e| e.is_body_typed }.index node
+            used_functions.index node
         end
 
         def vtable_functions
-            functions.map { |k,v| v }.flatten.select { |e| e.is_body_typed }.map do |func|
+            used_functions.map do |func|
                 next func if func.overriding_functions.size == 0
-                next func unless func.overriding_functions[self]
-                func.overriding_functions[self]
+                next func unless func.overriding_functions.keys.include? self
+                func.overriding_functions.values[func.overriding_functions.keys.index(self)]
             end
         end
 
