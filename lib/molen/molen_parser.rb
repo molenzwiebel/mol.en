@@ -165,6 +165,11 @@ module Molen
                     next_token # Consume static
                 end
 
+                type_vars = []
+                type_vars = parse_delimited "<", ",", ">" do
+                    parse_type
+                end if token.is? "<"
+
                 raise_error "Expected identifier or operator as function name", token unless token.is_identifier? or token.is_operator?
                 name = consume.value
 
@@ -180,7 +185,7 @@ module Molen
                     type = parse_type
                 end
 
-                Function.new name, is_static, type, args, parse_body(!type.is_a?(UnresolvedVoidType))
+                Function.new name, is_static, type, args, type_vars, parse_body(!type.is_a?(UnresolvedVoidType))
             end
 
             stmt -> x { x.is_keyword? "if" } do

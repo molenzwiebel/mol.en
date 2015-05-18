@@ -51,7 +51,7 @@ class String
     end
 
     def type
-        UnresolvedSimpleType.new self
+        UnresolvedSimpleType.new [self]
     end
 end
 
