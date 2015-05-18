@@ -115,7 +115,7 @@ module Molen
                 New.new type, args
             end
 
-            expr -> tok { tok.is_keyword? "def" } do
+            expr -> tok { tok.is_keyword? "func" } do
                 next_token
 
                 ret_type = UnresolvedVoidType.new

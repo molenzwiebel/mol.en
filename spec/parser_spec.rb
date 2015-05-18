@@ -64,7 +64,7 @@ describe Parser do
     it_parses "x = 3", Assign.new("x".ident, 3.literal)
     it_parses "X = 3", Assign.new("X".const, 3.literal)
 
-    it_parses "x = func(a: Int) -> Int 10", Assign.new("x".ident, NewAnonymousFunction.new("Int".type, [FunctionArg.new("a", "Int".type)], 10.literal))
+    it_parses "x = func(a: Int) -> Int 10", Assign.new("x".ident, NewAnonymousFunction.new("Int".type, [FunctionArg.new("a", "Int".type)], 10.literal.return))
 
     it_parses "2 as Int", Cast.new(2.literal, "Int".type)
     it_parses "2 as *Int", Cast.new(2.literal, "Int".type.ptr)
