@@ -1,0 +1,33 @@
+class StringScanner {
+    var string: String
+    var position: Int
+
+    def create(src: String) {
+        @string = src
+        @position = 0
+    }
+
+    def scan(regex: String) -> String {
+        @scan(new Regex(regex))
+    }
+
+    def scan(regex: Regex) -> String {
+        if (@is_eos()) return null
+
+        match = regex.match(@string, @position)
+        if (match.is_null()) {
+            return null
+        } else {
+            @position = @position + match.match_end(0).to_int()
+            return match[0]
+        }
+    }
+
+    def is_eos() -> Bool {
+        @position >= @string.length()
+    }
+
+    def rest() -> String {
+        @string.substring(@position, @string.length() - @position)
+    }
+}
