@@ -100,7 +100,7 @@ module Molen
     end
 
     class Call < Expression
-        attrs :object, :name, :args
+        attrs :object, :name, :args, :type_vars
     end
 
     class MemberAccess < Expression

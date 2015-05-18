@@ -40,9 +40,19 @@ module Molen
             expr -> tok { tok.is_identifier? } do
                 name = consume.value
                 if token.is_lparen? then
-                    next Call.new nil, name, parse_delimited { parse_expression }
+                    next Call.new nil, name, parse_delimited { parse_expression }, []
                 end
                 Identifier.new name
+            end
+
+            expr -> tok { tok.is? "<" } do
+                type_args = parse_delimited "<", ",", ">" do
+                    parse_type
+                end
+                call = parse_expression
+                raise_error "Expected call after <#{type_args.map(&:to_s).join(", ")}>", token unless call.is_a?(Call)
+                call.type_vars = type_args
+                call
             end
 
             expr -> tok { tok.is_constant? } do
@@ -52,7 +62,7 @@ module Molen
             expr -> tok { tok.is_instance_variable? } do
                 name = consume.value[1..-1]
                 if token.is_lparen? then
-                    next Call.new(Identifier.new("this"), name, parse_delimited { parse_expression })
+                    next Call.new(Identifier.new("this"), name, parse_delimited { parse_expression }, [])
                 end
                 MemberAccess.new Identifier.new("this"), Identifier.new(name)
             end
@@ -63,7 +73,7 @@ module Molen
 
             expr -> tok { tok.is? "!" } do
                 next_token # Consume !
-                Call.new parse_expression, "!", []
+                Call.new parse_expression, "!", [], []
             end
 
             expr -> tok { tok.is_lparen? } do
@@ -127,7 +137,7 @@ module Molen
                 right = parse_expression 3
                 raise_error "Expected expression at right hand side of `#{func_name}`", token unless right
 
-                Call.new nil, func_name, [left, right]
+                Call.new nil, func_name, [left, right], []
             end
 
             infix 50, -> x { x.is? "." } do |left|
@@ -135,7 +145,7 @@ module Molen
                 right = parse_expression 50
                 raise_error "Expected identifier or call after '.'", token unless right.is_a?(Call) or right.is_a?(Identifier)
 
-                next Call.new left, right.name, right.args if right.is_a? Call
+                next Call.new left, right.name, right.args, right.type_vars if right.is_a? Call
                 next MemberAccess.new left, right
             end
 
@@ -151,10 +161,10 @@ module Molen
                     right = parse_expression
                     raise_error "Expected value in array assignment", token unless right
 
-                    next Call.new(left, "__index_set", [ind, right])
+                    next Call.new(left, "__index_set", [ind, right], [])
                 end
 
-                Call.new(left, "__index_get", [ind])
+                Call.new(left, "__index_get", [ind], [])
             end
 
             stmt -> x { x.is_keyword? "def" } do
@@ -193,7 +203,7 @@ module Molen
 
                 cond = parse_expression
                 raise_error "Expected condition in if statement", token unless cond
-                cond = Call.new(cond, "to_bool", [])
+                cond = Call.new(cond, "to_bool", [], [])
 
                 expect_and_consume(:rparen)
 
@@ -210,7 +220,7 @@ module Molen
 
                         elseif_cond = parse_expression
                         raise_error "Expected condition in elseif statement", token unless elseif_cond
-                        elseif_cond = Call.new(elseif_cond, "to_bool", [])
+                        elseif_cond = Call.new(elseif_cond, "to_bool", [], [])
 
                         expect_and_consume(:rparen)
                         elseifs << [elseif_cond, parse_body(false)]
@@ -232,7 +242,7 @@ module Molen
 
                 cond = parse_expression
                 raise_error "Expected condition in for loop", token unless cond
-                cond = Call.new(cond, "to_bool", [])
+                cond = Call.new(cond, "to_bool", [], [])
                 expect_and_consume(",")
 
                 step = parse_node
@@ -377,7 +387,7 @@ module Molen
                 op_tok = consume # Consume operator
                 right = parse_expression right_associative ? prec - 1 : prec
                 raise_error "Expected expression at right hand side of #{op_tok.value}", op_tok unless right
-                return Call.new(left, op_tok.value, [right])
+                return Call.new(left, op_tok.value, [right], [])
             end
         end
 
