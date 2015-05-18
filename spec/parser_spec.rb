@@ -35,6 +35,7 @@ describe Parser do
     it_parses "__foo", "__foo".ident
     it_parses "X", "X".const
     it_parses "Foo", "Foo".const
+    it_parses "A:B:C", ["A", "B", "C"].const
 
     it_parses "@foo", "foo".var
     it_parses "@foo(a, b)", Call.new("this".ident, "foo", ["a".ident, "b".ident])

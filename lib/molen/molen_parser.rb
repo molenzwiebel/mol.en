@@ -46,7 +46,7 @@ module Molen
             end
 
             expr -> tok { tok.is_constant? } do
-                Constant.new consume.value
+                parse_const
             end
 
             expr -> tok { tok.is_instance_variable? } do
@@ -249,7 +249,7 @@ module Molen
 
             stmt -> x { x.is_keyword? "class" } do
                 name = expect_next_and_consume(:constant).value
-                parent = UnresolvedSimpleType.new "Object"
+                parent = UnresolvedSimpleType.new ["Object"]
                 type_vars = []
 
                 if token.is? "<" then
@@ -339,6 +339,16 @@ module Molen
     # need to be in the parser class, but are still handy to use from
     # our parsing blocks.
     class Parser
+        def parse_const
+            names = [consume.value]
+            while token.is? ":"
+                next_token
+                raise_error "Expected constant after :", token unless token.is_constant?
+                names << consume.value
+            end
+            Constant.new names
+        end
+
         def parse_delimited(start_tok = "(", delim = ",", end_tok = ")")
             expect start_tok
             next_token # Consume start token

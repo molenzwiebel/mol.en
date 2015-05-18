@@ -81,8 +81,8 @@ module Molen
         end
 
         def visit_constant(node)
-            node.type = UnresolvedSimpleType.new(node.value).resolve(self)
-            node.raise "Could not resolve constant #{node.value}" unless node.type
+            node.type = resolve_constant_type node.names
+            node.raise "Could not resolve constant #{node.names.first}" unless node.type
             node.type = node.type.metaclass
         end
 
@@ -340,6 +340,27 @@ module Molen
             type = node.type.resolve(self)
             node.raise "Undefined type '#{node.type.to_s}'" unless type
             current_type.types[node.name] = AliasType.new node.name, type
+        end
+
+        def resolve_constant_type(names)
+            type = nil
+            name = names.first
+
+            type_scope.reverse_each do |scope|
+                if !scope.is_a?(Program) && scope.name == name then
+                    type = scope
+                    break
+                end
+                type = scope.lookup_type(name) and break
+            end
+
+            return nil unless type
+
+            names.drop(1).each_with_index do |name, i|
+                type = type.types[name] or node.raise("Undefined type #{node.names[0..i + 1].join ':'}")
+            end
+
+            type
         end
 
         private

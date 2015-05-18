@@ -10,7 +10,8 @@ module Molen
                 return UnresolvedPointerType.new parse_type
             end
 
-            simple = UnresolvedSimpleType.new expect_and_consume(:constant).value
+            expect(:constant)
+            simple = UnresolvedSimpleType.new parse_const.names
             return simple unless token.is? "<"
 
             arg_types = parse_delimited "<", ",", ">" do
@@ -46,32 +47,22 @@ module Molen
     end
 
     class UnresolvedSimpleType < UnresolvedType
-        attr_accessor :name
+        attr_accessor :names
 
-        def initialize(name)
-            @name = name
+        def initialize(names)
+            @names = names
         end
 
         def ==(other)
-            other.is_a?(UnresolvedSimpleType) && other.name == name
+            other.is_a?(UnresolvedSimpleType) && other.names == names
         end
 
         def resolve(visitor)
-            type = nil
-
-            visitor.type_scope.reverse_each do |scope|
-                if !scope.is_a?(Program) && scope.name == name then
-                    type = scope
-                    break
-                end
-                type = scope.lookup_type(name) and break
-            end
-
-            type
+            visitor.resolve_constant_type names
         end
 
         def to_s
-            name
+            names.join ":"
         end
     end
 
@@ -113,7 +104,7 @@ module Molen
             args = type_args.map { |e| e.resolve(visitor) }
             return nil if type.nil? || args.include?(nil)
 
-            existing = UnresolvedSimpleType.new("#{type.name}<#{args.map(&:name).join(", ")}>").resolve(visitor)
+            existing = visitor.resolve_constant_type ["#{type.name}<#{args.map(&:name).join(", ")}>"]
             return existing if existing
 
             if type.is_a?(ObjectType)

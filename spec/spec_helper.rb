@@ -43,7 +43,7 @@ class String
     end
 
     def const
-        Constant.new self
+        Constant.new [self]
     end
 
     def var
@@ -84,5 +84,9 @@ end
 class Array
     def new
         NewArray.new self
+    end
+
+    def const
+        Constant.new self
     end
 end

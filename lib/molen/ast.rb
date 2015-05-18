@@ -83,10 +83,13 @@ module Molen
     class Long < Literal; end
     class Double < Literal; end
     class Identifier < Literal; end
-    class Constant < Literal; end
 
     class Import < ASTNode; attrs :value; end
-    class Null < ASTNode; attrs; end;
+    class Null < ASTNode; attrs; end
+
+    class Constant < Expression
+        attrs :names
+    end
 
     class NativeBody < Statement
         attrs :block
