@@ -1,0 +1,26 @@
+# 'Boxes' something, wrapping it into an object.
+class Box<X> {
+    var value: X
+
+    def create(value: X) @value = value
+    def get() -> X @value
+    def set(val: X) @value = val
+}
+
+# Boxable assumes a "get_box_target" method
+module Boxable<T> {
+    def box() -> Box<T> new Box<T>(@get_box_target())
+}
+
+class IntBoxer {
+    include Boxable<Int>
+
+    def get_box_target() -> Int {
+        10
+    }
+}
+
+foo = new IntBoxer
+puts(foo)
+puts(foo.box())
+puts(foo.box().get())

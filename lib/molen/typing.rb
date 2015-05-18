@@ -203,8 +203,9 @@ module Molen
 
         def type_function_prototype(node)
             with_type_scope(node.type_scope) do
-                node.return_type = node.return_type.resolve(self)
-                node.raise "Could not resolve function #{node.name}'s return type! (#{node.return_type.to_s} given)" unless node.return_type
+                return_type = node.return_type.resolve(self)
+                node.raise "Could not resolve function #{node.name}'s return type! (#{node.return_type.to_s} given)" unless return_type
+                node.return_type = return_type
                 node.args.each {|arg| arg.accept self}
                 node.is_prototype_typed = true
             end
@@ -300,6 +301,38 @@ module Molen
             node.return_type = node.return_type ? node.return_type.resolve(self) : nil
 
             current_type.functions[node.name] = (current_type.functions[node.name] || []) << node
+        end
+
+        def visit_module_def(node)
+            type = current_type.types[node.name]
+            if type then
+                node.raise "#{node.name} was already defined but not a module!" unless type.class == ModuleType
+            else
+                current_type.types[node.name] = type = ModuleType.new node.name, {}, Hash[node.type_vars.map { |e| [e.name, nil] }]
+            end
+
+            type_scope.push type
+            node.body.accept self
+            type_scope.pop
+        end
+
+        def visit_include(node)
+            type = node.type.resolve(self)
+            node.raise "Undefined type #{node.type.to_s}" unless type
+            node.raise "#{node.type.to_s} was defined but not a module" unless type.class == ModuleType
+
+            type.functions.each do |name, funcs|
+                funcs.each do |f|
+                    # Prevent cloning of these two
+                    f.type_scope = nil
+                    f.owner_type = nil
+                end
+                new_funcs = DeepClone.clone(funcs)
+                new_funcs.each do |func|
+                    func.accept self
+                    func.type_scope << type
+                end
+            end
         end
 
         private

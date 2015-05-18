@@ -102,7 +102,6 @@ module Molen
 
         def initialize(base_type, type_args)
             @base_type, @type_args = base_type, type_args
-            @simple_generic_type = UnresolvedSimpleType.new base_type.to_s + "<" + type_args.map(&:to_s).join(",") + ">"
         end
 
         def ==(other)
@@ -110,36 +109,57 @@ module Molen
         end
 
         def resolve(visitor)
-            existing = @simple_generic_type.resolve(visitor)
-            return existing if existing
-
             type = base_type.resolve(visitor)
             args = type_args.map { |e| e.resolve(visitor) }
             return nil if type.nil? || args.include?(nil)
 
-            new_type = ObjectType.new(type.name, type.parent_type, Hash[type.generic_types.keys.zip(args)])
-            visitor.type_scope.last.types[new_type.name] = new_type
-            visitor.type_scope.push new_type
+            existing = UnresolvedSimpleType.new("#{type.name}<#{args.map(&:name).join(", ")}>").resolve(visitor)
+            return existing if existing
 
-            type.vars.local_each do |name, var_type|
-                var_type = var_type.resolve(visitor) if var_type.is_a?(UnresolvedType)
-                new_type.vars[name] = var_type
-            end
+            if type.is_a?(ObjectType)
+                new_type = ObjectType.new(type.name, type.parent_type, Hash[type.generic_types.keys.zip(args)])
+                visitor.type_scope.last.types[new_type.name] = new_type
+                visitor.type_scope.push new_type
 
-            type.functions.local_each do |name, funcs|
-                funcs.each do |f|
-                    # Prevent cloning of these two
-                    f.type_scope = nil
-                    f.owner_type = nil
+                type.vars.local_each do |name, var_type|
+                    var_type = var_type.resolve(visitor) if var_type.is_a?(UnresolvedType)
+                    new_type.vars[name] = var_type
                 end
-                new_funcs = DeepClone.clone(funcs)
-                new_funcs.each do |func|
-                    func.accept visitor
-                end
-            end
 
-            visitor.type_scope.pop
-            new_type
+                type.functions.local_each do |name, funcs|
+                    funcs.each do |f|
+                        # Prevent cloning of these two
+                        f.type_scope = nil
+                        f.owner_type = nil
+                    end
+                    new_funcs = DeepClone.clone(funcs)
+                    new_funcs.each do |func|
+                        func.accept visitor
+                    end
+                end
+
+                visitor.type_scope.pop
+                return new_type
+            else
+                new_type = ModuleType.new(type.name, {}, Hash[type.generic_types.keys.zip(args)])
+                visitor.type_scope.last.types[new_type.name] = new_type
+                visitor.type_scope.push new_type
+
+                type.functions.each do |name, funcs|
+                    funcs.each do |f|
+                        # Prevent cloning of these two
+                        f.type_scope = nil
+                        f.owner_type = nil
+                    end
+                    new_funcs = DeepClone.clone(funcs)
+                    new_funcs.each do |func|
+                        func.accept visitor
+                    end
+                end
+
+                visitor.type_scope.pop
+                return new_type
+            end
         end
 
         def to_s

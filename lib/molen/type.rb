@@ -90,8 +90,16 @@ module Molen
             types[type_name] || generic_types[type_name]
         end
 
+        def upcastable_to?(other)
+            return other == self, 0
+        end
+
+        def explicitly_castable_to?(other)
+            return other == self
+        end
+
         def ==(other)
-            super && other.types == types && other.functions == functions
+            super && other.types == types && other.generic_types == generic_types && other.functions == functions
         end
 
         def hash
@@ -171,11 +179,12 @@ module Molen
         end
 
         def llvm_struct
-            @llvm_struct ||= begin
-                llvm_struct = LLVM::Struct("class.#{name}")
-                llvm_struct.element_types = [VTABLE_PTR, TYPEINFO_PTR] + vars.values.map(&:llvm_type)
-                llvm_struct
-            end
+            # @llvm_struct ||= begin
+            #     llvm_struct = LLVM::Struct("class.#{name}")
+            #     llvm_struct.element_types = [VTABLE_PTR, TYPEINFO_PTR] + vars.values.map(&:llvm_type)
+            #     llvm_struct
+            # end
+            LLVM::Struct *([VTABLE_PTR, TYPEINFO_PTR] + vars.values.map(&:llvm_type))
         end
 
         def ==(other)
@@ -183,7 +192,7 @@ module Molen
         end
 
         def upcastable_to?(other)
-            return (other.is_a?(ObjectType) && inheritance_chain.include?(other)), inheritance_chain.index(other)
+            return other == self || (other.is_a?(ObjectType) && inheritance_chain.include?(other)), inheritance_chain.index(other)
         end
 
         def var_index(name)
@@ -230,11 +239,12 @@ module Molen
         end
 
         def llvm_struct
-            @llvm_struct ||= begin
-                llvm_struct = LLVM::Struct("struct.#{name}")
-                llvm_struct.element_types = vars.values.map(&:llvm_type)
-                llvm_struct
-            end
+            # @llvm_struct ||= begin
+            #     llvm_struct = LLVM::Struct("struct.#{name}")
+            #     llvm_struct.element_types = vars.values.map(&:llvm_type)
+            #     llvm_struct
+            # end
+            LLVM::Struct *vars.values.map(&:llvm_type)
         end
 
         def ==(other)
