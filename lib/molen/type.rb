@@ -39,7 +39,7 @@ module Molen
             raise "Cannot define native function for type #{self.class.name}" unless self.class.method_defined?(:functions)
 
             body = NativeBody.new block
-            func_def = Function.new name, false, return_type, args.each_with_index.map{|type, id| FunctionArg.new "arg#{id.to_s}", type}, body
+            func_def = Function.new name, false, return_type, args.each_with_index.map{|type, id| FunctionArg.new "arg#{id.to_s}", type}, [], body
             func_def.owner_type = self
             func_def.is_prototype_typed = true
 

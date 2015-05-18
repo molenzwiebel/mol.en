@@ -100,7 +100,7 @@ module Molen
     end
 
     class Call < Expression
-        attrs :object, :name, :args
+        attrs :object, :name, :args, :type_vars
     end
 
     class MemberAccess < Expression
@@ -133,7 +133,7 @@ module Molen
 
     class FunctionArg < ASTNode; attrs :name, :type; end;
     class Function < Statement
-        attrs :name, :is_static, :return_type, :args, :body
+        attrs :name, :is_static, :return_type, :args, :type_vars, :body
     end
 
     class If < Statement

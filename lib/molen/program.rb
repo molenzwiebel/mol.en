@@ -58,4 +58,14 @@ module Molen
             node
         end
     end
+
+    class FunctionTypeScope
+        def initialize(types)
+            @types = types
+        end
+
+        def lookup_type(name)
+            @types[name]
+        end
+    end
 end

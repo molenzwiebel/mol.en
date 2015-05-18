@@ -38,13 +38,13 @@ describe Parser do
     it_parses "A:B:C", ["A", "B", "C"].const
 
     it_parses "@foo", "foo".var
-    it_parses "@foo(a, b)", Call.new("this".ident, "foo", ["a".ident, "b".ident])
+    it_parses "@foo(a, b)", Call.new("this".ident, "foo", ["a".ident, "b".ident], [])
 
     it_parses "[1, 2, 3]", [1, 2, 3].map(&:literal).new
 
-    it_parses "3 `foo` 3", Call.new(nil, "foo", [3.literal, 3.literal])
+    it_parses "3 `foo` 3", Call.new(nil, "foo", [3.literal, 3.literal], [])
 
-    it_parses "(10 - 2) * 3", Call.new(Call.new(10.literal, "-", [2.literal]), "*", [3.literal])
+    it_parses "(10 - 2) * 3", Call.new(Call.new(10.literal, "-", [2.literal], []), "*", [3.literal], [])
 
     it_parses "&foo", "foo".ident.ptr
 
@@ -58,7 +58,7 @@ describe Parser do
     it_parses "new A<B>(1)", New.new(UnresolvedGenericType.new("A".type, ["B".type]), [1.literal])
 
     ["+", "-", "*", "/", "%", "&&", "and", "||", "or", "<", "<=", ">", ">=", "==", "!="].each do |op|
-        it_parses "3 #{op} 3", Call.new(3.literal, op, [3.literal])
+        it_parses "3 #{op} 3", Call.new(3.literal, op, [3.literal], [])
     end
 
     it_parses "x = 3", Assign.new("x".ident, 3.literal)
@@ -69,19 +69,24 @@ describe Parser do
     it_parses "2 as Foo<A, B>", Cast.new(2.literal, UnresolvedGenericType.new("Foo".type, ["A".type, "B".type]))
 
     it_parses "a.b", MemberAccess.new("a".ident, "b".ident)
-    it_parses "a.b()", Call.new("a".ident, "b", [])
+    it_parses "a.b()", Call.new("a".ident, "b", [], [])
     it_parses "@a.b", MemberAccess.new("a".var, "b".ident)
-    it_parses "new Foo.test()", Call.new(New.new("Foo".type, []), "test", [])
+    it_parses "new Foo.test()", Call.new(New.new("Foo".type, []), "test", [], [])
 
-    it_parses "a[1]", Call.new("a".ident, "__index_get", [1.literal])
-    it_parses "a[1] = 2", Call.new("a".ident, "__index_set", [1.literal, 2.literal])
+    it_parses "a[1]", Call.new("a".ident, "__index_get", [1.literal], [])
+    it_parses "a[1] = 2", Call.new("a".ident, "__index_set", [1.literal, 2.literal], [])
+    it_parses "a.b[1]", Call.new(MemberAccess.new("a".ident, "b".ident), "__index_get", [1.literal], [])
 
-    it_parses "def foo() bar", Function.new("foo", false, nil.type, [], "bar".ident)
-    it_parses "def foo(a: Int) bar", Function.new("foo", false, nil.type, [FunctionArg.new("a", "Int".type)], "bar".ident)
-    it_parses "def foo(a: Int, b: Bool) bar", Function.new("foo", false, nil.type, [FunctionArg.new("a", "Int".type), FunctionArg.new("b", "Bool".type)], "bar".ident)
-    it_parses "def foo() -> Int 10", Function.new("foo", false, "Int".type, [], 10.literal.return)
-    it_parses "def foo(a: Int) -> Bool true", Function.new("foo", false, "Bool".type, [FunctionArg.new("a", "Int".type)], true.literal.return)
-    it_parses "def static foo() bar", Function.new("foo", true, nil.type, [], "bar".ident)
+    it_parses "test[Int](10)", Call.new(nil, "test", [10.literal], ["Int".type])
+    it_parses "test.test[Int, Double](10)", Call.new("test".ident, "test", [10.literal], ["Int".type, "Double".type])
+
+    it_parses "def foo() bar", Function.new("foo", false, nil.type, [], [], "bar".ident)
+    it_parses "def foo(a: Int) bar", Function.new("foo", false, nil.type, [FunctionArg.new("a", "Int".type)], [], "bar".ident)
+    it_parses "def foo(a: Int, b: Bool) bar", Function.new("foo", false, nil.type, [FunctionArg.new("a", "Int".type), FunctionArg.new("b", "Bool".type)], [], "bar".ident)
+    it_parses "def foo() -> Int 10", Function.new("foo", false, "Int".type, [], [], 10.literal.return)
+    it_parses "def foo(a: Int) -> Bool true", Function.new("foo", false, "Bool".type, [FunctionArg.new("a", "Int".type)], [], true.literal.return)
+    it_parses "def static foo() bar", Function.new("foo", true, nil.type, [], [], "bar".ident)
+    it_parses "def <A, B> foo() bar", Function.new("foo", false, nil.type, [], ["A".type, "B".type], "bar".ident)
 
     it_parses "if (true) 10", If.new(true.literal.to_bool_call, 10.literal, nil)
     it_parses "if (true) 10 else 11", If.new(true.literal.to_bool_call, 10.literal, 11.literal)

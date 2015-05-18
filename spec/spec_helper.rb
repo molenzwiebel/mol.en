@@ -51,7 +51,7 @@ class String
     end
 
     def type
-        UnresolvedSimpleType.new self
+        UnresolvedSimpleType.new [self]
     end
 end
 
@@ -65,7 +65,7 @@ class ASTNode
     end
 
     def to_bool_call
-        Call.new(self, "to_bool", [])
+        Call.new(self, "to_bool", [], [])
     end
 end
 
