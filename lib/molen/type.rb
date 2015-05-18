@@ -371,10 +371,16 @@ module Molen
         end
 
         def upcastable_to?(other)
+            if other.is_a?(AliasType) then
+                return type.upcastable_to?(other.type)
+            end
             type.upcastable_to?(other)
         end
 
         def explicitly_castable_to?(other)
+            if other.is_a?(AliasType) then
+                return type.explicitly_castable_to?(other.type)
+            end
             type.explicitly_castable_to?(other)
         end
 

@@ -1,0 +1,14 @@
+import "io/io"
+
+extern C {
+    fn fopen(filename: *Char, mode: *Char) -> File
+}
+
+class File :: IO {
+    var location: String
+
+    def create(file: String, mode: String) {
+        @location = file
+        @in = @out = C.fopen(file.pointer, mode.pointer)
+    }
+}
