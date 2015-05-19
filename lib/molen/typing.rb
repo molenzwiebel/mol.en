@@ -306,20 +306,18 @@ module Molen
             function = nil
 
             if node.type_vars.size == 0 then
-                function = find_function(scope, node.name, node.args)
+                function = find_function(scope, node.name, node.args, node.block)
             else
                 vars = node.type_vars.map {|x| x.resolve(self)}
                 node.raise "Could not resolve all type args." if vars.include?(nil)
                 name = node.name + "<" + vars.map(&:name).join(", ") + ">"
 
-                function = find_function(scope, name, node.args)
+                function = find_function(scope, name, node.args, node.block)
                 unless function
                     untyped_function = (scope.functions[node.name] || []).reject do |func|
-                        func.args.size != node.args.size || func.type_vars.size != vars.size
+                        func.args.size != (node.block ? node.args.size + 1 : node.args) || func.type_vars.size != vars.size || func.args.last.type.arg_types.size != node.block.arg_names.size
                     end.first
                     node.raise "Undefined generic function #{node.name}" unless untyped_function
-
-                    puts "Defining #{name} from #{untyped_function.name}"
 
                     # Prevent cloning of these two
                     untyped_function.type_scope = nil
@@ -341,6 +339,27 @@ module Molen
 
             node.raise "No function named #{node.name} with matching argument types found!" unless function
 
+            if node.block then
+                block_type = function.args.last.type
+                block_arg = NewAnonymousFunction.new nil, nil, nil
+
+                block_arg.body = node.block.body
+                block_arg.return_type = block_type.return_type
+                block_arg.args = node.block.arg_names.each_with_index.map { |n,i| FunctionArg.new n, block_type.args.values[i] }
+                block_arg.type = FunctionType.new block_type.return_type, Hash[block_arg.args.map{|x| [x.name, x.type]}], @scope.clone
+
+                @current_function, old = block_arg.type, @current_function
+                with_new_scope do
+                    block_arg.args.each do |arg|
+                        @scope[arg.name] = arg.type
+                    end
+                    block_arg.body.accept self
+                end
+                @current_function = old
+
+                node.args << block_arg
+            end
+
             type_function_body(function) unless function.is_a?(ExternalFuncDef) or function.is_body_typed
             node.type = function.return_type
             node.target_function = function
@@ -348,15 +367,16 @@ module Molen
             node.object.type.use_function(function) if node.object && node.object.type.is_a?(ObjectType)
         end
 
-        def find_function(scope, name, args, type_var_size = 0)
+        def find_function(scope, name, args, block, type_var_size = 0)
             possible_functions = (scope.functions[name] || []).reject do |func|
                 if func.is_a?(ExternalFuncDef) then
                     next func.args.size != args.size
                 else
                     next true if type_var_size != func.type_vars.size
                     type_function_prototype(func) unless func.is_prototype_typed
+                    next true if block && (func.args.size < 0 || !func.args.last.type.is_a?(FunctionType) || func.args.last.type.args.size != block.arg_names.size)
 
-                    next func.args.size != args.size || func.type_vars.size != type_var_size
+                    next func.args.size != (block ? args.size + 1 : args.size) || func.type_vars.size != type_var_size
                 end
             end
             find_overloaded_method(possible_functions, args)
@@ -472,8 +492,9 @@ module Molen
             options.each do |func|
                 total_dist, valid = 0, true
 
-                func.args.map(&:type).each_with_index do |arg_type, i|
-                    can, dist = args[i].type.upcastable_to? arg_type
+                args.map(&:type).each_with_index do |arg_type, i|
+                    can, dist = arg_type.upcastable_to? func.args[i].type
+
                     valid = valid && can
                     next unless can
                     total_dist += dist
