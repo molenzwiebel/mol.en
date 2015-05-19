@@ -284,25 +284,25 @@ module Molen
     end
 
     class FunctionType < Type
-        attr_accessor :captured_vars, :return_type, :arg_types
+        attr_accessor :captured_vars, :return_type, :args
 
-        def initialize(return_type, arg_types, captured_vars = {})
-            super "(#{arg_types.map(&:name).join(", ")})#{return_type.is_a?(VoidType) ? "" : " -> #{return_type.name}"}"
+        def initialize(return_type, args, captured_vars = {})
+            super "(#{args.values.map(&:name).join(", ")})#{return_type.is_a?(VoidType) ? "" : " -> #{return_type.name}"}"
 
             @return_type = return_type
-            @arg_types = arg_types
-            @captured_vars = {}
+            @args = args
+            @captured_vars = captured_vars
         end
 
         def ==(other)
-            super && other.return_type == return_type && other.arg_types == arg_types && other.captured_vars == captured_vars
+            super && other.return_type == return_type && other.args == args && other.captured_vars == captured_vars
         end
 
         def llvm_type
             # The first void pointer represents the struct used for holding the captures vars.
             # As these are different even between the same arg/return types we cannot use a
             # more specific type.
-            LLVM::Pointer(LLVM::Struct(GeneratingVisitor::VOID_PTR, LLVM::Pointer(LLVM::Function(arg_types.map(&:llvm_type), return_type.llvm_type))))
+            LLVM::Pointer(LLVM::Struct(GeneratingVisitor::VOID_PTR, LLVM::Pointer(LLVM::Function(args.values.map(&:llvm_type), return_type.llvm_type))))
         end
 
         def var_struct
@@ -310,7 +310,7 @@ module Molen
         end
 
         def upcastable_to?(other)
-            return other.is_a?(FunctionType) && other.return_type == return_type && other.arg_types == arg_types, 0
+            return other.is_a?(FunctionType) && other.return_type == return_type && other.args.values == args.values, 0
         end
 
         def explicitly_castable_to?(other)

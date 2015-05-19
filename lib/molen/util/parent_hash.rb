@@ -26,6 +26,10 @@ class ParentHash < Hash
         @parent.merge(self).each &block
     end
 
+    def clone
+        Hash[keys.clone.zip(values.clone)]
+    end
+
     def local_each(&block)
         Hash.instance_method(:each).bind(self).call &block
     end

@@ -105,6 +105,19 @@ module Molen
             node.type = @current_function.return_type
         end
 
+        def visit_new_anonymous_function(node)
+            node.args.each { |x| x.accept self }
+            ret_type = node.return_type.resolve(self)
+            node.raise "Undefined type '#{node.return_type.to_s}'" unless ret_type
+
+            node.return_type = ret_type
+            node.type = FunctionType.new ret_type, node.args, @scope.clone
+
+            @current_function, old = node.type, @current_function
+            with_new_scope { node.body.accept self }
+            @current_function = old
+        end
+
         def visit_new(node)
             node.args.each {|arg| arg.accept self}
             type = node.type.resolve(self)
