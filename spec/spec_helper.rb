@@ -65,7 +65,7 @@ class ASTNode
     end
 
     def to_bool_call
-        Call.new(self, "to_bool", [], [])
+        Call.new(self, "to_bool", [], [], nil)
     end
 end
 

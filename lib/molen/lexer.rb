@@ -51,7 +51,8 @@ module Molen
             /==/                                => :operator,
             /=/                                 => :special,
             /!=/                                => :operator,
-            /!/                                 => :operator
+            /!/                                 => :operator,
+            /\|/                                => :special
         }
 
         KEYWORDS = ["def", "if", "elseif", "else", "for", "return", "new", "var", "class", "static", "extern", "fn", "struct", "as", "and", "or", "import", "sizeof", "module", "include", "type", "func"]
