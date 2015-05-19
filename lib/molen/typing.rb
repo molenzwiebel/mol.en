@@ -211,10 +211,10 @@ module Molen
                 overrides_func = existing_functions.find do |func|
                     next false if func.args.size != node.args.size
 
-                    ret_type = func.return_type.nil? ? nil : func.is_prototype_typed ? func.return_type.name : func.return_type
-                    arg_types = func.is_prototype_typed ? func.args.map(&:type).map(&:to_s) : func.args.map(&:type)
+                    ret_type = func.is_prototype_typed ? func.return_type.name : func.return_type.to_s
+                    arg_types = func.is_prototype_typed ? func.args.map(&:type).map(&:name) : func.args.map(&:type).map(&:to_s)
 
-                    node.return_type.to_s == ret_type && node.args.map(&:to_s) == arg_types && node.type_vars.size == func.type_vars.size
+                    node.return_type.to_s == ret_type && node.args.map(&:type).map(&:to_s) == arg_types && node.type_vars.size == func.type_vars.size
                 end
 
                 overrides_func.add_overrider node if overrides_func
