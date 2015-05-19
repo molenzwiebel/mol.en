@@ -111,10 +111,15 @@ module Molen
             node.raise "Undefined type '#{node.return_type.to_s}'" unless ret_type
 
             node.return_type = ret_type
-            node.type = FunctionType.new ret_type, node.args, @scope.clone
+            node.type = FunctionType.new ret_type, Hash[node.args.map{|x| [x.name, x.type]}], @scope.clone
 
             @current_function, old = node.type, @current_function
-            with_new_scope { node.body.accept self }
+            with_new_scope do
+                node.args.each do |arg|
+                    @scope[arg.name] = arg.type
+                end
+                node.body.accept self
+            end
             @current_function = old
         end
 
