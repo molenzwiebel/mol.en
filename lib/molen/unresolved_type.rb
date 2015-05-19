@@ -181,8 +181,7 @@ module Molen
             args = arg_types.map { |e| e.resolve(visitor) }
             return nil if ret_type.nil? || args.include?(nil)
 
-            #TODO return FunctionType.new ret_type, args
-            nil
+            FunctionType.new ret_type, args
         end
 
         def ==(other)
