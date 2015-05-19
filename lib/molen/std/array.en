@@ -33,6 +33,13 @@ class Array<E> {
         return value
     }
 
+    def each(fun: (E)) -> Array<E> {
+        for (i = 0, i < @length, i = i + 1) {
+            fun.call(this[i])
+        }
+        this
+    }
+
     def to_s() -> String {
         res = "["
         for (i = 0, i < @length, i = i + 1) {

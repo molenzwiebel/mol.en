@@ -161,6 +161,46 @@ module Molen
             builder.ret node.value.accept(self)
         end
 
+        def visit_new_anonymous_function(node)
+            old_pos = builder.insert_block
+
+            struct = builder.alloca node.type.struct_type
+            var_struct = builder.alloca node.type.var_struct
+            node.type.captured_vars.each_with_index do |(k,v), index|
+                builder.store @variable_pointers[k], builder.struct_gep(var_struct, index)
+            end
+            builder.store builder.bit_cast(var_struct, VOID_PTR), builder.struct_gep(struct, 0)
+
+            func = mod.functions.add("__lambda", node.type.function_type)
+            func.linkage = :internal
+            builder.position_at_end func.basic_blocks.append("entry")
+
+            with_new_scope(false) do
+                scope_ptr = builder.bit_cast(func.params[0], LLVM::Pointer(node.type.var_struct), "__lambda_scope")
+
+                node.type.captured_vars.each_with_index do |(k,v), index|
+                    ptr = builder.alloca v.llvm_type, k
+                    @variable_pointers[k] = ptr
+                    val = builder.load builder.struct_gep(scope_ptr, index)
+                    builder.store builder.load(val), ptr
+                end
+
+                node.args.each_with_index do |arg, i|
+                    func.params[i + 1].name = arg.name
+                    ptr = builder.alloca arg.type.llvm_type, arg.name
+                    @variable_pointers[arg.name] = ptr
+                    builder.store func.params[i + 1], ptr
+                end
+
+                node.body.accept self
+                builder.ret nil if node.type.return_type.is_a?(VoidType) and not node.body.returns?
+            end
+
+            builder.position_at_end old_pos
+            builder.store func, builder.struct_gep(struct, 1)
+            struct
+        end
+
         def visit_new(node)
             allocator = @object_allocator_functions[node.type]
             allocator = generate_object_allocator(node.type) unless allocator

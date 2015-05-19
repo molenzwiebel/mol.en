@@ -16,6 +16,14 @@ module Molen
             @overriding_functions ||= {}
         end
     end
+    class Body
+        attr_accessor :referenced_identifiers
+
+        def reference(name)
+            @referenced_identifiers ||= []
+            @referenced_identifiers << name unless @referenced_identifiers.include?(name)
+        end
+    end
 
     def type(tree, program)
         Molen.type tree, program
@@ -38,7 +46,9 @@ module Molen
         end
 
         def visit_body(node)
+            @current_body, old = node, @current_body
             node.each { |n| n.accept self }
+            @current_body = old
         end
 
         def visit_bool(node)
@@ -78,6 +88,7 @@ module Molen
 
         def visit_identifier(node)
             node.type = @scope[node.value] || node.raise("Could not resolve variable #{node.value}")
+            @current_body.reference node.value
         end
 
         def visit_constant(node)
@@ -92,6 +103,24 @@ module Molen
 
         def visit_native_body(node)
             node.type = @current_function.return_type
+        end
+
+        def visit_new_anonymous_function(node)
+            node.args.each { |x| x.accept self }
+            ret_type = node.return_type.resolve(self)
+            node.raise "Undefined type '#{node.return_type.to_s}'" unless ret_type
+
+            node.return_type = ret_type
+            node.type = FunctionType.new ret_type, Hash[node.args.map{|x| [x.name, x.type]}], @scope.clone
+
+            @current_function, old = node.type, @current_function
+            with_new_scope do
+                node.args.each do |arg|
+                    @scope[arg.name] = arg.type
+                end
+                node.body.accept self
+            end
+            @current_function = old
         end
 
         def visit_new(node)
@@ -137,6 +166,7 @@ module Molen
 
             if node.target.is_a?(Identifier) then
                 type = @scope[node.target.value]
+                @current_body.reference node.value
 
                 unless type
                     type = @scope[node.target.value] = node.value.type
@@ -181,10 +211,10 @@ module Molen
                 overrides_func = existing_functions.find do |func|
                     next false if func.args.size != node.args.size
 
-                    ret_type = func.return_type.nil? ? nil : func.is_prototype_typed ? func.return_type.name : func.return_type
-                    arg_types = func.is_prototype_typed ? func.args.map(&:type).map(&:to_s) : func.args.map(&:type)
+                    ret_type = func.is_prototype_typed ? func.return_type.name : func.return_type.to_s
+                    arg_types = func.is_prototype_typed ? func.args.map(&:type).map(&:name) : func.args.map(&:type).map(&:to_s)
 
-                    node.return_type.to_s == ret_type && node.args.map(&:to_s) == arg_types && node.type_vars.size == func.type_vars.size
+                    node.return_type.to_s == ret_type && node.args.map(&:type).map(&:to_s) == arg_types && node.type_vars.size == func.type_vars.size
                 end
 
                 overrides_func.add_overrider node if overrides_func
@@ -276,20 +306,18 @@ module Molen
             function = nil
 
             if node.type_vars.size == 0 then
-                function = find_function(scope, node.name, node.args)
+                function = find_function(scope, node.name, node.args, node.block)
             else
                 vars = node.type_vars.map {|x| x.resolve(self)}
                 node.raise "Could not resolve all type args." if vars.include?(nil)
                 name = node.name + "<" + vars.map(&:name).join(", ") + ">"
 
-                function = find_function(scope, name, node.args)
+                function = find_function(scope, name, node.args, node.block)
                 unless function
                     untyped_function = (scope.functions[node.name] || []).reject do |func|
-                        func.args.size != node.args.size || func.type_vars.size != vars.size
+                        func.args.size != (node.block ? node.args.size + 1 : node.args) || func.type_vars.size != vars.size || func.args.last.type.arg_types.size != node.block.arg_names.size
                     end.first
                     node.raise "Undefined generic function #{node.name}" unless untyped_function
-
-                    puts "Defining #{name} from #{untyped_function.name}"
 
                     # Prevent cloning of these two
                     untyped_function.type_scope = nil
@@ -311,6 +339,27 @@ module Molen
 
             node.raise "No function named #{node.name} with matching argument types found!" unless function
 
+            if node.block then
+                block_type = function.args.last.type
+                block_arg = NewAnonymousFunction.new nil, nil, nil
+
+                block_arg.body = node.block.body
+                block_arg.return_type = block_type.return_type
+                block_arg.args = node.block.arg_names.each_with_index.map { |n,i| FunctionArg.new n, block_type.args.values[i] }
+                block_arg.type = FunctionType.new block_type.return_type, Hash[block_arg.args.map{|x| [x.name, x.type]}], @scope.clone
+
+                @current_function, old = block_arg.type, @current_function
+                with_new_scope do
+                    block_arg.args.each do |arg|
+                        @scope[arg.name] = arg.type
+                    end
+                    block_arg.body.accept self
+                end
+                @current_function = old
+
+                node.args << block_arg
+            end
+
             type_function_body(function) unless function.is_a?(ExternalFuncDef) or function.is_body_typed
             node.type = function.return_type
             node.target_function = function
@@ -318,15 +367,16 @@ module Molen
             node.object.type.use_function(function) if node.object && node.object.type.is_a?(ObjectType)
         end
 
-        def find_function(scope, name, args, type_var_size = 0)
+        def find_function(scope, name, args, block, type_var_size = 0)
             possible_functions = (scope.functions[name] || []).reject do |func|
                 if func.is_a?(ExternalFuncDef) then
                     next func.args.size != args.size
                 else
                     next true if type_var_size != func.type_vars.size
                     type_function_prototype(func) unless func.is_prototype_typed
+                    next true if block && (func.args.size < 0 || !func.args.last.type.is_a?(FunctionType) || func.args.last.type.args.size != block.arg_names.size)
 
-                    next func.args.size != args.size || func.type_vars.size != type_var_size
+                    next func.args.size != (block ? args.size + 1 : args.size) || func.type_vars.size != type_var_size
                 end
             end
             find_overloaded_method(possible_functions, args)
@@ -442,8 +492,9 @@ module Molen
             options.each do |func|
                 total_dist, valid = 0, true
 
-                func.args.map(&:type).each_with_index do |arg_type, i|
-                    can, dist = args[i].type.upcastable_to? arg_type
+                args.map(&:type).each_with_index do |arg_type, i|
+                    can, dist = arg_type.upcastable_to? func.args[i].type
+
                     valid = valid && can
                     next unless can
                     total_dist += dist

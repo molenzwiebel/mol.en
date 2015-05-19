@@ -53,7 +53,7 @@ module Molen
         end
 
         def upcastable_to?(other)
-            return other.is_a?(ObjectType) || other.is_a?(PointerType) || other.is_a?(ArrayType), 0
+            return other.is_a?(ObjectType) || other.is_a?(PointerType) || other.is_a?(FunctionType), 0
         end
 
         def explicitly_castable_to?(other)
@@ -280,6 +280,59 @@ module Molen
 
         def hash
             super + vars.hash
+        end
+    end
+
+    class FunctionType < Type
+        attr_accessor :functions, :captured_vars, :return_type, :args
+
+        def initialize(return_type, args, captured_vars = {})
+            super "(#{args.values.map(&:name).join(", ")})#{return_type.is_a?(VoidType) ? "" : " -> #{return_type.name}"}"
+
+            @return_type = return_type
+            @args = args
+            @captured_vars = captured_vars
+            @functions = {}
+
+            define_native_function("call", return_type, *args.values) do |this, *args|
+                scope = builder.load builder.struct_gep(this, 0)
+                ptr = builder.load builder.struct_gep(this, 1)
+
+                ret = builder.call ptr, scope, *args
+                builder.ret nil if return_type.is_a?(VoidType)
+                builder.ret ret unless return_type.is_a?(VoidType)
+            end
+        end
+
+        def ==(other)
+            super && other.return_type == return_type && other.args == args && other.captured_vars == captured_vars
+        end
+
+        def llvm_type
+            LLVM::Pointer(struct_type)
+        end
+
+        def struct_type
+            # The first void pointer represents the struct used for holding the captures vars.
+            # As these are different even between the same arg/return types we cannot use a
+            # more specific type.
+            LLVM::Struct(GeneratingVisitor::VOID_PTR, LLVM::Pointer(function_type))
+        end
+
+        def var_struct
+            LLVM::Struct *captured_vars.map { |k, v| LLVM::Pointer(v.llvm_type) }
+        end
+
+        def function_type
+            LLVM::Function([GeneratingVisitor::VOID_PTR] + args.values.map(&:llvm_type), return_type.llvm_type)
+        end
+
+        def upcastable_to?(other)
+            return other.is_a?(FunctionType) && other.return_type == return_type && other.args.values == args.values, 0
+        end
+
+        def explicitly_castable_to?(other)
+            return upcastable_to?(other).first
         end
     end
 

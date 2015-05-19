@@ -50,7 +50,20 @@ module Molen
 
                     if token.is?("(") then
                         raise_error "Expected only types in generic function call", token if type_args.reject{|x| x.is_a?(UnresolvedType)}.size > 0
-                        next Call.new nil, name, parse_delimited { parse_expression }, type_args
+
+                        args = parse_delimited { parse_expression }
+                        if token.is?("|") || token.is?("{") then
+                            block_args = []
+                            if token.is?("|") then
+                                block_args = parse_delimited "|", ",", "|" do
+                                    expect_and_consume(:identifier).value
+                                end
+                            end
+
+                            next Call.new nil, name, args, type_args, CallBlock.new(block_args, parse_body(false))
+                        end
+
+                        next Call.new nil, name, args, type_args, nil
                     end
 
                     if token.is?("=") then
@@ -59,10 +72,10 @@ module Molen
                         right = parse_expression
                         raise_error "Expected value in array assignment", token unless right
 
-                        next Call.new(Identifier.new(name), "__index_set", [type_args.first, right], [])
+                        next Call.new(Identifier.new(name), "__index_set", [type_args.first, right], [], nil)
                     end
 
-                    next Call.new Identifier.new(name), "__index_get", [type_args.first], []
+                    next Call.new Identifier.new(name), "__index_get", [type_args.first], [], nil
                 end
                 Identifier.new name
             end
@@ -74,7 +87,7 @@ module Molen
             expr -> tok { tok.is_instance_variable? } do
                 name = consume.value[1..-1]
                 if token.is_lparen? then
-                    next Call.new(Identifier.new("this"), name, parse_delimited { parse_expression }, [])
+                    next Call.new(Identifier.new("this"), name, parse_delimited { parse_expression }, [], nil)
                 end
                 MemberAccess.new Identifier.new("this"), Identifier.new(name)
             end
@@ -85,7 +98,7 @@ module Molen
 
             expr -> tok { tok.is? "!" } do
                 next_token # Consume !
-                Call.new parse_expression, "!", [], []
+                Call.new parse_expression, "!", [], [], nil
             end
 
             expr -> tok { tok.is_lparen? } do
@@ -113,6 +126,24 @@ module Molen
                 type = parse_type
                 args = !token.is?("(") ? [] : parse_delimited { parse_expression }
                 New.new type, args
+            end
+
+            expr -> tok { tok.is_keyword? "func" } do
+                next_token
+
+                ret_type = UnresolvedVoidType.new
+                args = parse_delimited("(", ",", ")") do
+                    name = expect_and_consume(:identifier).value
+                    expect_and_consume(":")
+                    FunctionArg.new name, parse_type
+                end
+
+                if token.is? "->" then
+                    next_token # Consume ->
+                    ret_type = parse_type
+                end
+
+                NewAnonymousFunction.new ret_type, args, parse_body(!ret_type.is_a?(UnresolvedVoidType))
             end
 
             infix 12, -> x { x.is_operator? "+" }, &create_binary_parser(11)
@@ -149,7 +180,7 @@ module Molen
                 right = parse_expression 3
                 raise_error "Expected expression at right hand side of `#{func_name}`", token unless right
 
-                Call.new nil, func_name, [left, right], []
+                Call.new nil, func_name, [left, right], [], nil
             end
 
             infix 50, -> x { x.is? "." } do |left|
@@ -157,7 +188,7 @@ module Molen
                 right = parse_expression 50
                 raise_error "Expected identifier or call after '.'", token unless right.is_a?(Call) or right.is_a?(Identifier)
 
-                next Call.new left, right.name, right.args, right.type_vars if right.is_a? Call
+                next Call.new left, right.name, right.args, right.type_vars, right.block if right.is_a? Call
                 next MemberAccess.new left, right
             end
 
@@ -197,7 +228,7 @@ module Molen
 
                 cond = parse_expression
                 raise_error "Expected condition in if statement", token unless cond
-                cond = Call.new(cond, "to_bool", [], [])
+                cond = Call.new(cond, "to_bool", [], [], nil)
 
                 expect_and_consume(:rparen)
 
@@ -214,7 +245,7 @@ module Molen
 
                         elseif_cond = parse_expression
                         raise_error "Expected condition in elseif statement", token unless elseif_cond
-                        elseif_cond = Call.new(elseif_cond, "to_bool", [], [])
+                        elseif_cond = Call.new(elseif_cond, "to_bool", [], [], nil)
 
                         expect_and_consume(:rparen)
                         elseifs << [elseif_cond, parse_body(false)]
@@ -236,7 +267,7 @@ module Molen
 
                 cond = parse_expression
                 raise_error "Expected condition in for loop", token unless cond
-                cond = Call.new(cond, "to_bool", [], [])
+                cond = Call.new(cond, "to_bool", [], [], nil)
                 expect_and_consume(",")
 
                 step = parse_node
@@ -381,7 +412,7 @@ module Molen
                 op_tok = consume # Consume operator
                 right = parse_expression right_associative ? prec - 1 : prec
                 raise_error "Expected expression at right hand side of #{op_tok.value}", op_tok unless right
-                return Call.new(left, op_tok.value, [right], [])
+                return Call.new(left, op_tok.value, [right], [], nil)
             end
         end
 

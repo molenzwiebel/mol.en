@@ -38,13 +38,13 @@ describe Parser do
     it_parses "A:B:C", ["A", "B", "C"].const
 
     it_parses "@foo", "foo".var
-    it_parses "@foo(a, b)", Call.new("this".ident, "foo", ["a".ident, "b".ident], [])
+    it_parses "@foo(a, b)", Call.new("this".ident, "foo", ["a".ident, "b".ident], [], nil)
 
     it_parses "[1, 2, 3]", [1, 2, 3].map(&:literal).new
 
-    it_parses "3 `foo` 3", Call.new(nil, "foo", [3.literal, 3.literal], [])
+    it_parses "3 `foo` 3", Call.new(nil, "foo", [3.literal, 3.literal], [], nil)
 
-    it_parses "(10 - 2) * 3", Call.new(Call.new(10.literal, "-", [2.literal], []), "*", [3.literal], [])
+    it_parses "(10 - 2) * 3", Call.new(Call.new(10.literal, "-", [2.literal], [], nil), "*", [3.literal], [], nil)
 
     it_parses "&foo", "foo".ident.ptr
 
@@ -58,26 +58,35 @@ describe Parser do
     it_parses "new A<B>(1)", New.new(UnresolvedGenericType.new("A".type, ["B".type]), [1.literal])
 
     ["+", "-", "*", "/", "%", "&&", "and", "||", "or", "<", "<=", ">", ">=", "==", "!="].each do |op|
-        it_parses "3 #{op} 3", Call.new(3.literal, op, [3.literal], [])
+        it_parses "3 #{op} 3", Call.new(3.literal, op, [3.literal], [], nil)
     end
 
     it_parses "x = 3", Assign.new("x".ident, 3.literal)
     it_parses "X = 3", Assign.new("X".const, 3.literal)
+
+    it_parses "x = func(a: Int) -> Int 10", Assign.new("x".ident, NewAnonymousFunction.new("Int".type, [FunctionArg.new("a", "Int".type)], 10.literal.return))
 
     it_parses "2 as Int", Cast.new(2.literal, "Int".type)
     it_parses "2 as *Int", Cast.new(2.literal, "Int".type.ptr)
     it_parses "2 as Foo<A, B>", Cast.new(2.literal, UnresolvedGenericType.new("Foo".type, ["A".type, "B".type]))
 
     it_parses "a.b", MemberAccess.new("a".ident, "b".ident)
-    it_parses "a.b()", Call.new("a".ident, "b", [], [])
+    it_parses "a.b()", Call.new("a".ident, "b", [], [], nil)
     it_parses "@a.b", MemberAccess.new("a".var, "b".ident)
-    it_parses "new Foo.test()", Call.new(New.new("Foo".type, []), "test", [], [])
+    it_parses "new Foo.test()", Call.new(New.new("Foo".type, []), "test", [], [], nil)
 
-    it_parses "a[1]", Call.new("a".ident, "__index_get", [1.literal], [])
-    it_parses "a[1] = 2", Call.new("a".ident, "__index_set", [1.literal, 2.literal], [])
+    it_parses "a[1]", Call.new("a".ident, "__index_get", [1.literal], [], nil)
+    it_parses "a[1] = 2", Call.new("a".ident, "__index_set", [1.literal, 2.literal], [], nil)
 
-    it_parses "test[Int](10)", Call.new(nil, "test", [10.literal], ["Int".type])
-    it_parses "test.test[Int, Double](10)", Call.new("test".ident, "test", [10.literal], ["Int".type, "Double".type])
+    it_parses "test[Int](10)", Call.new(nil, "test", [10.literal], ["Int".type], nil)
+    it_parses "test.test[Int, Double](10)", Call.new("test".ident, "test", [10.literal], ["Int".type, "Double".type], nil)
+
+    it_parses "test() { return 10 }", Call.new(nil, "test", [], [], CallBlock.new([], 10.literal.return))
+    it_parses "test(1, 2) { return 10 }", Call.new(nil, "test", [1.literal, 2.literal], [], CallBlock.new([], 10.literal.return))
+    it_parses "test() |a| { return 10 }", Call.new(nil, "test", [], [], CallBlock.new(["a"], 10.literal.return))
+    it_parses "test() |a, b| { return 10 }", Call.new(nil, "test", [], [], CallBlock.new(["a", "b"], 10.literal.return))
+    it_parses "test() { return 10 }.test", MemberAccess.new(Call.new(nil, "test", [], [], CallBlock.new([], 10.literal.return)), "test".ident)
+    it_parses "test.test() { return 10 }", Call.new("test".ident, "test", [], [], CallBlock.new([], 10.literal.return))
 
     it_parses "def foo() bar", Function.new("foo", false, nil.type, [], [], "bar".ident)
     it_parses "def foo(a: Int) bar", Function.new("foo", false, nil.type, [FunctionArg.new("a", "Int".type)], [], "bar".ident)

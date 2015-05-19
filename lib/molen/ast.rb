@@ -100,7 +100,11 @@ module Molen
     end
 
     class Call < Expression
-        attrs :object, :name, :args, :type_vars
+        attrs :object, :name, :args, :type_vars, :block
+    end
+
+    class CallBlock < ASTNode
+        attrs :arg_names, :body
     end
 
     class MemberAccess < Expression
@@ -129,6 +133,10 @@ module Molen
 
     class NewArray < Expression
         attrs :elements
+    end
+
+    class NewAnonymousFunction < Expression
+        attrs :return_type, :args, :body
     end
 
     class FunctionArg < ASTNode; attrs :name, :type; end;
