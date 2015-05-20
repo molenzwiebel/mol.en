@@ -321,7 +321,7 @@ module Molen
         end
 
         def var_struct
-            LLVM::Struct *captured_vars.map { |k, v| LLVM::Pointer(v.llvm_type) }
+            LLVM::Struct *captured_vars.map { |k, v| v.is_a?(ObjectType) || v.is_a?(StructType) || v.is_a?(FunctionType) ? v.llvm_type : LLVM::Pointer(v.llvm_type) }
         end
 
         def function_type

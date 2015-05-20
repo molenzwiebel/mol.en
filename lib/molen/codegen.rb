@@ -167,7 +167,9 @@ module Molen
             struct = builder.alloca node.type.struct_type
             var_struct = builder.alloca node.type.var_struct
             node.type.captured_vars.each_with_index do |(k,v), index|
-                builder.store @variable_pointers[k], builder.struct_gep(var_struct, index)
+                val = @variable_pointers[k]
+                val = builder.load(val) unless k == "this"
+                builder.store val, builder.struct_gep(var_struct, index)
             end
             builder.store builder.bit_cast(var_struct, VOID_PTR), builder.struct_gep(struct, 0)
 
@@ -182,7 +184,8 @@ module Molen
                     ptr = builder.alloca v.llvm_type, k
                     @variable_pointers[k] = ptr
                     val = builder.load builder.struct_gep(scope_ptr, index)
-                    builder.store builder.load(val), ptr
+                    val = builder.load val unless v.is_a?(ObjectType) || v.is_a?(StructType) || v.is_a?(FunctionType)
+                    builder.store val, ptr
                 end
 
                 node.args.each_with_index do |arg, i|
