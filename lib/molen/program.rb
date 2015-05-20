@@ -9,19 +9,19 @@ module Molen
             @functions = {}
             @imports = Set.new
 
-            @types["Bool"] = PrimitiveType.new "Bool", LLVM::Int1
-            @types["Char"] = PrimitiveType.new "Char", LLVM::Int8
-            @types["Short"] = PrimitiveType.new "Short", LLVM::Int16
-            @types["Int"] = PrimitiveType.new "Int", LLVM::Int32
-            @types["Long"] = PrimitiveType.new "Long", LLVM::Int64
-            @types["Float"] = PrimitiveType.new "Float", LLVM::Float
-            @types["Double"] = PrimitiveType.new "Double", LLVM::Double
+            @types["Bool"] = PrimitiveType.new "Bool", LLVM::Int1, self
+            @types["Char"] = PrimitiveType.new "Char", LLVM::Int8, self
+            @types["Short"] = PrimitiveType.new "Short", LLVM::Int16, self
+            @types["Int"] = PrimitiveType.new "Int", LLVM::Int32, self
+            @types["Long"] = PrimitiveType.new "Long", LLVM::Int64, self
+            @types["Float"] = PrimitiveType.new "Float", LLVM::Float, self
+            @types["Double"] = PrimitiveType.new "Double", LLVM::Double, self
 
-            @types["Object"] = ObjectType.new "Object", nil
-            @types["String"] = ObjectType.new "String", object
+            @types["Object"] = ObjectType.new "Object", nil, self
+            @types["String"] = ObjectType.new "String", object, self
             string.vars['pointer'] = PointerType.new self, char
 
-            @types["Pointer"] = ObjectType.new "Pointer", nil
+            @types["Pointer"] = ObjectType.new "Pointer", nil, self
             add_natives
         end
 

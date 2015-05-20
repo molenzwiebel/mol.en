@@ -45,6 +45,10 @@ module Molen
 
             functions[name] = (functions[name] || []) << func_def
         end
+
+        def full_name
+            name
+        end
     end
 
     class VoidType < Type
@@ -69,16 +73,34 @@ module Molen
         end
     end
 
+    class ContainedType < Type
+        attr_accessor :container
+
+        def initialize(name, cont)
+            super name
+            @container = cont
+        end
+
+        def full_name
+            return "#{container.full_name}:#{name}" if container && !container.is_a?(Program)
+            name
+        end
+
+        def ==(other)
+            super && other.container == container
+        end
+    end
+
     # A container type is able to contain other types. Sorta
     # like ruby modules or java packages.
-    class ModuleType < Type
+    class ModuleType < ContainedType
         attr_accessor :types, :functions, :generic_types, :nodes
 
-        def initialize(name, functions = {}, generic_types = {})
+        def initialize(name, container, functions = {}, generic_types = {})
             if generic_types && generic_types.values.compact.size > 0 then
-                super name + "<" + generic_types.values.map(&:name).join(", ") + ">"
+                super name + "<" + generic_types.values.map(&:full_name).join(", ") + ">", container
             else
-                super name
+                super name, container
             end
 
             @types = {}
@@ -111,8 +133,8 @@ module Molen
     class ClassType < ModuleType
         attr_accessor :parent_type
 
-        def initialize(name, parent, generic_types = {})
-            super name, parent ? ParentHash.new(parent.functions) : {}, generic_types
+        def initialize(name, parent, container, generic_types = {})
+            super name, container, parent ? ParentHash.new(parent.functions) : {}, generic_types
 
             @parent_type = parent
         end
@@ -133,8 +155,8 @@ module Molen
     class PrimitiveType < ClassType
         attr_accessor :llvm_type
 
-        def initialize(name, llvm_type)
-            super name, nil
+        def initialize(name, llvm_type, container)
+            super name, nil, container
 
             @llvm_type = llvm_type
         end
@@ -169,8 +191,8 @@ module Molen
         TYPEINFO_PTR = LLVM::Pointer(LLVM::Struct(GeneratingVisitor::VOID_PTR, GeneratingVisitor::VOID_PTR, "_typeinfo"))
         attr_accessor :vars
 
-        def initialize(name, parent, generic_types = {})
-            super name, parent, generic_types
+        def initialize(name, parent, container, generic_types = {})
+            super name, parent, container, generic_types
 
             @vars = parent ? ParentHash.new(parent.vars) : {}
             @used_functions = []
@@ -239,8 +261,8 @@ module Molen
     class StructType < ModuleType
         attr_accessor :vars
 
-        def initialize(name)
-            super name
+        def initialize(name, container)
+            super name, container
 
             @vars = {}
         end
@@ -288,7 +310,7 @@ module Molen
         attr_accessor :functions, :captured_vars, :return_type, :args
 
         def initialize(return_type, args, captured_vars = {})
-            super "(#{args.values.map(&:name).join(", ")})#{return_type.is_a?(VoidType) ? "" : " -> #{return_type.name}"}"
+            super "(#{args.values.map(&:full_name).join(", ")})#{return_type.is_a?(VoidType) ? "" : " -> #{return_type.full_name}"}"
 
             @return_type = return_type
             @args = args
@@ -394,8 +416,8 @@ module Molen
     class ExternType < ClassType
         attr_accessor :libnames
 
-        def initialize(name)
-            super name, nil
+        def initialize(name, container)
+            super name, nil, container
 
             @libnames = []
         end

@@ -115,19 +115,19 @@ module Molen
             args = type_args.map { |e| e.resolve(visitor) }
             return nil if type.nil? || args.include?(nil)
 
-            existing = visitor.resolve_constant_type ["#{type.name}<#{args.map(&:name).join(", ")}>"]
+            existing = visitor.resolve_constant_type ["#{type.name}<#{args.map(&:full_name).join(", ")}>"]
             return existing if existing
 
             new_type = nil
             if type.is_a?(ObjectType)
-                new_type = ObjectType.new(type.name, type.parent_type, Hash[type.generic_types.keys.zip(args)])
+                new_type = ObjectType.new(type.name, type.parent_type, type.container, Hash[type.generic_types.keys.zip(args)])
             else
-                new_type = ModuleType.new(type.name, {}, Hash[type.generic_types.keys.zip(args)])
+                new_type = ModuleType.new(type.name, type.container, {}, Hash[type.generic_types.keys.zip(args)])
             end
 
             insert_type = visitor.type_scope.last.is_a?(FunctionTypeScope) ? visitor.type_scope[0...-2].last : visitor.type_scope.last
 
-            insert_type.types[new_type.name] = new_type
+            type.container.types[new_type.name] = new_type
             visitor.type_scope.push new_type
 
             type.nodes.each do |node|

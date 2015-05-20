@@ -93,7 +93,7 @@ module Molen
 
         def visit_constant(node)
             node.type = resolve_constant_type node.names
-            node.raise "Could not resolve constant #{node.names.first}" unless node.type
+            node.raise "Could not resolve constant #{node.names.join(":")}" unless node.type
             node.type = node.type.metaclass
         end
 
@@ -172,11 +172,11 @@ module Molen
                     type = @scope[node.target.value] = node.value.type
                 end
 
-                node.raise "Cannot assign #{node.value.type.name} to '#{node.target.value}' (a #{type.name})" unless node.value.type.upcastable_to?(type).first
+                node.raise "Cannot assign #{node.value.type.full_name} to '#{node.target.value}' (a #{type.full_name})" unless node.value.type.upcastable_to?(type).first
                 node.type = node.target.type = type
             else
                 node.target.accept self
-                node.raise "Cannot assign #{node.value.type.name} to '#{node.target.to_s}' (a #{node.target.type.name})" unless node.value.type.upcastable_to?(node.target.type).first
+                node.raise "Cannot assign #{node.value.type.full_name} to '#{node.target.to_s}' (a #{node.target.type.full_name})" unless node.value.type.upcastable_to?(node.target.type).first
                 node.type = node.target.type
             end
         end
@@ -184,22 +184,20 @@ module Molen
         def visit_member_access(node)
             node.object.accept self
             obj_type = node.object.type
-            node.raise "Can only access members of objects and structs. Tried to access #{node.field.value} on #{obj_type.name}" unless obj_type.is_a?(ObjectType) or obj_type.is_a?(StructType)
-            node.raise "Unknown member #{node.field.value} on object of type #{obj_type.name}" unless obj_type.vars[node.field.value]
+            node.raise "Can only access members of objects and structs. Tried to access #{node.field.value} on #{obj_type.full_name}" unless obj_type.is_a?(ObjectType) or obj_type.is_a?(StructType)
+            node.raise "Unknown member #{node.field.value} on object of type #{obj_type.full_name}" unless obj_type.vars[node.field.value]
             node.type = obj_type.vars[node.field.value]
         end
 
         def visit_cast(node)
             node.target.accept self
             type = node.type.resolve(self)
-            node.raise "Cannot cast #{node.target.type.name} to #{type.name}" unless node.target.type.explicitly_castable_to?(type)
+            node.raise "Cannot cast #{node.target.type.full_name} to #{type.full_name}" unless node.target.type.explicitly_castable_to?(type)
             node.type = type
         end
 
         def visit_function(node)
-            type = current_type.is_a?(FunctionTypeScope) ? type_scope[0...-1].last : current_type
-
-            receiver_type = type
+            receiver_type = current_type
             receiver_type = receiver_type.metaclass if node.is_static
             node.owner_type = receiver_type unless receiver_type.is_a?(Program)
             node.type_scope = type_scope.clone
@@ -231,7 +229,7 @@ module Molen
             node.type = node.value ? node.value.type : VoidType.new
 
             node.raise "Cannot return void from non-void function" if node.value.nil? && @current_function.return_type.is_a?(VoidType)
-            node.raise "Cannot return value of type #{node.type.name} from function returning type #{@current_function.return_type.name}" unless node.type.upcastable_to?(@current_function.return_type).first
+            node.raise "Cannot return value of type #{node.type.full_name} from function returning type #{@current_function.return_type.full_name}" unless node.type.upcastable_to?(@current_function.return_type).first
         end
 
         def type_function_prototype(node)
@@ -277,7 +275,7 @@ module Molen
             node.raise "Could not resolve supertype #{node.superclass.to_s}." unless parent
 
             existing_type = current_type.types[node.name]
-            existing_type = current_type.types[node.name] = ObjectType.new(node.name, parent, Hash[node.type_vars.map { |e| [e.names.first, nil] }]) unless existing_type
+            existing_type = current_type.types[node.name] = ObjectType.new(node.name, parent, current_type, Hash[node.type_vars.map { |e| [e.names.join(":"), nil] }]) unless existing_type
             existing_type.nodes << node.body
 
             type_scope.push existing_type
@@ -288,7 +286,7 @@ module Molen
         def visit_struct_def(node)
             type = current_type.types[node.name]
             node.raise "Redefinition of #{node.name} in same scope" if type
-            node.type = current_type.types[node.name] = StructType.new(node.name) unless type
+            node.type = current_type.types[node.name] = StructType.new(node.name, current_type) unless type
             node.type.nodes << node.body
 
             type_scope.push node.type
@@ -314,7 +312,7 @@ module Molen
             else
                 vars = node.type_vars.map {|x| x.resolve(self)}
                 node.raise "Could not resolve all type args." if vars.include?(nil)
-                name = node.name + "<" + vars.map(&:name).join(", ") + ">"
+                name = node.name + "<" + vars.map(&:full_name).join(", ") + ">"
 
                 function = find_function(scope, name, node.args, node.block)
                 unless function
@@ -396,7 +394,7 @@ module Molen
             existing_type = current_type.types[node.name]
             node.raise "Cannot define external with name #{node.name}: #{node.name} was already defined elsewhere" unless existing_type.nil? || existing_type.is_a?(ExternType)
 
-            node.type = existing_type || (current_type.types[node.name] = ExternType.new(node.name))
+            node.type = existing_type || (current_type.types[node.name] = ExternType.new(node.name, current_type))
             node.type.libnames << node.location if node.location
 
             type_scope.push node.type
@@ -414,9 +412,9 @@ module Molen
         def visit_module_def(node)
             type = current_type.types[node.name]
             if type then
-                node.raise "#{node.name} was already defined but not a module!" unless type.class == ModuleType
+                node.raise "#{node.full_name} was already defined but not a module!" unless type.class == ModuleType
             else
-                current_type.types[node.name] = type = ModuleType.new node.name, {}, Hash[node.type_vars.map { |e| [e.names.last, nil] }]
+                current_type.types[node.name] = type = ModuleType.new node.name, current_type, {}, Hash[node.type_vars.map { |e| [e.names.join(":"), nil] }]
             end
             type.nodes << node.body
 
@@ -474,7 +472,7 @@ module Molen
 
         private
         def current_type
-            @type_scope.last
+            @type_scope.last.is_a?(FunctionTypeScope) ? @type_scope[0...-1].last : @type_scope.last
         end
 
         def with_new_scope(inherit = true)
