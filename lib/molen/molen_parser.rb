@@ -38,58 +38,21 @@ module Molen
             end
 
             expr -> tok { tok.is_identifier? } do
-                name = consume.value
-                if token.is_lparen? || token.is?("[") then
-                    type_args = []
-                    type_args = parse_delimited "[", ",", "]" do
-                        if token.is?("*") || token.is_constant? then
-                            next parse_type
-                        end
-                        parse_expression
-                    end if token.is? "["
-
-                    if token.is?("(") then
-                        raise_error "Expected only types in generic function call", token if type_args.reject{|x| x.is_a?(UnresolvedType)}.size > 0
-
-                        args = parse_delimited { parse_expression }
-                        if token.is?("|") || token.is?("{") then
-                            block_args = []
-                            if token.is?("|") then
-                                block_args = parse_delimited "|", ",", "|" do
-                                    expect_and_consume(:identifier).value
-                                end
-                            end
-
-                            next Call.new nil, name, args, type_args, CallBlock.new(block_args, parse_body(false))
-                        end
-
-                        next Call.new nil, name, args, type_args, nil
-                    end
-
-                    if token.is?("=") then
-                        next_token # Consume =
-
-                        right = parse_expression
-                        raise_error "Expected value in array assignment", token unless right
-
-                        next Call.new(Identifier.new(name), "__index_set", [type_args.first, right], [], nil)
-                    end
-
-                    next Call.new Identifier.new(name), "__index_get", [type_args.first], [], nil
-                end
-                Identifier.new name
+                parse_identifier
             end
 
             expr -> tok { tok.is_constant? } do
                 parse_const
             end
 
-            expr -> tok { tok.is_instance_variable? } do
-                name = consume.value[1..-1]
-                if token.is_lparen? then
-                    next Call.new(Identifier.new("this"), name, parse_delimited { parse_expression }, [], nil)
-                end
-                MemberAccess.new Identifier.new("this"), Identifier.new(name)
+            expr -> tok { tok.is? "@" } do
+                next_token # Consume @
+                right = parse_identifier
+                raise_error "Expected call, identifier, assignment or member access after @, received #{right.inspect}", token unless right.is_a?(Call) || right.is_a?(Identifier) || right.is_a?(Assign) || right.is_a?(MemberAccess)
+
+                next Call.new Identifier.new("this"), right.name, right.args, right.type_vars, right.block if right.is_a? Call
+                next Assign.new MemberAccess.new(Identifier.new("this"), right.target), right.value if right.is_a? Assign
+                MemberAccess.new Identifier.new("this"), right
             end
 
             expr -> tok { tok.is? "[" } do
@@ -405,6 +368,49 @@ module Molen
             next_token # Consume end token
 
             ret
+        end
+
+        def parse_identifier
+            name = consume.value
+            if token.is_lparen? || token.is?("[") then
+                type_args = []
+                type_args = parse_delimited "[", ",", "]" do
+                    if token.is?("*") || token.is_constant? then
+                        next parse_type
+                    end
+                    parse_expression
+                end if token.is? "["
+
+                if token.is?("(") then
+                    raise_error "Expected only types in generic function call", token if type_args.reject{|x| x.is_a?(UnresolvedType)}.size > 0
+
+                    args = parse_delimited { parse_expression }
+                    if token.is?("|") || token.is?("{") then
+                        block_args = []
+                        if token.is?("|") then
+                            block_args = parse_delimited "|", ",", "|" do
+                                expect_and_consume(:identifier).value
+                            end
+                        end
+
+                        return Call.new nil, name, args, type_args, CallBlock.new(block_args, parse_body(false))
+                    end
+
+                    return Call.new nil, name, args, type_args, nil
+                end
+
+                if token.is?("=") then
+                    next_token # Consume =
+
+                    right = parse_expression
+                    raise_error "Expected value in array assignment", token unless right
+
+                    return Call.new(Identifier.new(name), "__index_set", [type_args.first, right], [], nil)
+                end
+
+                return Call.new Identifier.new(name), "__index_get", [type_args.first], [], nil
+            end
+            Identifier.new name
         end
 
         def create_binary_parser(prec, right_associative = false)

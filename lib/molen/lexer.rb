@@ -43,7 +43,6 @@ module Molen
             /<=?/                               => :operator,
 
             # We need this after the keywords and 'and', 'or' or it will match them as identifiers.
-            /@[_a-z][_0-9a-zA-Z]*/              => :instance_variable,
             /[A-Z][_0-9a-zA-Z]*/                => :constant,
             /[_a-zA-Z][_0-9a-zA-Z]*/            => :identifier,
 
@@ -52,7 +51,8 @@ module Molen
             /=/                                 => :special,
             /!=/                                => :operator,
             /!/                                 => :operator,
-            /\|/                                => :special
+            /\|/                                => :special,
+            /@/                                 => :special
         }
 
         KEYWORDS = ["def", "if", "elseif", "else", "for", "return", "new", "var", "class", "static", "extern", "fn", "struct", "as", "and", "or", "import", "sizeof", "module", "include", "type", "func"]
