@@ -50,7 +50,8 @@ module Molen
                 right = parse_identifier
                 raise_error "Expected call, identifier, assignment or member access after @, received #{right.inspect}", token unless right.is_a?(Call) || right.is_a?(Identifier) || right.is_a?(Assign) || right.is_a?(MemberAccess)
 
-                next Call.new Identifier.new("this"), right.name, right.args, right.type_vars, right.block if right.is_a? Call
+                next Call.new Identifier.new("this"), right.name, right.args, right.type_vars, right.block if right.is_a?(Call) && right.object.nil?
+                next Call.new MemberAccess.new(Identifier.new("this"), right.object), right.name, right.args, right.type_vars, right.block if right.is_a?(Call)
                 next Assign.new MemberAccess.new(Identifier.new("this"), right.target), right.value if right.is_a? Assign
                 MemberAccess.new Identifier.new("this"), right
             end

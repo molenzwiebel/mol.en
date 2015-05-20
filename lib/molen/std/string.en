@@ -24,6 +24,22 @@ class String {
         "\"" + this + "\""
     }
 
+    def __index_get(index: Int) -> Char {
+        assert(index < @length(), "Cannot get char at index " + index + ", String is only " + @length() + " characters (ranging from 0 to " + (@length() - 1) + ")")
+        (@pointer + index).get()
+    }
+
+    def chars() -> Array<Char> {
+        ret = new Array<Char>
+        for (i = 0, i < @length(), i = i + 1)
+            ret.add(this[i])
+        ret
+    }
+
+    def ==(other: String) -> Bool {
+        C.strcmp(@pointer, other.pointer) == 0
+    }
+
     def substring(start: Int, count: Int) -> String {
         assert(start >= 0, "Negative argument to String.substring")
         assert(start + count <= @length(), "String.substring out of index")
