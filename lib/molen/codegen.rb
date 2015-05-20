@@ -168,7 +168,7 @@ module Molen
             var_struct = builder.alloca node.type.var_struct
             node.type.captured_vars.each_with_index do |(k,v), index|
                 val = @variable_pointers[k]
-                val = builder.load(val) unless k == "this"
+                val = builder.load(val) unless v.is_a?(PrimitiveType) || v.is_a?(PointerType) || k == "this"
                 builder.store val, builder.struct_gep(var_struct, index)
             end
             builder.store builder.bit_cast(var_struct, VOID_PTR), builder.struct_gep(struct, 0)
@@ -257,6 +257,7 @@ module Molen
 
         def generate_vtable_invoke(args, node)
             func = @function_pointers[node.target_function]
+            func = generate_function(node.target_function) unless func
 
             vtable_ptr = builder.bit_cast args[0], LLVM::Pointer(LLVM::Pointer(LLVM::Pointer(func.function_type)))
             vtable = builder.load vtable_ptr, "vtable"

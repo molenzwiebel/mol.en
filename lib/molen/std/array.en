@@ -29,11 +29,17 @@ class Array<E> {
     }
 
     def __index_get(index: Int) -> E {
+        assert(index < @capacity, "Array get out of bounds!")
         (@buffer + index).get()
     }
 
     def __index_set(index: Int, value: E) -> E {
+        assert(index < @capacity, "Array set out of bounds!")
         (@buffer + index).set(value)
+        if (index >= @length) {
+            # Adjust length if needed.
+            @length = index + 1
+        }
         return value
     }
 

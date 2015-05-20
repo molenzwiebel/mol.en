@@ -342,7 +342,7 @@ module Molen
                 end
             end
 
-            node.raise "No function named #{node.name} with matching argument types found (#{node.args.map(&:type).map(&:name).join(", ")}, on object of #{node.object.type.name})!" unless function
+            node.raise "No function named #{node.name} with matching argument types found!" unless function
 
             if node.block then
                 block_type = function.args.last.type

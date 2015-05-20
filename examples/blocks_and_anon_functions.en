@@ -1,0 +1,48 @@
+foo = 10
+
+# Functions have access to their scope. The variables
+# are pointers and thus will change. They are not copies
+get_foo = func() -> Int {
+    return foo
+}
+
+puts(get_foo.call()) # 10
+
+foo = 15
+puts(get_foo.call()) # 15
+
+def function_caller(fun: ()) {
+    fun.call()
+}
+
+# If the last argument of a function is a function type, you can use a block
+function_caller() {
+    puts("This is getting called by function_caller!")
+}
+
+# This also works for args!
+def another_function_caller(num: Int, fun: (Int)) fun.call(num)
+
+# Note that the return type and arg types of
+# the block is inferred from the function
+# prototype. The arguments can be named
+# anything.
+another_function_caller(10) |num| {
+    puts("The number was " + num)
+}
+
+
+# Nested scopes of course also work
+make_counter = func() -> () -> Int {
+    count = 1
+    count_ptr = &count
+    return func() -> Int {
+        count_ptr.set(count_ptr.get() + 1)
+        return count
+    }
+}
+
+counter = make_counter.call()
+puts(counter.call()) # 1
+puts(counter.call()) # 2
+puts(counter.call()) # 3

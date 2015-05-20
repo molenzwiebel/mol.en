@@ -20,6 +20,10 @@ class String {
         C.strlen(@pointer)
     }
 
+    def to_s() -> String {
+        "\"" + this + "\""
+    }
+
     def substring(start: Int, count: Int) -> String {
         assert(start >= 0, "Negative argument to String.substring")
         assert(start + count <= @length(), "String.substring out of index")
