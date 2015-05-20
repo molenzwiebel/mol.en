@@ -87,7 +87,7 @@ module Molen
         end
 
         def visit_identifier(node)
-            node.type = @scope[node.value] || node.raise("Could not resolve variable #{node.value}")
+            node.type = @scope[node.value] || node.raise("Could not resolve variable #{node.value} in #{@current_function.name}")
             @current_body.reference node.value
         end
 
@@ -197,7 +197,9 @@ module Molen
         end
 
         def visit_function(node)
-            receiver_type = current_type
+            type = current_type.is_a?(FunctionTypeScope) ? type_scope[0...-1].last : current_type
+
+            receiver_type = type
             receiver_type = receiver_type.metaclass if node.is_static
             node.owner_type = receiver_type unless receiver_type.is_a?(Program)
             node.type_scope = type_scope.clone
@@ -276,9 +278,10 @@ module Molen
 
             existing_type = current_type.types[node.name]
             existing_type = current_type.types[node.name] = ObjectType.new(node.name, parent, Hash[node.type_vars.map { |e| [e.names.first, nil] }]) unless existing_type
+            existing_type.nodes << node.body
 
             type_scope.push existing_type
-            node.body.accept self
+            node.body.accept(self) unless existing_type.generic_types.size > 0
             type_scope.pop
         end
 
@@ -286,6 +289,7 @@ module Molen
             type = current_type.types[node.name]
             node.raise "Redefinition of #{node.name} in same scope" if type
             node.type = current_type.types[node.name] = StructType.new(node.name) unless type
+            node.type.nodes << node.body
 
             type_scope.push node.type
             node.body.accept self
@@ -320,11 +324,11 @@ module Molen
                     node.raise "Undefined generic function #{node.name}" unless untyped_function
 
                     # Prevent cloning of these two
-                    untyped_function.type_scope = nil
+                    sc, untyped_function.type_scope = untyped_function.type_scope, nil
                     untyped_function.owner_type = nil
                     typed_func = DeepClone.clone(untyped_function)
                     typed_func.name = name
-                    with_type_scope([scope]) { typed_func.accept self }
+                    with_type_scope(sc) { typed_func.accept self }
 
                     type_lookup_scope = {}
                     vars.each_with_index do |var, i|
@@ -333,11 +337,12 @@ module Molen
 
                     typed_func.type_scope << FunctionTypeScope.new(type_lookup_scope)
                     type_function_prototype(typed_func)
+
                     function = typed_func
                 end
             end
 
-            node.raise "No function named #{node.name} with matching argument types found!" unless function
+            node.raise "No function named #{node.name} with matching argument types found (#{node.args.map(&:type).map(&:name).join(", ")}, on object of #{node.object.type.name})!" unless function
 
             if node.block then
                 block_type = function.args.last.type
@@ -374,7 +379,12 @@ module Molen
                 else
                     next true if type_var_size != func.type_vars.size
                     type_function_prototype(func) unless func.is_prototype_typed
-                    next true if block && (func.args.size < 0 || !func.args.last.type.is_a?(FunctionType) || func.args.last.type.args.size != block.arg_names.size)
+
+                    if block then
+                        next true if func.args.size < 1
+                        next true unless func.args.last.type.is_a?(FunctionType)
+                        next true if func.args.last.type.args.size != block.arg_names.size
+                    end
 
                     next func.args.size != (block ? args.size + 1 : args.size) || func.type_vars.size != type_var_size
                 end
@@ -406,11 +416,12 @@ module Molen
             if type then
                 node.raise "#{node.name} was already defined but not a module!" unless type.class == ModuleType
             else
-                current_type.types[node.name] = type = ModuleType.new node.name, {}, Hash[node.type_vars.map { |e| [e.name, nil] }]
+                current_type.types[node.name] = type = ModuleType.new node.name, {}, Hash[node.type_vars.map { |e| [e.names.last, nil] }]
             end
+            type.nodes << node.body
 
             type_scope.push type
-            node.body.accept self
+            node.body.accept(self) unless type.generic_types.size > 0
             type_scope.pop
         end
 
@@ -428,7 +439,7 @@ module Molen
                 new_funcs = DeepClone.clone(funcs)
                 new_funcs.each do |func|
                     func.accept self
-                    func.type_scope << type
+                    func.type_scope << FunctionTypeScope.new(type.generic_types)
                 end
             end
         end

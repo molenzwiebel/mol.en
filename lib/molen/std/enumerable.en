@@ -1,4 +1,6 @@
 module Enumerable<Type> {
+    class Array<E> {}
+
     def <RetType> map(fun: (Type) -> RetType) -> Array<RetType> {
         ret = new Array<RetType>
         @each() |el| {

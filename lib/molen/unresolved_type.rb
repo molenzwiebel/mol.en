@@ -118,50 +118,26 @@ module Molen
             existing = visitor.resolve_constant_type ["#{type.name}<#{args.map(&:name).join(", ")}>"]
             return existing if existing
 
+            new_type = nil
             if type.is_a?(ObjectType)
                 new_type = ObjectType.new(type.name, type.parent_type, Hash[type.generic_types.keys.zip(args)])
-                visitor.type_scope.last.types[new_type.name] = new_type
-                visitor.type_scope.push new_type
-
-                type.vars.local_each do |name, var_type|
-                    var_type = var_type.resolve(visitor) if var_type.is_a?(UnresolvedType)
-                    new_type.vars[name] = var_type
-                end
-
-                type.functions.local_each do |name, funcs|
-                    funcs.each do |f|
-                        # Prevent cloning of these two
-                        f.type_scope = nil
-                        f.owner_type = nil
-                    end
-                    new_funcs = DeepClone.clone(funcs)
-                    new_funcs.each do |func|
-                        func.accept visitor
-                    end
-                end
-
-                visitor.type_scope.pop
-                return new_type
             else
                 new_type = ModuleType.new(type.name, {}, Hash[type.generic_types.keys.zip(args)])
-                visitor.type_scope.last.types[new_type.name] = new_type
-                visitor.type_scope.push new_type
-
-                type.functions.each do |name, funcs|
-                    funcs.each do |f|
-                        # Prevent cloning of these two
-                        f.type_scope = nil
-                        f.owner_type = nil
-                    end
-                    new_funcs = DeepClone.clone(funcs)
-                    new_funcs.each do |func|
-                        func.accept visitor
-                    end
-                end
-
-                visitor.type_scope.pop
-                return new_type
             end
+
+            insert_type = visitor.type_scope.last.is_a?(FunctionTypeScope) ? visitor.type_scope[0...-2].last : visitor.type_scope.last
+
+            insert_type.types[new_type.name] = new_type
+            visitor.type_scope.push new_type
+
+            type.nodes.each do |node|
+                node = DeepClone.clone(node)
+                new_type.nodes << node
+                node.accept(visitor)
+            end
+
+            visitor.type_scope.pop
+            return new_type
         end
 
         def to_s

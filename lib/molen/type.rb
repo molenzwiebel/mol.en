@@ -72,7 +72,7 @@ module Molen
     # A container type is able to contain other types. Sorta
     # like ruby modules or java packages.
     class ModuleType < Type
-        attr_accessor :types, :functions, :generic_types
+        attr_accessor :types, :functions, :generic_types, :nodes
 
         def initialize(name, functions = {}, generic_types = {})
             if generic_types && generic_types.values.compact.size > 0 then
@@ -84,6 +84,7 @@ module Molen
             @types = {}
             @functions = functions
             @generic_types = generic_types
+            @nodes = []
         end
 
         def lookup_type(type_name)
