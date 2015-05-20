@@ -109,21 +109,21 @@ module Molen
                 NewAnonymousFunction.new ret_type, args, parse_body(!ret_type.is_a?(UnresolvedVoidType))
             end
 
-            infix 12, -> x { x.is_operator? "+" }, &create_binary_parser(11)
-            infix 12, -> x { x.is_operator? "-" }, &create_binary_parser(11)
-            infix 13, -> x { x.is_operator? "*" }, &create_binary_parser(12)
-            infix 13, -> x { x.is_operator? "/" }, &create_binary_parser(12)
-            infix 11, -> x { x.is_operator? "%" }, &create_binary_parser(10)
+            infix 12, -> x { x.is_operator? "+" }, &create_binary_parser(12)
+            infix 12, -> x { x.is_operator? "-" }, &create_binary_parser(12)
+            infix 13, -> x { x.is_operator? "*" }, &create_binary_parser(13)
+            infix 13, -> x { x.is_operator? "/" }, &create_binary_parser(13)
+            infix 11, -> x { x.is_operator? "%" }, &create_binary_parser(11)
 
-            infix 5, -> x { x.is_operator?("&&") or x.is_keyword?("and") }, &create_binary_parser(4)
-            infix 4, -> x { x.is_operator?("||") or x.is_keyword?("or")  }, &create_binary_parser(3)
-            infix 10, -> x { x.is_operator? "<"  }, &create_binary_parser(9)
-            infix 10, -> x { x.is_operator? "<=" }, &create_binary_parser(9)
-            infix 10, -> x { x.is_operator? ">"  }, &create_binary_parser(9)
-            infix 10, -> x { x.is_operator? ">=" }, &create_binary_parser(9)
+            infix 5, -> x { x.is_operator?("&&") or x.is_keyword?("and") }, &create_binary_parser(5)
+            infix 4, -> x { x.is_operator?("||") or x.is_keyword?("or")  }, &create_binary_parser(4)
+            infix 10, -> x { x.is_operator? "<"  }, &create_binary_parser(10)
+            infix 10, -> x { x.is_operator? "<=" }, &create_binary_parser(10)
+            infix 10, -> x { x.is_operator? ">"  }, &create_binary_parser(10)
+            infix 10, -> x { x.is_operator? ">=" }, &create_binary_parser(10)
 
-            infix 9, -> x { x.is_operator? "==" }, &create_binary_parser(8)
-            infix 9, -> x { x.is_operator? "!=" }, &create_binary_parser(8)
+            infix 9, -> x { x.is_operator? "==" }, &create_binary_parser(9)
+            infix 9, -> x { x.is_operator? "!=" }, &create_binary_parser(9)
 
             infix 1, -> x { x.is? "=" } do |left|
                 next_token # Consume =
