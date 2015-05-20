@@ -1,4 +1,8 @@
+import "enumerable"
+
 class Array<E> {
+    include Enumerable<E>
+
     var length: Int
     var capacity: Int
     var buffer: *E

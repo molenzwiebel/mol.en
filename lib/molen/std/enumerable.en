@@ -1,0 +1,18 @@
+module Enumerable<Type> {
+    def <RetType> map(fun: (Type) -> RetType) -> Array<RetType> {
+        ret = new Array<RetType>
+        @each() |el| {
+            ret.add(fun.call(el))
+        }
+        ret
+    }
+
+    def select(fun: (Type) -> Bool) -> Array<Type> {
+        ret = new Array<Type>
+        @each() |el| {
+            res = fun.call(el)
+            if (res) ret.add(el)
+        }
+        ret
+    }
+}
