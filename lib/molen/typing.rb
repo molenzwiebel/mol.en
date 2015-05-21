@@ -230,7 +230,7 @@ module Molen
             node.value.accept self if node.value
             node.type = node.value ? node.value.type : VoidType.new
 
-            node.raise "Cannot return void from non-void function" if node.value.nil? && @current_function.return_type.is_a?(VoidType)
+            node.raise "Cannot return void from non-void function" if node.value.nil? && !@current_function.return_type.is_a?(VoidType)
             node.raise "Cannot return value of type #{node.type.full_name} from function returning type #{@current_function.return_type.full_name}" unless node.type.upcastable_to?(@current_function.return_type).first
         end
 

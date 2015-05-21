@@ -157,6 +157,7 @@ module Molen
         end
 
         def visit_return(node)
+            return builder.ret(nil) if node.type.is_a?(VoidType) && builder.insert_block.parent.function_type.return_type == LLVM.Void
             return builder.ret(builder.int2ptr(LLVM::Int(0), builder.insert_block.parent.function_type.return_type)) if node.type.is_a?(VoidType)
             builder.ret builder.bit_cast(node.value.accept(self), builder.insert_block.parent.function_type.return_type)
         end

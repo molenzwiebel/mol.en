@@ -57,7 +57,7 @@ module Molen
         end
 
         def upcastable_to?(other)
-            return other.is_a?(ObjectType) || other.is_a?(PointerType) || other.is_a?(FunctionType), 0
+            return other == self || other.is_a?(ObjectType) || other.is_a?(PointerType) || other.is_a?(FunctionType), 0
         end
 
         def explicitly_castable_to?(other)
