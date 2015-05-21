@@ -17,4 +17,17 @@ module Enumerable<Type> {
         }
         ret
     }
+
+    def join(sep: String) -> String {
+        ret = ""
+        ret_ptr = &ret
+        index = 0
+        index_ptr = &index
+        @each() |el| {
+            if (index_ptr.get() != 0) ret_ptr.set(ret_ptr.get() + sep)
+            ret_ptr.set(ret_ptr.get() + el.to_s())
+            index_ptr.set(index_ptr.get() + 1)
+        }
+        ret
+    }
 }

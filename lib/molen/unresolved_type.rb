@@ -115,7 +115,7 @@ module Molen
             args = type_args.map { |e| e.resolve(visitor) }
             return nil if type.nil? || args.include?(nil)
 
-            existing = visitor.resolve_constant_type ["#{type.name}<#{args.map(&:full_name).join(", ")}>"]
+            existing = visitor.resolve_constant_type ["#{type.full_name}<#{args.map(&:full_name).join(", ")}>"]
             return existing if existing
 
             new_type = nil

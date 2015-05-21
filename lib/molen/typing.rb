@@ -157,8 +157,8 @@ module Molen
         def visit_var_def(node)
             node.raise "Unexpected var def!" unless current_type.is_a?(ObjectType) || current_type.is_a?(StructType)
             node.raise "Redefinition of variable #{node.name}" if current_type.vars[node.name]
-            node.raise "Undefined type '#{node.type.to_s}'" unless node.type.resolve(self) || current_type.generic_types.size > 0
-            current_type.vars[node.name] = node.type = node.type.resolve(self) || node.type
+            node.raise "Undefined type '#{node.type.to_s}'" unless node.type.resolve(self)
+            current_type.vars[node.name] = node.type = node.type.resolve(self)
         end
 
         def visit_assign(node)
@@ -218,6 +218,8 @@ module Molen
                 end
 
                 overrides_func.add_overrider node if overrides_func
+                type_function_prototype(node) if overrides_func && overrides_func.is_prototype_typed
+                type_function_body(node) if overrides_func && overrides_func.is_body_typed
             end
 
             receiver_type.functions.has_key?(node.name) ? receiver_type.functions[node.name] << node : receiver_type.functions[node.name] = [node]
@@ -301,6 +303,7 @@ module Molen
             if node.object then
                 node.object.accept self
                 scope = node.object.type
+                node.raise "Tried to call method on void" if scope.is_a?(VoidType)
             else
                 scope = program
             end
@@ -340,7 +343,7 @@ module Molen
                 end
             end
 
-            node.raise "No function named #{node.name} with matching argument types found!" unless function
+            node.raise "No function named #{node.name} with matching argument types found (#{node.args.map(&:type).map(&:full_name).join(",")})!" unless function
 
             if node.block then
                 block_type = function.args.last.type
