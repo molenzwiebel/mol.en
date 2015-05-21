@@ -107,8 +107,7 @@ module Molen
                 ret = instance_exec(&parser)
             end
             if ret then
-                ret.line = line
-                ret.filename = @file
+                add_line_info(line, ret)
             end
             ret
         end
@@ -129,8 +128,7 @@ module Molen
                 ret = left
             end
             if ret then
-                ret.line = line
-                ret.filename = @file
+                add_line_info(line, ret)
             end
             ret
         end
@@ -204,6 +202,21 @@ module Molen
             return 0 if filtered.size == 0
             _, contents = filtered.first
             contents[0]
+        end
+
+        def add_line_info(line, node)
+            return if node.is_a?(Body)
+            return unless node.is_a?(ASTNode) || node.is_a?(::Enumerable)
+
+            if node.is_a?(::Enumerable) then
+                node.each {|el| add_line_info(line, el)}
+            else
+                node.line = line
+                node.filename = @file
+                node.instance_variables.each do |var|
+                    add_line_info(line, node.instance_variable_get(var))
+                end
+            end
         end
     end
 end

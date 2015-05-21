@@ -239,6 +239,7 @@ module Molen
 
             if node.object && node.object.type.pass_as_this? then
                 obj = node.object.accept(self)
+                generate_null_check(node, node.object.type, obj) unless node.name == "to_bool" || node.name == "is_null"
                 casted_this = builder.bit_cast obj, node.target_function.owner_type.llvm_type
                 args = [casted_this] + args
             end
@@ -276,6 +277,7 @@ module Molen
             llvm_arg_types = args.map(&:type).map(&:llvm_type)
 
             if node.is_a?(ExternalFuncDef) then
+                return mod.functions[node.name] if mod.functions[node.name]
                 func = mod.functions.add(node.name, llvm_arg_types, node.return_type.llvm_type)
                 @function_pointers[node] = func
 
@@ -373,6 +375,7 @@ module Molen
             ptr_to_obj = node.object.accept(self)
             index = node.object.type.var_index node.field.value
 
+            generate_null_check(node, node.object.type, ptr_to_obj)
             builder.gep ptr_to_obj, [LLVM::Int(0), LLVM::Int(index)], node.field.value + "_ptr"
         end
 
@@ -449,6 +452,29 @@ module Molen
             end
 
             builder.call mod.functions["__do_allocate_string"], val_ptr
+        end
+
+        def generate_null_check(node, val_type, val)
+            return unless val_type.is_a?(ObjectType) || val_type.is_a?(StructType) || val_type.is_a?(PointerType) || val_type.is_a?(FunctionType)
+
+            puts_fun = mod.functions["puts"] || mod.functions.add("puts", [VOID_PTR], LLVM::Int)
+            exit_fun = mod.functions["exit"] || mod.functions.add("exit", [LLVM::Int], LLVM.Void)
+
+            the_func = builder.insert_block.parent
+
+            fail_block = the_func.basic_blocks.append "null_chk.#{node.object_id}.fail"
+            next_block = the_func.basic_blocks.append "null_chk.#{node.object_id}.after"
+
+            is_null = builder.icmp :eq, builder.ptr2int(val, LLVM::Int), LLVM::Int(0)
+            builder.cond(is_null, fail_block, next_block)
+
+            builder.position_at_end fail_block
+            err_msg = "#{node.filename}##{node.line}: ERROR: Tried to manipulate or read null"
+            builder.call puts_fun, builder.global_string_pointer(err_msg)
+            builder.call exit_fun, LLVM::Int(1)
+            builder.br next_block
+
+            builder.position_at_end next_block
         end
     end
 
