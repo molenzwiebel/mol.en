@@ -142,10 +142,12 @@ module Molen
                 func.args.size != node.args.size
             end
 
-            if (fn = find_overloaded_method(applicable_constructors, node.args)) then
+            fn = find_overloaded_method(applicable_constructors, node.args)
+            if fn then
                 type_function_body(fn) unless fn.is_body_typed
                 node.target_constructor = fn
             end
+            node.raise "Could not find suitable constructor" unless fn || node.args.size < 1
         end
 
         def visit_if(node)
