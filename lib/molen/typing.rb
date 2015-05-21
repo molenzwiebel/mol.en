@@ -150,15 +150,15 @@ module Molen
 
         def visit_if(node)
             node.condition.accept self
-            node.if_body.accept self
-            node.else_body.accept self if node.else_body
+            with_new_scope { node.if_body.accept self }
+            with_new_scope { node.else_body.accept self if node.else_body }
         end
 
         def visit_for(node)
             node.init.accept self if node.init
             node.cond.accept self
             node.step.accept self if node.step
-            node.body.accept self
+            with_new_scope { node.body.accept self }
         end
 
         def visit_var_def(node)

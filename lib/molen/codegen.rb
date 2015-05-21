@@ -169,6 +169,7 @@ module Molen
             var_struct = builder.alloca node.type.var_struct
             node.type.captured_vars.each_with_index do |(k,v), index|
                 val = @variable_pointers[k]
+                node.raise "Undefined variable #{k} (#{node.type.captured_vars.keys})" unless val
                 val = builder.load(val) unless v.is_a?(PrimitiveType) || v.is_a?(PointerType) || k == "this"
                 builder.store val, builder.struct_gep(var_struct, index)
             end
