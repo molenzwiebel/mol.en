@@ -138,6 +138,11 @@ module Molen
                 Cast.new left, parse_type
             end
 
+            infix 2, -> x { x.is_is_a? } do |left|
+                next_token
+                IsA.new left, parse_type
+            end
+
             infix 3, -> x { x.is_special? "`" } do |left|
                 func_name = expect_next_and_consume(:identifier).value
                 expect_and_consume "`"

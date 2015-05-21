@@ -135,6 +135,10 @@ module Molen
         attrs :elements
     end
 
+    class IsA < Expression
+        attrs :target, :comp_type
+    end
+
     class NewAnonymousFunction < Expression
         attrs :return_type, :args, :body
     end

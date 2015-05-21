@@ -83,4 +83,8 @@ describe TypingVisitor do
 
     # Make sure that functions get typed if they override others
     it_fails_on "class X { def foo() {} } class Y :: X { def foo() { new Bar } } new Y.foo()", /Undefined type 'Bar'/
+
+    # Is a
+    it_types "class X {} new X is a X", "Bool"
+    it_fails_on "10 is a X", /Can only 'is a' on objects/
 end

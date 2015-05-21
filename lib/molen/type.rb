@@ -188,7 +188,8 @@ module Molen
 
     class ObjectType < ClassType
         VTABLE_PTR = LLVM::Pointer(LLVM::Pointer(LLVM::Function([], LLVM::Int, varargs: true)))
-        TYPEINFO_PTR = LLVM::Pointer(LLVM::Struct(GeneratingVisitor::VOID_PTR, GeneratingVisitor::VOID_PTR, "_typeinfo"))
+        TYPEINFO = LLVM::Struct(GeneratingVisitor::VOID_PTR, GeneratingVisitor::VOID_PTR, "_typeinfo")
+        TYPEINFO_PTR = LLVM::Pointer(TYPEINFO)
         attr_accessor :vars
 
         def initialize(name, parent, container, generic_types = {})

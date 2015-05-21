@@ -80,6 +80,13 @@ module Molen
             node.type = program.long
         end
 
+        def visit_is_a(node)
+            node.target.accept self
+            node.raise "Can only 'is a' on objects" unless node.target.type.is_a?(ObjectType)
+            node.comp_type = node.comp_type.resolve(self) || node.raise("Undefined type #{node.comp_type.to_s}")
+            node.type = program.bool
+        end
+
         def visit_pointer_of(node)
             node.target.accept self
             node.raise "Cannot take pointer of void" unless node.target.type

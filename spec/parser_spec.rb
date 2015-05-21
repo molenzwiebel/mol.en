@@ -43,6 +43,7 @@ describe Parser do
     it_parses "[1, 2, 3]", [1, 2, 3].map(&:literal).new
 
     it_parses "3 `foo` 3", Call.new(nil, "foo", [3.literal, 3.literal], [], nil)
+    it_parses "2 is a String", IsA.new(2.literal, "String".type)
 
     it_parses "(10 - 2) * 3", Call.new(Call.new(10.literal, "-", [2.literal], [], nil), "*", [3.literal], [], nil)
 

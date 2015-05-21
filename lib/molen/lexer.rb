@@ -15,6 +15,7 @@ module Molen
             /true/                              => :true,
             /false/                             => :false,
             /null/                              => :null,
+            /is\sa/                             => :is_a,
 
             /\{/                                => :begin_block,
             /\}/                                => :end_block,

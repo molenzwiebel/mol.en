@@ -365,6 +365,59 @@ module Molen
             builder.position_at_end after_block
         end
 
+        def visit_is_a(node)
+            val = node.target.accept self
+
+            unless mod.functions["is_a"]
+                old_pos = builder.insert_block
+
+                func = mod.functions.add("is_a", [program.object.llvm_type, VOID_PTR], LLVM::Int1)
+                func.linkage = :internal
+
+                builder.position_at_end func.basic_blocks.append("init")
+                once_block = func.basic_blocks.append("once")
+                body_block = func.basic_blocks.append("body")
+                next_if_block = func.basic_blocks.append("next.if")
+                next_advance_block = func.basic_blocks.append("next.advance")
+                true_block = func.basic_blocks.append("true")
+                false_block = func.basic_blocks.append("false")
+
+                is_obj_null = builder.icmp :ne, func.params[0], builder.int2ptr(LLVM::Int(0), program.object.llvm_type)
+                typeinfo_ptr = builder.alloca ObjectType::TYPEINFO
+                builder.cond(is_obj_null, once_block, false_block)
+
+                builder.position_at_end once_block
+                ptr = builder.gep(func.params[0], [LLVM::Int(0), LLVM::Int(1)])
+                builder.store builder.load(builder.load(ptr)), typeinfo_ptr
+                builder.br body_block
+
+                builder.position_at_end next_if_block
+                parent = builder.load builder.gep(typeinfo_ptr, [LLVM::Int(0), LLVM::Int(0)])
+                parent_is_null = builder.icmp :ne, parent, builder.int2ptr(LLVM::Int(0), VOID_PTR)
+                builder.cond(parent_is_null, next_advance_block, false_block)
+
+                builder.position_at_end next_advance_block
+                builder.store builder.load(builder.bit_cast(parent, ObjectType::TYPEINFO_PTR)), typeinfo_ptr
+                builder.br body_block
+
+                builder.position_at_end body_block
+                name_ptr = builder.load builder.gep typeinfo_ptr, [LLVM::Int(0), LLVM::Int(1)]
+                is_eq = builder.icmp :eq, name_ptr, func.params[1]
+                builder.cond(is_eq, true_block, next_if_block)
+
+                builder.position_at_end true_block
+                builder.ret LLVM::TRUE
+
+                builder.position_at_end false_block
+                builder.ret LLVM::FALSE
+
+                builder.position_at_end old_pos
+            end
+
+            typeinfo = get_or_create_type_info(node.comp_type)
+            builder.call mod.functions["is_a"], builder.bit_cast(val, program.object.llvm_type), builder.load(builder.gep(typeinfo, [LLVM::Int(0), LLVM::Int(1)]))
+        end
+
         private
         def with_new_scope(inherit = true)
             old, @variable_pointers = @variable_pointers, inherit ? ParentHash.new(@variable_pointers) : {}
@@ -407,7 +460,7 @@ module Molen
             return @type_infos[type] if @type_infos[type]
 
             parent_ptr = type.parent_type ? builder.bit_cast(get_or_create_type_info(type.parent_type), VOID_PTR) : builder.int2ptr(LLVM::Int(0), VOID_PTR)
-            @type_infos[type] = add_global("typeinfo.#{type.name}", LLVM::ConstantStruct.const([parent_ptr, builder.global_string_pointer(type.name)]))
+            @type_infos[type] = add_global("typeinfo.#{type.full_name}", LLVM::ConstantStruct.const([parent_ptr, builder.global_string_pointer(type.full_name)]))
         end
 
         def get_or_create_vtable(type)
