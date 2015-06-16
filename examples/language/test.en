@@ -1,0 +1,37 @@
+import "../../../examples/language/ast"
+import "../../../examples/language/lexer"
+import "../../../examples/language/parser"
+import "../../../examples/language/inefficient_hash"
+import "../../../examples/language/env"
+import "../../../examples/language/eval"
+
+extern C {
+    fn scanf(format: *Char, storage: *Double)
+}
+
+env = new Environment(null)
+
+env.define("putchar", new FunctionBox(func(args: Array<Object>) -> Object {
+    putchar(args[0] as DoubleBox.value.to_int())
+    return new DoubleBox(0.0)
+}))
+
+env.define("print", new FunctionBox(func(args: Array<Object>) -> Object {
+    puts(args)
+    return new DoubleBox(0.0)
+}))
+
+env.define("read", new FunctionBox(func(args: Array<Object>) -> Object {
+    res = 0.0
+    C.scanf("%lf".pointer, &res)
+    return new DoubleBox(res)
+}))
+
+#lex = new Lexer("print(putchar(69) + putchar(110) + putchar(116) + putchar(101) + putchar(114) + putchar(32) + putchar(97) + putchar(32) + putchar(110) + putchar(117) + putchar(109) + putchar(98) + putchar(101) + putchar(114) + putchar(58) + putchar(32) + read() + 3)")
+lex = new Lexer("def foo(a, b) a + b print(foo(1, 3))")
+lex.next_token()
+parser = new Parser(lex)
+
+for (, p = parser.parse_expression(), ) {
+    evaluate(p, env)
+}

@@ -1,0 +1,96 @@
+class Char {
+    def is_letter() -> Bool {
+        this >= 65 && this <= 122
+    }
+
+    def is_number() -> Bool {
+        this >= 48 && this <= 57
+    }
+
+    def is_alnum() -> Bool {
+        @is_letter() || @is_number()
+    }
+
+    def ==(other: String) -> Bool {
+        chars = other.chars()
+        this == chars[0]
+    }
+
+    def !=(other: String) -> Bool {
+        (this == other) == false
+    }
+}
+
+extern C {
+    fn atof(str: *Char) -> Double
+}
+
+class Lexer {
+    var input: String
+    var last_char: Char
+    var index: Int
+    var current_token: Char
+
+    var ident: String
+    var num: Double
+
+    def create(src: String) {
+        @input = src
+        @last_char = 32.to_char()
+
+        @index = 0
+        @current_token = -1.to_char()
+        @ident = null
+        @num = 0.0
+    }
+
+    def get_char() -> Char {
+        if (@index == @input.length()) return -1.to_char()
+        old = @index
+        @index = @index + 1
+        @input[old]
+    }
+
+    def get_token() -> Char {
+        for (, @last_char == 32, ) {
+            @last_char = @get_char()
+            if (@last_char == -1) return -1.to_char()
+        }
+
+        if (@last_char.is_letter()) {
+            @ident = @last_char.to_s()
+            @last_char = @get_char()
+            for (, @last_char.is_alnum(), ) {
+                @ident = @ident + @last_char
+                @last_char = @get_char()
+            }
+
+            if (@ident == "def") {
+    			return -2.to_char()
+    		} elseif (@ident == "extern") {
+    			return -3.to_char()
+    		} else {
+    			return -4.to_char()
+    		}
+        }
+
+        if (@last_char.is_number() || @last_char == 46) {
+            num_str = @last_char.to_s()
+            @last_char = @get_char()
+            for (, @last_char.is_number() || @last_char == 46, ) {
+                num_str = num_str + @last_char
+                @last_char = @get_char()
+            }
+            @num = C.atof(num_str.pointer)
+            return -5.to_char()
+        }
+
+        this_char = @last_char
+        @last_char = @get_char()
+        return this_char
+    }
+
+    def next_token() -> Char {
+        @current_token = @get_token()
+    }
+}

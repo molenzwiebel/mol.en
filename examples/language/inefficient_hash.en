@@ -1,0 +1,49 @@
+# A very simple but inefficient hash.
+# This is here because there is not yet a default
+# implementation in the std.
+class Hash<K, V> {
+    var entries: Array<Entry<K, V>>
+
+    def create() {
+        @entries = new Array<Entry<K, V>>
+    }
+
+    def __index_get(key: K) -> V {
+        entries = @entries.select() |entry| {
+            return entry.key == key
+        }
+        if (entries.length == 0) return null
+        return entries[0].value
+    }
+
+    def __index_set(key: K, value: V) {
+        existing = @entries.select() |entry| {
+            return entry.key == key
+        }
+
+        if (existing.length > 0) {
+            existing[0].value = value
+        } else {
+            entry = new Entry<K, V>(key, value)
+            @entries.add(entry)
+        }
+    }
+
+    def to_s() -> String {
+        "{" + @entries.join(", ") + "}"
+    }
+}
+
+class Entry<K, V> {
+    var key: K
+    var value: V
+
+    def create(k: K, v: V) {
+        @key = k
+        @value = v
+    }
+
+    def to_s() -> String {
+        @key.to_s() + ": " + @value
+    }
+}

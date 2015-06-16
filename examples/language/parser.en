@@ -1,0 +1,129 @@
+class Parser {
+    var lex: Lexer
+
+    def create(lex: Lexer) {
+        @lex = lex
+    }
+
+    def parse_expression() -> ASTNode {
+        left = @parse_primary()
+        if (left.is_null()) {
+            return null
+        }
+        @parse_binary(0, left)
+    }
+
+    def parse_primary() -> ASTNode {
+        tok = @lex.current_token
+        if (tok == -4) {
+            return @parse_identifier()
+        } elseif (tok == -5) {
+            return @parse_number()
+        } elseif (tok == '(') {
+            return @parse_parenthesized_expression()
+        } elseif (tok == -2) {
+            return @parse_function()
+        }
+        return null
+    }
+
+    def parse_identifier() -> ASTNode {
+        name = @lex.ident
+        @lex.next_token()
+
+        if (@lex.current_token != '(') {
+            return new Identifier(name)
+        }
+        @lex.next_token()
+
+        args = new Array<ASTNode>
+        for (, @lex.current_token != ')', ) {
+            args.add(@parse_expression())
+            assert(@lex.current_token == ')' || @lex.current_token == ',', "Expected , or ) in arg list")
+            if (@lex.current_token == ',') @lex.next_token()
+        }
+
+        @lex.next_token()
+        new Call(name, args)
+    }
+
+    def parse_number() -> ASTNode {
+        val = new Number(@lex.num)
+        @lex.next_token()
+        val
+    }
+
+    def parse_parenthesized_expression() -> ASTNode {
+        @lex.next_token()
+        expr = @parse_expression()
+        assert(@lex.current_token == ')', "Expected ) after (expr")
+        @lex.next_token()
+        expr
+    }
+
+    def get_operator_prec(op: Char) -> Int {
+        if (op == '<') return 10
+        if (op == '+') return 20
+        if (op == '-') return 20
+        if (op == '*') return 40
+        if (op == '/') return 40
+        return -1
+    }
+
+    def parse_binary(prec: Int, left: ASTNode) -> ASTNode {
+        for (, true, ) {
+            tok_prec = @get_operator_prec(@lex.current_token)
+            if (tok_prec < prec) return left
+            op = @lex.current_token
+            @lex.next_token()
+
+            right = @parse_primary()
+            if (right.is_null()) return null
+
+            next_prec = @get_operator_prec(@lex.current_token)
+            if (tok_prec < next_prec) {
+                right = @parse_binary(tok_prec + 1, right)
+                if (right.is_null()) return null
+            }
+            left = new Binary(op, left, right)
+        }
+        return null
+    }
+
+    def parse_prototype() -> ASTNode {
+        if (@lex.current_token != -4) {
+            assert(false, "Expected function name in prototype")
+            return null
+        }
+
+        name = @lex.ident
+        @lex.next_token()
+
+        if (@lex.current_token != '(') {
+            assert(false, "Expected ( in prototype")
+            return null
+        }
+        @lex.next_token()
+
+        arg_names = new Array<String>
+        for (, @lex.current_token != ')', ) {
+            assert(@lex.current_token == -4, "Expected identifier in prototype")
+            arg_names.add(@lex.ident)
+            @lex.next_token()
+            assert(@lex.current_token == ')' || @lex.current_token == ',', "Expected , or ) in arg list")
+            if (@lex.current_token == ',') @lex.next_token()
+        }
+
+        @lex.next_token()
+        return new FunPrototype(name, arg_names)
+    }
+
+    def parse_function() -> ASTNode {
+        @lex.next_token()
+        proto = @parse_prototype()
+        body = @parse_expression()
+        assert(proto.to_bool(), "Expected prototype in function")
+        assert(body.to_bool(), "Expected body in function")
+        return new Fun(proto as FunPrototype, body)
+    }
+}

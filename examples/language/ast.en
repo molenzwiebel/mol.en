@@ -1,0 +1,79 @@
+class ASTNode { }
+
+class Number :: ASTNode {
+    var value: Double
+
+    def create(val: Double) @value = val
+
+    def to_s() -> String {
+        @value.to_s()
+    }
+}
+
+class Identifier :: ASTNode {
+    var value: String
+
+    def create(val: String) @value = val
+
+    def to_s() -> String {
+        @value
+    }
+}
+
+class Binary :: ASTNode {
+    var operation: Char
+    var left: ASTNode
+    var right: ASTNode
+
+    def create(op: Char, left: ASTNode, right: ASTNode) {
+        @operation = op
+        @left = left
+        @right = right
+    }
+
+    def to_s() -> String {
+        @left.to_s() + " " + @operation + " " + @right.to_s()
+    }
+}
+
+class Call :: ASTNode {
+    var name: String
+    var args: Array<ASTNode>
+
+    def create(name: String, args: Array<ASTNode>) {
+        @name = name
+        @args = args
+    }
+
+    def to_s() -> String {
+        @name + "(" + @args.map[String]()|x|{return x.to_s()}.join(", ") + ")"
+    }
+}
+
+class FunPrototype :: ASTNode {
+    var name: String
+    var arg_names: Array<String>
+
+    def create(name: String, args: Array<String>) {
+        @name = name
+        @arg_names = args
+    }
+
+    def to_s() -> String {
+        @name + "(" + @arg_names.join(", ") + ")"
+    }
+}
+
+class Fun :: ASTNode {
+    var prototype: FunPrototype
+    var body: ASTNode
+
+    def create(proto: FunPrototype, body: ASTNode) {
+        @prototype = proto
+        @body = body
+    }
+
+    def to_s() -> String {
+        "def " + @prototype + "{\n" + @body + "\n}"
+    }
+}

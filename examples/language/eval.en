@@ -1,0 +1,75 @@
+class DoubleBox {
+    var value: Double
+
+    def create(val: Double) @value = val
+    def get() -> Double @value
+    def set(val: Double) @value = val
+    def to_s() -> String @value.to_s()
+}
+
+class FunctionBox {
+    var value: (Array<Object>) -> Object
+
+    def create(val: (Array<Object>) -> Object) @value = val
+    def get() -> (Array<Object>) -> Object @value
+    def set(val: (Array<Object>) -> Object) @value = val
+    def to_s() -> String "<function>"
+}
+
+def evaluate(node: ASTNode, env: Environment) -> Object {
+    if (node is a Number) {
+        return new DoubleBox((node as Number).value)
+    } elseif (node is a Binary) {
+        binary = node as Binary
+        return new DoubleBox(applyOp(binary.operation, evaluate(binary.left, env), evaluate(binary.right, env)))
+    } elseif (node is a Identifier) {
+        return env.get((node as Identifier).value)
+    } elseif (node is a Call) {
+        call = node as Call
+
+        fun = env.get(call.name)
+        assert(fun.to_bool(), "Undefined function " + call.name)
+        assert(fun is a FunctionBox, "Expected "+call.name+" to be a function")
+
+        args = new Array<Object>()
+        call.args.each() |arg| {
+            args.add(evaluate(arg, env))
+        }
+
+        return (fun as FunctionBox).get().call(args)
+    } elseif (node is a Fun) {
+        fun = node as Fun
+        lambda = make_lambda(fun, env)
+        env.define(fun.prototype.name, lambda)
+        return fun
+    } else {
+        assert(false, "Unexpected ASTNode")
+    }
+    return null
+}
+
+def make_lambda(node: Fun, env: Environment) -> FunctionBox {
+    return new FunctionBox(func(args: Array<Object>) -> Object {
+        puts("running")
+        names = node.prototype.arg_names
+        new_scope = env.extend()
+
+        return evaluate(node.body, env)
+    })
+}
+
+def applyOp(op: Char, left: Object, right: Object) -> Double {
+    assert(left is a DoubleBox, "Expected left hand in operation to be number")
+    assert(right is a DoubleBox, "Expected right hand in operation to be number")
+
+    leftn = left as DoubleBox.value
+    rightn = right as DoubleBox.value
+
+    if (op == "+") return leftn + rightn
+    if (op == "-") return leftn - rightn
+    if (op == "*") return leftn * rightn
+    if (op == "/") return leftn / rightn
+
+    assert(false, "Unknown operator!")
+    return -1.0
+}
