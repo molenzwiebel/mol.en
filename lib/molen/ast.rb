@@ -25,6 +25,10 @@ module Molen
                 def initialize(#{fields.map(&:to_s).join ", "})
                     #{fields.map(&:to_s).map{|x| x.include?("body") ? "@#{x} = Body.from #{x}" : "@#{x} = #{x}"}.join("\n")}
                 end
+
+                def clone
+                    #{self.class.name}.new #{fields.map{|x| "@#{x.to_s}"}.join ", "}
+                end
             )
         end
 
